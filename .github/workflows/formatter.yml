@@ -1,6 +1,6 @@
 name: format-action
 on:
-  push:
+  pull_request:
     branches: [ master ]
 
 jobs:
