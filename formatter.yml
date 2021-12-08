@@ -1,0 +1,48 @@
+name: C/C++ CI
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+name: build-test-action
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: make init
+      run: make init
+    - name: make build
+      run: make build
+    - uses: DoozyX/clang-format-lint-action@v0.13
+      with:
+        source: './src'
+        extensions: 'h,c'
+        clangFormatVersion: 12
+        inplace: True
+        style='{BreakBeforeBraces: Linux}'
+    - uses: EndBug/add-and-commit@v4
+      with:
+        add: './src'
+        author_name: FormatterBot
+        author_email: formatter@bot.com
+        message: 'Format code'
+        branch: master
+        
+        
+    
