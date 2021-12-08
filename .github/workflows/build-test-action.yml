@@ -1,7 +1,5 @@
 name: build-test-action
 on:
-  push:
-    branches: [ master ]
   pull_request:
     branches: [ master ]
 
@@ -13,6 +11,6 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: make init
-      run: make init
+      run:  make init
     - name: make build
-      run: make build
+      run:  make build
