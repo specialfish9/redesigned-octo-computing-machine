@@ -35,7 +35,6 @@ jobs:
         author_name: FormatterBot
         author_email: formatter@bot.com
         message: 'Format code'
-        branch: master
         
         
     
