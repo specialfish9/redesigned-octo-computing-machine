@@ -35,6 +35,14 @@ Clean the project:
 make clean
 ```
 
+Format code
+```
+make format
+```
+
+TODO: rimuovere il format dal build
+
+
 
 
 
