@@ -54,10 +54,13 @@ init:
 	@echo -e "Creating project tree..."
 	@mkdir -p $(BIN_PATH) $(OBJ_PATH) $(DBG_PATH)
 
-
 .PHONY: build
-build: $(TARGET)
+build: $(TARGET) format
 
+.PHONY: format
+format:
+	@echo -e "FORMAT"
+	@find src -iname *.[h,c]| xargs clang-format -i -style="{BasedOnStyle: llvm, BreakBeforeBraces: Linux}"
 
 .PHONY: run
 run: 
