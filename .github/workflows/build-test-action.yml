@@ -1,7 +1,5 @@
 name: build-test-action
 on:
-  push:
-    branches: [ master ]
   pull_request:
     branches: [ master ]
 
