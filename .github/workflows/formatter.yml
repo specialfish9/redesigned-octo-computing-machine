@@ -23,7 +23,7 @@ jobs:
         extensions: 'h,c'
         clangFormatVersion: 12
         inplace: True
-        style='{BreakBeforeBraces: Linux}'
+        style: file
         
   commit:
     runs-on: ubuntu-latest
