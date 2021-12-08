@@ -24,11 +24,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
-    - name: make init
-      run: cd ../../.. && make init
-    - name: make build
-      run: cd ../../.. && make build
+    - uses: ./build-test-action@v1
     - uses: DoozyX/clang-format-lint-action@v0.13
       with:
         source: './src'
