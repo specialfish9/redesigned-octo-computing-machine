@@ -13,6 +13,6 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: make init
-      run: make init
+      run: cd ../.. && make init
     - name: make build
-      run: make build
+      run: cd ../.. && make build
