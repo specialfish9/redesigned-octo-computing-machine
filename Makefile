@@ -1,81 +1,71 @@
-# Inspired by:
-# https://github.com/TheNetAdmin/Makefile-Templates/blob/master/SmallProject/Template/Makefile
+ifneq ($(wildcard /usr/bin/umps3),)
+	UMPS3_DIR_PREFIX = /usr
+	LIBDIR = $(UMPS3_DIR_PREFIX)/lib64/umps3
+else
+	UMPS3_DIR_PREFIX = /usr/local
+	LIBDIR = $(UMPS3_DIR_PREFIX)/lib/umps3
+endif
 
-CC :=  gcc
-CCFLAGS := -Wall
-DBGFLAGS := -g
-CCOBJFLAGS := $(CCFLAGS) -c
+INCDIR = $(UMPS3_DIR_PREFIX)/include/umps3/umps
+SUPDIR = $(UMPS3_DIR_PREFIX)/share/umps3
 
-BIN_PATH := bin
-OBJ_PATH := obj
 SRC_PATH := src
-DBG_PATH := debug
+OBJ_PATH := obj
+OUT_PATH := output
 
-TARGET_NAME := redesigned-octo-computing-machine
-TARGET := $(BIN_PATH)/$(TARGET_NAME)
-TARGET_DEBUG := $(DBG_PATH)/$(TARGET_NAME)
+HEADERS := $(foreach x, $(SRC_PATH), $(wildcard $(addprefix $(x)/*,.h)))
+SOURCES := $(foreach x, $(SRC_PATH), $(wildcard $(addprefix $(x)/*,.c)))
+OBJS := $(addprefix $(OBJ_PATH)/, $(addsuffix .o, $(notdir $(basename $(SOURCES)))))
 
-SRC := $(foreach x, $(SRC_PATH), $(wildcard $(addprefix $(x)/*,.c*)))
-OBJ := $(addprefix $(OBJ_PATH)/, $(addsuffix .o, $(notdir $(basename $(SRC)))))
-OBJ_DEBUG := $(addprefix $(DBG_PATH)/, $(addsuffix .o, $(notdir $(basename $(SRC)))))
+CLEAN_LIST := $(OUT_PATH)/* \
+				$(OBJ_PATH)/* \
 
-CLEAN_LIST := $(TARGET) \
-			  $(TARGET_DEBUG) \
-				$(OBJ) \
-				$(OBJ_DEBUG)
+CFLAGS = -ffreestanding -ansi -Wall -c -mips1 -mabi=32 -mfp32 \
+				-mno-gpopt -G 0 -fno-pic -mno-abicalls
+LDAOUTFLAGS = -G 0 -nostdlib -T $(SUPDIR)/umpsaout.ldscript
+LDCOREFLAGS = -G 0 -nostdlib -T $(SUPDIR)/umpscore.ldscript
 
-default: build run
+CC = mipsel-linux-gnu-gcc
+LD = mipsel-linux-gnu-ld
+AS = mipsel-linux-gnu-as -KPIC
+EF = umps3-elf2umps
+UDEV = umps3-mkdev
 
-# non-phony targets
-$(TARGET): $(OBJ)
-	@echo -e "BUILD"
-	@echo -e "Building target without debug..."
-	$(CC) $(CCFLAGS) -o $@ $(OBJ)
+KERNEL_NAME = ROCM_kernel
+DISK_NAME = disk0
 
-$(OBJ_PATH)/%.o: $(SRC_PATH)/%.c
-	@echo -e "BUILD"
-	@echo -e "Building object files without debug..."
-	$(CC) $(CCOBJFLAGS) -o $@ $<
+#main target
+all: kernel.core.umps disk0.umps
+	@echo "--------"
+	@echo "Done :D"
 
-$(DBG_PATH)/%.o: $(SRC_PATH)/%.c
-	@echo -e "BUILD"
-	@echo -e "Building target with debug..."
-	$(CC) $(CCOBJFLAGS) $(DBGFLAGS) -o $@ $<
+# use umps3-mkdev to create the disk0 device
+disk0.umps:
+	@echo "*** DISK ***"
+	@echo "Creating disk " $@ "..."
+	$(UDEV) -d $(OUT_PATH)/$(DISK_NAME).umps
 
-$(TARGET_DEBUG): $(OBJ_DEBUG)
-	@echo -e "BUILD"
-	@echo -e "Building object files with debug..."
-	$(CC) $(CCFLAGS) $(DBGFLAGS) $(OBJ_DEBUG) -o $@
+# create the kernel.core.umps kernel executable file
+kernel.core.umps: kernel
+	@echo "Creating " $@ "..."
+	$(EF) -k $(OUT_PATH)/$(KERNEL_NAME)
 
-# phony rules
-.PHONY: init
-init:
-	@echo -e "INIT"
-	@echo -e "Creating project tree..."
-	@mkdir -p $(BIN_PATH) $(OBJ_PATH) $(DBG_PATH)
+kernel: $(OBJS)
+	@echo "*** KERNEL ***"
+	@echo "Linking kernel..."
+	$(LD) $(LDCOREFLAGS) $(LIBDIR)/crtso.o $(OBJS) \
+	$(LIBDIR)/libumps.o -o $(OUT_PATH)/$(KERNEL_NAME)
 
-.PHONY: build
-build: $(TARGET) format
+$(OBJ_PATH)/%.o: $(SRC_PATH)/%.c format
+	@echo -e "Building " $@ "..."
+	$(CC) $(CFLAGS) -o $@ $<
 
-.PHONY: format
 format:
-	@echo -e "FORMAT"
+	@echo -e "*** FORMAT ***"
 	@find src -iname *.[h,c]| xargs clang-format -i -style="{BasedOnStyle: llvm, BreakBeforeBraces: Linux}"
 
-.PHONY: run
-run: 
-	@echo -e "RUN"
-	@./$(TARGET)
-
-.PHONY: debug
-debug: $(TARGET_DEBUG)
-	@echo -e "DEBUG"
-	@./$(TARGET_DEBUG)
-
-
-.PHONY: clean
 clean:
-	@echo -e "CLEAN"
+	@echo -e "*** CLEAN ***"
 	@echo -e "Cleaning project structure..."
 	@rm -rf $(CLEAN_LIST)
 
