@@ -1,41 +1,29 @@
-# redesigned-octo-computing-machine
+# Redesigned Octo Computing Machine
 
 ### Usage:
 
-First time run with:
+Build kernel and create disk image with:
 ```
-make init
-make
+make all
 ```
-
-Otherwise build & run with:
+or just simply:
 ```
 make
 ```
 
-Or run only with:
+_Note:_ Generated outputs file are stored in  __output__ dir.
+
+Build kernel with:
 ```
-make run
+make kernel
 ```
 
-### Others:
-
-Build only:
-```
-make build
-```
-
-Debug:
-```
-make debug
-```
-
-Clean the project:
+Clean the project with:
 ```
 make clean
 ```
 
-Format code
+Format code with:
 ```
 make format
 ```

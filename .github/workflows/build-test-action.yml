@@ -10,7 +10,5 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - name: make init
-      run:  make init
-    - name: make build
-      run:  make build
+    - name: make format 
+      run:  make format 
