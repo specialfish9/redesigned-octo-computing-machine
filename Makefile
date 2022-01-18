@@ -1,29 +1,29 @@
 ifneq ($(wildcard /usr/bin/umps3),)
 	UMPS3_DIR_PREFIX = /usr
-	LIBDIR = $(UMPS3_DIR_PREFIX)/lib64/umps3
 else
 	UMPS3_DIR_PREFIX = /usr/local
-	LIBDIR = $(UMPS3_DIR_PREFIX)/lib/umps3
 endif
 
-INCDIR = $(UMPS3_DIR_PREFIX)/include/umps3/umps
-SUPDIR = $(UMPS3_DIR_PREFIX)/share/umps3
+UMPS3_DATA_DIR = $(UMPS3_DIR_PREFIX)/share/umps3
+UMPS3_INCLUDE_DIR = $(UMPS3_DIR_PREFIX)/include/umps3
 
-SRC_PATH := src
+SRC_PATH := src/phase1
 OBJ_PATH := obj
 OUT_PATH := output
 
-HEADERS := $(foreach x, $(SRC_PATH), $(wildcard $(addprefix $(x)/*,.h)))
+HEADERS := $(foreach x, $(SRC_PATH), $(wildcard $(addprefix $(x)/*,.h))) \
+					$(INCDIR)/libumps.h
 SOURCES := $(foreach x, $(SRC_PATH), $(wildcard $(addprefix $(x)/*,.c)))
-OBJS := $(addprefix $(OBJ_PATH)/, $(addsuffix .o, $(notdir $(basename $(SOURCES)))))
+#OBJS := $(addprefix $(OBJ_PATH)/, $(addsuffix .o, $(notdir $(basename $(SOURCES)))))
+OBJS = obj/p1test.o
 
 CLEAN_LIST := $(OUT_PATH)/* \
 				$(OBJ_PATH)/* \
 
 CFLAGS = -ffreestanding -ansi -Wall -c -mips1 -mabi=32 -mfp32 \
-				-mno-gpopt -G 0 -fno-pic -mno-abicalls
-LDAOUTFLAGS = -G 0 -nostdlib -T $(SUPDIR)/umpsaout.ldscript
-LDCOREFLAGS = -G 0 -nostdlib -T $(SUPDIR)/umpscore.ldscript
+				 -mno-gpopt -G 0 -fno-pic -mno-abicalls -EL -I$(UMPS3_INCLUDE_DIR)
+
+LDFLAGS = -G 0 -nostdlib -T $(UMPS3_DATA_DIR)/umpscore.ldscript -m elf32ltsmip
 
 CC = mipsel-linux-gnu-gcc
 LD = mipsel-linux-gnu-ld
@@ -47,18 +47,22 @@ disk0.umps:
 
 # create the kernel.core.umps kernel executable file
 kernel.core.umps: kernel
+	@echo "*** " $@ " ***"
 	@echo "Creating " $@ "..."
-	$(EF) -k $(OUT_PATH)/$(KERNEL_NAME)
+	umps3-elf2umps -k $<
 
-kernel: $(OBJS)
+kernel: $(OBJS) crtso.o libumps.o  
 	@echo "*** KERNEL ***"
 	@echo "Linking kernel..."
-	$(LD) $(LDCOREFLAGS) $(LIBDIR)/crtso.o $(OBJS) \
-	$(LIBDIR)/libumps.o -o $(OUT_PATH)/$(KERNEL_NAME)
+	$(LD) \
+		$(LDFLAGS) \
+		-o $(OUT_PATH)/$(KERNEL_NAME) \
+		$^
 
-$(OBJ_PATH)/%.o: $(SRC_PATH)/%.c format
+$(OBJ_PATH)/%.o: $(SRC_PATH)/%.c
 	@echo -e "Building " $@ "..."
 	$(CC) $(CFLAGS) -o $@ $<
+	format
 
 format:
 	@echo -e "*** FORMAT ***"
@@ -68,4 +72,7 @@ clean:
 	@echo -e "*** CLEAN ***"
 	@echo -e "Cleaning project structure..."
 	@rm -rf $(CLEAN_LIST)
+	@echo -e "-------------------------------------------"
+	@echo -e "Un progetto pulito è un progetto felice :D"
+	@echo -e "-------------------------------------------"
 
