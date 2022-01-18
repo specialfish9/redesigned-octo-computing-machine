@@ -9,7 +9,7 @@
 
 #include "listx.h"
 #include "pandos_const.h"
-#include <umps3/umps/types.h>
+#include "umps/types.h"
 
 typedef signed int cpu_t;
 typedef unsigned int memaddr;
