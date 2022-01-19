@@ -3,7 +3,7 @@
 #include "pandos_const.h"
 #include "listx.h"
 
-struct semd_t semd_table[MAX_PROC]; //array di SEMD con dimensione massima MAX_PROC
+struct semd_t semd_table[MAXPROC]; //array di SEMD con dimensione massima MAXPROC
 struct list_head *semdFree_h;   //lista dei SEMD liberi o inutilizzati
 struct list_head *semd_h; //lista dei semafori attivi (ASL)
 
@@ -16,7 +16,7 @@ processi bloccati associata al SEMD con chiave
 semAdd. Se il semaforo corrispondente non è
 presente nella ASL, alloca un nuovo SEMD dalla
 lista di quelli liberi (semdFree) e lo inserisce nella
-ASL, settando I campi in maniera opportuna (i.e.
+ASL, settando I campi in maniera opportuna (i.e.MAX
 key e s_procQ). Se non è possibile allocare un
 nuovo SEMD perché la lista di quelli liberi è vuota,
 restituisce TRUE. In tutti gli altri casi, restituisce
