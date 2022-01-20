@@ -57,10 +57,6 @@ kernel: $(OBJS) crtso.o libumps.o
 		-o $(OUT_PATH)/$(KERNEL_NAME) \
 		$(addprefix $(OBJ_PATH)/,$^)
 
-d:
-	@echo $(UMPS3_DATA_DIR) 
-
-
 %.o: $(SRC_PATH)/%.c
 	@echo -e "Building " $@ "..."
 	$(CC) $(CFLAGS) -o $(OBJ_PATH)/$@ $<
