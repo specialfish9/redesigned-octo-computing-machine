@@ -47,7 +47,7 @@ disk0.umps:
 kernel.core.umps: kernel
 	@echo "*** " $@ " ***"
 	@echo "Creating " $@ "..."
-	umps3-elf2umps -k $<
+	umps3-elf2umps -k $(OUT_PATH)/$(KERNEL_NAME)
 
 kernel: $(OBJS) crtso.o libumps.o  
 	@echo "*** KERNEL ***"
@@ -57,14 +57,21 @@ kernel: $(OBJS) crtso.o libumps.o
 		-o $(OUT_PATH)/$(KERNEL_NAME) \
 		$(addprefix $(OBJ_PATH)/,$^)
 
-%.o: $(SOURCES)
+d:
+	@echo $(UMPS3_DATA_DIR) 
+
+
+%.o: $(SRC_PATH)/%.c
 	@echo -e "Building " $@ "..."
 	$(CC) $(CFLAGS) -o $(OBJ_PATH)/$@ $<
 
-d:
-	@echo -e $(SOURCES)
-	@echo -e $(HEADERS)
-	@echo -e $(OBJS)
+crtso.o:
+	@echo -e "Building " $@ "..."
+	$(CC) $(CFLAGS) -o $(OBJ_PATH)/$@ $(UMPS3_DATA_DIR)/crtso.S
+
+libumps.o:
+	@echo -e "Building " $@ "..."
+	$(CC) $(CFLAGS) -o $(OBJ_PATH)/$@ $(UMPS3_DATA_DIR)/libumps.S
 
 format:
 	@echo -e "*** FORMAT ***"
