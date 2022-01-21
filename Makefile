@@ -11,17 +11,15 @@ SRC_PATH := src/phase1
 OBJ_PATH := obj
 OUT_PATH := output
 
-HEADERS := $(foreach x, $(SRC_PATH), $(wildcard $(addprefix $(x)/*,.h))) \
-					$(INCDIR)/libumps.h
+HEADERS := $(foreach x, $(SRC_PATH), $(wildcard $(addprefix $(x)/*,.h))) 
 SOURCES := $(foreach x, $(SRC_PATH), $(wildcard $(addprefix $(x)/*,.c)))
-#OBJS := $(addprefix $(OBJ_PATH)/, $(addsuffix .o, $(notdir $(basename $(SOURCES)))))
-OBJS = obj/p1test.o
+OBJS :=  $(addsuffix .o, $(notdir $(basename $(SOURCES))))
 
 CLEAN_LIST := $(OUT_PATH)/* \
 				$(OBJ_PATH)/* \
 
 CFLAGS = -ffreestanding -ansi -Wall -c -mips1 -mabi=32 -mfp32 \
-				 -mno-gpopt -G 0 -fno-pic -mno-abicalls -EL -I$(UMPS3_INCLUDE_DIR)
+				 -mno-gpopt -G 0 -fno-pic -mno-abicalls -EL -I$(UMPS3_INCLUDE_DIR) -std=c99
 
 LDFLAGS = -G 0 -nostdlib -T $(UMPS3_DATA_DIR)/umpscore.ldscript -m elf32ltsmip
 
@@ -49,7 +47,7 @@ disk0.umps:
 kernel.core.umps: kernel
 	@echo "*** " $@ " ***"
 	@echo "Creating " $@ "..."
-	umps3-elf2umps -k $<
+	umps3-elf2umps -k $(OUT_PATH)/$(KERNEL_NAME)
 
 kernel: $(OBJS) crtso.o libumps.o  
 	@echo "*** KERNEL ***"
@@ -57,12 +55,19 @@ kernel: $(OBJS) crtso.o libumps.o
 	$(LD) \
 		$(LDFLAGS) \
 		-o $(OUT_PATH)/$(KERNEL_NAME) \
-		$^
+		$(addprefix $(OBJ_PATH)/,$^)
 
-$(OBJ_PATH)/%.o: $(SRC_PATH)/%.c
+%.o: $(SRC_PATH)/%.c
 	@echo -e "Building " $@ "..."
-	$(CC) $(CFLAGS) -o $@ $<
-	format
+	$(CC) $(CFLAGS) -o $(OBJ_PATH)/$@ $<
+
+crtso.o:
+	@echo -e "Building " $@ "..."
+	$(CC) $(CFLAGS) -o $(OBJ_PATH)/$@ $(UMPS3_DATA_DIR)/crtso.S
+
+libumps.o:
+	@echo -e "Building " $@ "..."
+	$(CC) $(CFLAGS) -o $(OBJ_PATH)/$@ $(UMPS3_DATA_DIR)/libumps.S
 
 format:
 	@echo -e "*** FORMAT ***"
