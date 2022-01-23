@@ -28,12 +28,9 @@ pcb_t *allocPcb(void)
   if (list_empty(pcbFree_h))
     return NULL;
   pcb_t *pcb = container_of(pcbFree_h.next, pcb_t, p_list);
-  list_del(pcbFree_h.next);
+  list_del(pcbFree_h->next);
   pcb->p_parent = NULL;
-  pcb->p_child = 0;
-  pcb->p_sib = 0;
-  pcb->p_s = 0;
-  pcb->p_time = 0;
+  /*TODO*/
   pcb->p_semAdd = NULL;
   return pcb;
 }
