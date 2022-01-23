@@ -4,7 +4,7 @@
 #include "pandos_const.h"
 
 static pcb_t pcbFree_table[MAX_PROC]; 
-static pcb_t *pcbFree_h;
+static struct  list_head pcbFree_h;
 
 void initPcbs(void);
 
