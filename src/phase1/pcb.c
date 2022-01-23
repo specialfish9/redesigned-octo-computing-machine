@@ -2,7 +2,7 @@
 #include "listx.h"
 
 static pcb_t pcbFree_table[MAXPROC];
-static struct list_head* pcbFree_h;
+static struct list_head *pcbFree_h;
 
 /*
  *Inizializza la lista pcbFree in modo da contenere tutti gli elementi della
@@ -10,7 +10,8 @@ static struct list_head* pcbFree_h;
  */
 void initPcbs(void)
 {
-  INIT_LIST_HEAD(pcbFree_h);
+
+  pcbFree_h = LIST_HEAD_INIT(pcbFree_h);
 
   for (size_tt i = 0; i < MAXPROC; i++)
     list_add_tail(pcbFree_table[i].p_list, pcbFree_h.p_list);
@@ -35,11 +36,10 @@ pcb_t *allocPcb()
   return pcb;
 }
 
-/*void mkEmptyProcQ(struct list_head *head){
-
+void mkEmptyProcQ(struct list_head *head){
+	head= LIST_HEAD_INIT(head);
 }
 
 int emptyProcQ (struct list_head *head){
-
+	return list_empty(head);
 }
-*/
