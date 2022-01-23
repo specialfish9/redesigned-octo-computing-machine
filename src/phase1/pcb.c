@@ -1,6 +1,9 @@
 #include "pcb.h"
 #include "listx.h"
+#include "pandos_const.h"
 #include "pandos_types.h"
+
+/* PCB LIST */
 
 /*
  *Inizializza la lista pcbFree in modo da contenere tutti gli elementi della
@@ -10,22 +13,26 @@ void initPcbs(void)
 {
   pcbFree_h->p_list = LIST_HEAD_INIT(pcbFree_h->p_list);
 
-  for (int i = 0; i < MAXPROC; i++) {
-    list_add(pcbFree_table[i], pcbFree_h->p_list);
-  }
-
-  for (pcb_t *ptr = pcbFree_table; ptr != NULL; ptr++) {
-    list_add(ptr, pcbFree_h->p_list);
+  for (pcb_t *ptr = pcbFree_table; ptr != pcbFree_table + MAXPROC; ptr++) {
+    list_add(&ptr->p_list, &pcbFree_h->p_list);
   }
 }
 
-const int emptyChild(const pcb_t *p) { return list_empty(&p->p_child); }
+/* PCB TREE */
 
+/* Checks wheter p has children or not */
+const int emptyChild(const pcb_t *p) { return list_empty(p->p_child.next); }
+
+/* Inserts p as child of print */
 void insertChild(pcb_t *prnt, pcb_t *p)
 {
-  list_add(&p->p_list, &prnt->p_child);
+  if (!prnt->p_child.next) {
+    INIT_LIST_HEAD(&prnt->p_child);
+  }
+  list_add(&p->p_sib, &prnt->p_child);
 }
 
+/* Removes first child of p */
 pcb_t *removeChild(pcb_t *p)
 {
   if (list_empty(&p->p_child)) {
@@ -36,10 +43,23 @@ pcb_t *removeChild(pcb_t *p)
   return p;
 }
 
+/* Removes p from his parent's children */
 pcb_t *outChild(pcb_t *p)
 {
-  pcb_t *father = p->p_parent;
+  pcb_t *parent = p->p_parent;
 
-  if (p == NULL)
+  if (!parent)
     return NULL;
+
+  struct list_head *ptr;
+  list_for_each(ptr, &p->p_sib)
+  {
+    pcb_t *curr = container_of(ptr, pcb_t, p_sib);
+    if (curr == p) {
+      list_del(ptr);
+      return p;
+    }
+  }
+
+  return p;
 }
