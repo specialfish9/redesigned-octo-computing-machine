@@ -6,6 +6,10 @@
 
 void initPcbs(void);
 void freePcb(pcb_t *p);
-pcb_t *allocPcb();
+pcb_t *allocPcb(void);
+void mkEmptyProcQ(struct list_head *head);
+int emptyProcQ (struct list_head *head);
+
+
 
 #endif

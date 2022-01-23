@@ -11,25 +11,27 @@ static struct list_head *pcbFree_h;
 void initPcbs(void)
 {
 
-  pcbFree_h = LIST_HEAD_INIT(pcbFree_h);
+  INIT_LIST_HEAD(pcbFree_h);
 
   for (size_tt i = 0; i < MAXPROC; i++)
-    list_add_tail(pcbFree_table[i].p_list, pcbFree_h.p_list);
+    list_add_tail(&pcbFree_table[i].p_list, pcbFree_h);
 }
 
 void freePcb(pcb_t *p)
 {
   /*list_del(&p->p_list);*/
-  list_add(p->p_list, pcbFree_h.p_list);
+  list_add(&p->p_list, pcbFree_h);
 }
 
-pcb_t *allocPcb()
+pcb_t *allocPcb(void)
 {
-  if (list_empty(pcbFree_h.p_list))
+  if (list_empty(pcbFree_h))
     return NULL;
-  pcb_t *pcb = container_of(pcbFree_h.p_list->next, pcb_t, p_list);
-  list_del(pcbFree_h.p_list->next);
+  pcb_t *pcb = container_of(pcbFree_h.next, pcb_t, p_list);
+  list_del(pcbFree_h.next);
   pcb->p_parent = NULL;
+  pcb->p_child = 0;
+  pcb->p_sib = 0;
   pcb->p_s = 0;
   pcb->p_time = 0;
   pcb->p_semAdd = NULL;
@@ -37,7 +39,7 @@ pcb_t *allocPcb()
 }
 
 void mkEmptyProcQ(struct list_head *head){
-	head= LIST_HEAD_INIT(head);
+  INIT_LIST_HEAD(head);
 }
 
 int emptyProcQ (struct list_head *head){
