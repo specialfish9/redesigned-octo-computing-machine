@@ -35,10 +35,48 @@ pcb_t *allocPcb(void)
   return pcb;
 }
 
-void mkEmptyProcQ(struct list_head *head){
-  INIT_LIST_HEAD(head);
+void mkEmptyProcQ(struct list_head *head) { INIT_LIST_HEAD(head); }
+
+int emptyProcQ(struct list_head *head) { return list_empty(head); }
+
+void insertProcQ(struct list_head *head, pcb_t *p)
+{
+  list_add_tail(&p->p_list, &head);
 }
 
-int emptyProcQ (struct list_head *head){
-	return list_empty(head);
+pcb_t *headProcQ(struct list_head *head)
+{
+  return container_of(head->next, pcb_t, p_list);
+}
+
+pcb_t *removeProcQ(struct list_head *head)
+{
+  if (list_empty(head))
+    return NULL;
+  else {
+    pcb_t *pcb = container_of(head->next, pcb_t, p_list);
+    list_del(head);
+    return pcb;
+  }
+}
+
+pcb_t *outProcQ(struct list_head *head, pcb_t *p)
+{
+  struct list_head *iter;
+
+  /* Ciclo for che scorre l'intera lista */
+  list_for_each(iter, &head)
+  {
+    /* Da ogni elemento della lista si risale al pcb corrispondente*/
+    current_pcb = container_of(iter, pcb_t, p_list);
+    /* Se il pcb dell'elemento in esame è quello che cerchiamo, viene eliminato
+     * dalla lista*/
+    if (current_pcb == p) {
+      list_del(iter);
+      return p;
+    }
+  }
+  /*Se siamo arrivati alla fine del ciclo senza trovare p, il risultato è NULL
+   */
+  return NULL;
 }
