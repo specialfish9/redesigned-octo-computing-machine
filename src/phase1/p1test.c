@@ -132,7 +132,7 @@ int main(void)
   return 0;
   /* Check allocProc */
 
-  /*
+  
   for (i = 0; i < MAXPROC; i++) {
     if ((procp[i] = allocPcb()) == NULL)
       adderrbuf("allocPcb: unexpected NULL   ");
@@ -141,16 +141,16 @@ int main(void)
     adderrbuf("allocPcb: allocated more than MAXPROC entries   ");
   }
   addokbuf("allocPcb ok   \n");
-  */
+  
   /* return the last 10 entries back to free list */
-  /*
+  
   for (i = 10; i < MAXPROC; i++)
     freePcb(procp[i]);
   addokbuf("freed 10 entries   \n");
-    */
+  
 
   /* create a 10-element process queue */
-  /*
+  
   LIST_HEAD(qa);
   if (!emptyProcQ(&qa))
     adderrbuf("emptyProcQ: unexpected FALSE   ");
@@ -177,10 +177,10 @@ int main(void)
 
   if (emptyProcQ(&qa))
     adderrbuf("emptyProcQ: unexpected TRUE");
-    */
+    
 
   /* Check outProc and headProc */
-  /*
+  
   if (headProcQ(&qa) != firstproc)
     adderrbuf("headProcQ failed   ");
   q = outProcQ(&qa, firstproc);
@@ -194,10 +194,9 @@ int main(void)
   if (outProcQ(&qa, procp[0]) != NULL)
     adderrbuf("outProcQ failed on nonexistent entry   ");
   addokbuf("outProcQ ok   \n");
-    */
-
+    
   /* Check if removeProc and insertProc remove in the correct order */
-  /*
+  
   addokbuf("Removing...   \n");
   for (i = 0; i < 8; i++) {
     if ((q = removeProcQ(&qa)) == NULL)
@@ -219,8 +218,7 @@ int main(void)
 
   if (!emptyChild(procp[2]))
     adderrbuf("emptyChild: unexpected FALSE   ");
-    */
-
+    
   /* make procp[1] through procp[9] children of procp[0] */
   /*
   addokbuf("Inserting...   \n");

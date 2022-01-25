@@ -1,13 +1,7 @@
 #include "pcb.h"
 #include "listx.h"
 
-static pcb_t pcbFree_table[MAXPROC];
-static struct list_head *pcbFree_h;
-
-/*
- *Inizializza la lista pcbFree in modo da contenere tutti gli elementi della
- *pcbFree_table.
- */
+/*Inizializza la lista pcbFree in modo da contenere tutti gli elementi della pcbFree_table.*/
 void initPcbs(void)
 {
 
@@ -17,12 +11,16 @@ void initPcbs(void)
     list_add_tail(&pcbFree_table[i].p_list, pcbFree_h);
 }
 
+/*Inserisce il PCB puntato da p nella lista dei PCB liberi.*/
 void freePcb(pcb_t *p)
 {
   /*list_del(&p->p_list);*/
   list_add(&p->p_list, pcbFree_h);
 }
 
+/*Restituisce NULL se la pcbFree_h è vuota.
+Altrimenti rimuove un elemento dalla pcbFree, inizializza tutti i campi (NULL/0)
+e restituisce l’elemento rimosso.*/
 pcb_t *allocPcb(void)
 {
   if (list_empty(pcbFree_h))
@@ -35,10 +33,13 @@ pcb_t *allocPcb(void)
   return pcb;
 }
 
+/*Crea una lista di PCB, inizializzandola come lista vuota*/
 void mkEmptyProcQ(struct list_head *head) { INIT_LIST_HEAD(head); }
 
+/*Restituisce TRUE se la lista puntata da head è vuota, FALSE altrimenti.*/
 int emptyProcQ(struct list_head *head) { return list_empty(head); }
 
+/*Inserisce l’elemento puntato da p nella coda dei processi puntata da head.*/
 void insertProcQ(struct list_head *head, pcb_t *p)
 {
   list_add_tail(&p->p_list, head);
