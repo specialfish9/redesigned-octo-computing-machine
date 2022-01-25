@@ -3,8 +3,6 @@
 #include "pandos_const.h"
 #include "pandos_types.h"
 
-static pcb_t pcbFree_table[MAXPROC];
-static struct list_head *pcbFree_h;
 
 void initPcbs(void);
 void freePcb(pcb_t *);

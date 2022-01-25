@@ -122,17 +122,12 @@ void adderrbuf(char *strp)
 
 int main(void)
 {
-  /*
-   * int i;
-   */
+  int i;
 
   initPcbs();
   addokbuf("Initialized process control blocks   \n");
 
-  return 0;
   /* Check allocProc */
-
-  
   for (i = 0; i < MAXPROC; i++) {
     if ((procp[i] = allocPcb()) == NULL)
       adderrbuf("allocPcb: unexpected NULL   ");
@@ -214,11 +209,13 @@ int main(void)
   addokbuf("insertProcQ, removeProcQ and emptyProcQ ok   \n");
   addokbuf("process queues module ok      \n");
 
+  return 0;
+  /*
   addokbuf("checking process trees...\n");
 
   if (!emptyChild(procp[2]))
     adderrbuf("emptyChild: unexpected FALSE   ");
-    
+   */ 
   /* make procp[1] through procp[9] children of procp[0] */
   /*
   addokbuf("Inserting...   \n");

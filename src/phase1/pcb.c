@@ -1,6 +1,9 @@
 #include "pcb.h"
 #include "listx.h"
 
+static pcb_t pcbFree_table[MAXPROC];
+static struct list_head *pcbFree_h;
+
 /*Inizializza la lista pcbFree in modo da contenere tutti gli elementi della pcbFree_table.*/
 void initPcbs(void)
 {
