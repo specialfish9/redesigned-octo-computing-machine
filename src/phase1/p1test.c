@@ -57,7 +57,6 @@ int main(void)
   
 
   /* create a 10-element process queue */
-  
   LIST_HEAD(qa);
   if (!emptyProcQ(&qa))
     print_err("emptyProcQ: unexpected FALSE   ");
@@ -94,6 +93,7 @@ int main(void)
   if (q == NULL || q != firstproc)
     print_err("outProcQ failed on first entry   ");
   freePcb(q);
+
   q = outProcQ(&qa, midproc);
   if (q == NULL || q != midproc)
     print_err("outProcQ failed on middle entry   ");
@@ -110,6 +110,7 @@ int main(void)
       print_err("removeProcQ: unexpected NULL   ");
     freePcb(q);
   }
+
   if (q != lastproc)
     print_err("removeProcQ: failed on last entry   ");
   if (removeProcQ(&qa) != NULL)
