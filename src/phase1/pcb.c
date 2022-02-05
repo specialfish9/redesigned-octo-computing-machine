@@ -5,11 +5,12 @@
 static pcb_t pcbFree_table[MAXPROC];
 static struct list_head pcbFree_h;
 
-/*Inizializza la lista pcbFree in modo da contenere tutti gli elementi della pcbFree_table.*/
+/*Inizializza la lista pcbFree in modo da contenere tutti gli elementi della
+ * pcbFree_table.*/
 void initPcbs(void)
 {
   INIT_LIST_HEAD(&pcbFree_h);
-  for (size_tt i = 0; i < MAXPROC; i++){
+  for (size_tt i = 0; i < MAXPROC; i++) {
     list_add_tail(&pcbFree_table[i].p_list, &pcbFree_h);
   }
 }
@@ -44,7 +45,7 @@ pcb_t *allocPcb(void)
   pcb->p_s.cause = 0;
   pcb->p_s.status = 0;
   pcb->p_s.pc_epc = 0;
-  for(int i=0;i<STATE_GPR_LEN;i++)
+  for (int i = 0; i < STATE_GPR_LEN; i++)
     pcb->p_s.gpr[i] = 0;
   pcb->p_s.hi = 0;
   pcb->p_s.lo = 0;
@@ -66,30 +67,34 @@ void insertProcQ(struct list_head *head, pcb_t *p)
   list_add_tail(&p->p_list, head);
 }
 
-/*Restituisce il primo elemento nella lista. Se la lista è vuota il risultato è NULL.*/
+/*Restituisce il primo elemento nella lista. Se la lista è vuota il risultato è
+ * NULL.*/
 pcb_t *headProcQ(struct list_head *head)
 {
-  if(emptyProcQ(head))
+  if (emptyProcQ(head))
     return NULL;
   else
     return container_of(head->next, pcb_t, p_list);
 }
 
-/* Rimuove il primo elemento presente nella lista data. Se la lista è vuota il risultato è NULL.*/
+/* Rimuove il primo elemento presente nella lista data. Se la lista è vuota il
+ * risultato è NULL.*/
 pcb_t *removeProcQ(struct list_head *head)
 {
   /* Controllo che la lista non sia vuota */
   if (emptyProcQ(head))
     return NULL;
   else {
-    /* In caso contrario, ricavo il primo elemento della lista, lo elimino dalla lista e lo restituisco */
+    /* In caso contrario, ricavo il primo elemento della lista, lo elimino dalla
+     * lista e lo restituisco */
     pcb_t *pcb = headProcQ(head);
     list_del(head->next);
     return pcb;
   }
 }
 
-/* Elimina il pcb "p" dalla lista data e lo restituisce. Se p non è presente, il risultato è NULL. */
+/* Elimina il pcb "p" dalla lista data e lo restituisce. Se p non è presente, il
+ * risultato è NULL. */
 pcb_t *outProcQ(struct list_head *head, pcb_t *p)
 {
   struct list_head *iter;
@@ -97,12 +102,14 @@ pcb_t *outProcQ(struct list_head *head, pcb_t *p)
   /* Ciclo for che scorre l'intera lista */
   list_for_each(iter, head)
   {
-    /* Se l'elemento della lista in esame punta al p_list del pcb che cerchiamo, esso viene eliminato e restituito. */
+    /* Se l'elemento della lista in esame punta al p_list del pcb che cerchiamo,
+     * esso viene eliminato e restituito. */
     if (iter == &p->p_list) {
       list_del(iter);
       return p;
     }
   }
-  /*Se siamo arrivati alla fine del ciclo senza trovare p, il risultato è NULL */
+  /*Se siamo arrivati alla fine del ciclo senza trovare p, il risultato è NULL
+   */
   return NULL;
 }

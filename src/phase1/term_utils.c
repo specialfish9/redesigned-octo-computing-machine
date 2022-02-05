@@ -5,7 +5,6 @@ char errbuf[128]; /* contains reason for failing */
 char msgbuf[128]; /* nonrecoverable error message before shut down */
 char *mp = okbuf;
 
-
 typedef unsigned int devreg;
 
 /* This function returns the terminal transmitter status value given its address
@@ -88,4 +87,3 @@ void print_err(char *strp)
 
   PANIC();
 }
-

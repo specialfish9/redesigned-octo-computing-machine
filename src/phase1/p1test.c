@@ -27,14 +27,12 @@ int sem[MAXSEM];
 int onesem;
 pcb_t *procp[MAXPROC], *p, *q, *firstproc, *lastproc, *midproc;
 
-
 typedef unsigned int devreg;
-
 
 int main(void)
 {
   int i;
-  
+
   print("Phase 1 test\n");
   initPcbs();
   print("Initialized process control blocks   \n");
@@ -48,13 +46,12 @@ int main(void)
     print_err("allocPcb: allocated more than MAXPROC entries   ");
   }
   print("allocPcb ok   \n");
-  
+
   /* return the last 10 entries back to free list */
-  
+
   for (i = 10; i < MAXPROC; i++)
     freePcb(procp[i]);
   print("freed 10 entries   \n");
-  
 
   /* create a 10-element process queue */
   LIST_HEAD(qa);
@@ -83,10 +80,9 @@ int main(void)
 
   if (emptyProcQ(&qa))
     print_err("emptyProcQ: unexpected TRUE");
-    
 
   /* Check outProc and headProc */
-  
+
   if (headProcQ(&qa) != firstproc)
     print_err("headProcQ failed   ");
   q = outProcQ(&qa, firstproc);
@@ -101,9 +97,9 @@ int main(void)
   if (outProcQ(&qa, procp[0]) != NULL)
     print_err("outProcQ failed on nonexistent entry   ");
   print("outProcQ ok   \n");
-    
+
   /* Check if removeProc and insertProc remove in the correct order */
-  
+
   print("Removing...   \n");
   for (i = 0; i < 8; i++) {
     if ((q = removeProcQ(&qa)) == NULL)
@@ -128,7 +124,7 @@ int main(void)
 
   if (!emptyChild(procp[2]))
     print_err("emptyChild: unexpected FALSE   ");
-   */ 
+   */
   /* make procp[1] through procp[9] children of procp[0] */
   /*
   print("Inserting...   \n");

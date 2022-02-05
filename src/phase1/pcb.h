@@ -3,11 +3,10 @@
 #include "pandos_const.h"
 #include "pandos_types.h"
 
-
 void initPcbs(void);
 void freePcb(pcb_t *);
 pcb_t *allocPcb(void);
-void mkEmptyProcQ( struct list_head *);
+void mkEmptyProcQ(struct list_head *);
 int emptyProcQ(struct list_head *);
 void insertProcQ(struct list_head *, pcb_t *);
 pcb_t *headProcQ(struct list_head *);
