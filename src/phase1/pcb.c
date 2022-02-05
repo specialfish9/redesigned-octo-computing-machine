@@ -3,27 +3,22 @@
 #include "term_utils.h"
 
 static pcb_t pcbFree_table[MAXPROC];
-static struct list_head *pcbFree_h;
+static struct list_head pcbFree_h;
 
 /*Inizializza la lista pcbFree in modo da contenere tutti gli elementi della pcbFree_table.*/
 void initPcbs(void)
 {
-  print("Init Pcbs...");
-  INIT_LIST_HEAD(pcbFree_h);
-  print("list head\n");
+  INIT_LIST_HEAD(&pcbFree_h);
   for (size_tt i = 0; i < MAXPROC; i++){
-    print("i\n");
-    list_add_tail(&pcbFree_table[i].p_list, pcbFree_h);
+    list_add_tail(&pcbFree_table[i].p_list, &pcbFree_h);
   }
-
-  print(" done!\n");
 }
 
 /*Inserisce il PCB puntato da p nella lista dei PCB liberi.*/
 void freePcb(pcb_t *p)
 {
   /*list_del(&p->p_list);*/
-  list_add(&p->p_list, pcbFree_h);
+  list_add(&p->p_list, &pcbFree_h);
 }
 
 /*Restituisce NULL se la pcbFree_h è vuota.
@@ -31,10 +26,10 @@ Altrimenti rimuove un elemento dalla pcbFree, inizializza tutti i campi (NULL/0)
 e restituisce l’elemento rimosso.*/
 pcb_t *allocPcb(void)
 {
-  if (list_empty(pcbFree_h))
+  if (list_empty(&pcbFree_h))
     return NULL;
-  pcb_t *pcb = container_of(pcbFree_h->next, pcb_t, p_list);
-  list_del(pcbFree_h->next);
+  pcb_t *pcb = container_of(pcbFree_h.next, pcb_t, p_list);
+  list_del(pcbFree_h.next);
   pcb->p_parent = NULL;
   /*TODO*/
   pcb->p_semAdd = NULL;
