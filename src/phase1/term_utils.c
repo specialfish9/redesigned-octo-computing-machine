@@ -1,19 +1,32 @@
 #include "term_utils.h"
 
-char okbuf[2048]; /* sequence of progress messages */
-char errbuf[128]; /* contains reason for failing */
-char msgbuf[128]; /* nonrecoverable error message before shut down */
-char *mp = okbuf;
+#include "pandos_const.h"
+#include "pandos_types.h"
+#include <umps/libumps.h>
+
+#define TRANSMITTED 5
+#define ACK 1
+#define PRINTCHR 2
+#define CHAROFFSET 8
+#define STATUSMASK 0xFF
+#define TERM0ADDR 0x10000254
 
 typedef unsigned int devreg;
 
+static char okbuf[2048]; /* sequence of progress messages */
+static char errbuf[128]; /* contains reason for failing */
+static char *mp = okbuf;
+
 /* This function returns the terminal transmitter status value given its address
  */
-static devreg termstat(memaddr *stataddr) { return ((*stataddr) & STATUSMASK); }
+static devreg termstat(const memaddr *stataddr)
+{
+  return ((*stataddr) & STATUSMASK);
+}
 
 /* This function prints a string on specified terminal and returns TRUE if
  * print was successful, FALSE if not   */
-static unsigned int termprint(char *str, unsigned int term)
+static unsigned int termprint(const char *str, const unsigned int term)
 {
   memaddr *statusp;
   memaddr *commandp;
@@ -63,9 +76,9 @@ static unsigned int termprint(char *str, unsigned int term)
 
 /* This function placess the specified character string in okbuf and
  *	causes the string to be written out to terminal0 */
-void print(char *strp)
+void print(const char *strp)
 {
-  char *tstrp = strp;
+  const char *tstrp = strp;
   while ((*mp++ = *strp++) != '\0')
     ;
   mp--;
@@ -75,10 +88,10 @@ void print(char *strp)
 /* This function placess the specified character string in errbuf and
  *	causes the string to be written out to terminal0.  After this is done
  *	the system shuts down with a panic message */
-void print_err(char *strp)
+void print_err(const char *strp)
 {
   char *ep = errbuf;
-  char *tstrp = strp;
+  const char *tstrp = strp;
 
   while ((*ep++ = *strp++) != '\0')
     ;
