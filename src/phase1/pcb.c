@@ -1,5 +1,6 @@
 #include "pcb.h"
 #include "listx.h"
+#include "term_utils.h"
 
 static pcb_t pcbFree_table[MAXPROC];
 static struct list_head *pcbFree_h;
@@ -7,11 +8,15 @@ static struct list_head *pcbFree_h;
 /*Inizializza la lista pcbFree in modo da contenere tutti gli elementi della pcbFree_table.*/
 void initPcbs(void)
 {
-
+  print("Init Pcbs...");
   INIT_LIST_HEAD(pcbFree_h);
-
-  for (size_tt i = 0; i < MAXPROC; i++)
+  print("list head\n");
+  for (size_tt i = 0; i < MAXPROC; i++){
+    print("i\n");
     list_add_tail(&pcbFree_table[i].p_list, pcbFree_h);
+  }
+
+  print(" done!\n");
 }
 
 /*Inserisce il PCB puntato da p nella lista dei PCB liberi.*/
