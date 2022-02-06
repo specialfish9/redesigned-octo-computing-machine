@@ -1,12 +1,16 @@
+#ifndef ASL_H
+#define ASL_H
+
 #include "pcb.h"
 #include "pandos_types.h"
 #include "pandos_const.h"
 #include "listx.h"
 
-struct semd_t semd_table[MAXPROC]; //array di SEMD con dimensione massima MAXPROC
-struct list_head *semdFree_h;   //lista dei SEMD liberi o inutilizzati
-struct list_head *semd_h; //lista dei semafori attivi (ASL)
 
+semd_t* getSemd(int *s_key);
+/*Restituisce il semaforo corrispondente alla 
+chiave passata come input. Se non esiste tale
+SEMD restituisce NULL.*/
 
 /*-----ACTIVE SEMAPHORE LIST FUNCTIONS-----*/
 
@@ -59,3 +63,5 @@ modo da contenere tutti gli elementi
 della semdTable. Questo metodo
 viene invocato una volta sola durante
 l’inizializzazione della struttura dati.*/                          
+
+#endif
