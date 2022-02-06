@@ -19,7 +19,7 @@ CLEAN_LIST := $(OUT_PATH)/* \
 				$(OBJ_PATH)/* \
 
 CFLAGS = -ffreestanding -ansi -Wall -c -mips1 -mabi=32 -mfp32 \
-				 -mno-gpopt -G 0 -fno-pic -mno-abicalls -EL -I$(UMPS3_INCLUDE_DIR) -std=c99
+				 -mno-gpopt -G 0 -fno-pic -mno-abicalls -EL -I$(UMPS3_INCLUDE_DIR) -std=gnu99
 
 LDFLAGS = -G 0 -nostdlib -T $(UMPS3_DATA_DIR)/umpscore.ldscript -m elf32ltsmip
 
