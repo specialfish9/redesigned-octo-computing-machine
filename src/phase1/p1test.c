@@ -118,15 +118,14 @@ int main(void)
   print("insertProcQ, removeProcQ and emptyProcQ ok   \n");
   print("process queues module ok      \n");
 
-  return 0;
-  
+  /*
   print("checking process trees...\n");
 
   if (!emptyChild(procp[2]))
     print_err("emptyChild: unexpected FALSE   ");
-  
+   */
   /* make procp[1] through procp[9] children of procp[0] */
-  
+  /*
   print("Inserting...   \n");
   for (i = 1; i < 10; i++) {
     insertChild(procp[0], procp[i]);
@@ -135,9 +134,10 @@ int main(void)
 
   if (emptyChild(procp[0]))
     print_err("emptyChild: unexpected TRUE   ");
-  
+    */
+
   /* Check outChild */
-  
+  /*
   q = outChild(procp[1]);
   if (q == NULL || q != procp[1])
     print_err("outChild failed on first child   ");
@@ -147,10 +147,10 @@ int main(void)
   if (outChild(procp[0]) != NULL)
     print_err("outChild failed on nonexistent child   ");
   print("outChild ok   \n");
-    
+    */
 
   /* Check removeChild */
-  
+  /*
   print("Removing...   \n");
   for (i = 0; i < 7; i++) {
     if ((q = removeChild(procp[0])) == NULL)
@@ -167,7 +167,7 @@ int main(void)
 
   for (i = 0; i < 10; i++)
     freePcb(procp[i]);
-    
+    */
 
   /* check ASL */
   
