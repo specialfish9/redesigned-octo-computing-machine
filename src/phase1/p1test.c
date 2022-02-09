@@ -162,14 +162,10 @@ int main(void)
   for (i = 0; i < 10; i++)
     freePcb(procp[i]);
 
-  return 0;
   /* check ASL */
-  /*
   initASL();
   print("Initialized active semaphore list   \n");
-  */
   /* check removeBlocked and insertBlocked */
-  /*
   print("insertBlocked test #1 started  \n");
   for (i = 10; i < MAXPROC; i++) {
     procp[i] = allocPcb();
@@ -181,10 +177,9 @@ int main(void)
     procp[i] = allocPcb();
     if (insertBlocked(&sem[i], procp[i]))
       print_err("insertBlocked(2): unexpected TRUE   ");
-  }*/
+  }
 
   /* check if semaphore descriptors are returned to free list */
-  /*
   p = removeBlocked(&sem[11]);
   if (insertBlocked(&sem[11], p))
     print_err("removeBlocked: fails to return to free list   ");
@@ -231,6 +226,6 @@ int main(void)
   print("headBlocked and outBlocked ok   \n");
   print("ASL module ok   \n");
   print("So Long and Thanks for All the Fish\n");
-  */
+
   return 0;
 }
