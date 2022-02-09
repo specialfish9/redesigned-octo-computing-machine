@@ -1,6 +1,9 @@
 #ifndef PCB_H
 #define PCB_H
+
 #include "pandos_types.h"
+
+/* LIST FUNCTIONS */
 
 extern void initPcbs(void);
 
@@ -23,14 +26,14 @@ extern pcb_t *outProcQ(struct list_head *, pcb_t *);
 /* TREES FUNCTIONS */
 
 /* Returns TRUE if the PCB pointed by p hasn't got any child. FALSE otherwise */
-const int emptyChild(const pcb_t *p);
+extern const int emptyChild(const pcb_t *p);
 
 /* Inserts the PCB pointed by p as a child of the PCB pointed by prnt */
-void insertChild(pcb_t *prnt, pcb_t *p);
+extern void insertChild(pcb_t *prnt, pcb_t *p);
 
 /* Removes the first child of the PCB pointed by p. If p hasn't children
  * returns NULL*/
-pcb_t *removeChild(pcb_t *p);
+extern pcb_t *removeChild(pcb_t *p);
 
 /*
  * Removes the PCB pointed by p from the list of children of his father.
@@ -38,6 +41,6 @@ pcb_t *removeChild(pcb_t *p);
  * the deleted element (p). p can be in every position, it may not be the first
  * child .
  */
-pcb_t *outChild(pcb_t *p);
+extern pcb_t *outChild(pcb_t *p);
 
 #endif
