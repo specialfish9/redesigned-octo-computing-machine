@@ -33,13 +33,12 @@ pcb_t *allocPcb(void)
   list_del(pcbFree_h.next);
 
   /* Inizializzazione di tutti gli elementi */
-  pcb->p_list.next = NULL;
-  pcb->p_list.prev = NULL;
   pcb->p_parent = NULL;
-  pcb->p_child.next = NULL;
-  pcb->p_child.prev = NULL;
-  pcb->p_sib.next = NULL;
-  pcb->p_sib.prev = NULL;
+
+	INIT_LIST_HEAD(&(pcb->p_list));
+	INIT_LIST_HEAD(&(pcb->p_child));
+	INIT_LIST_HEAD(&(pcb->p_sib));
+
   /* Impostazione di tutti gli elementi di processor state a 0*/
   pcb->p_s.entry_hi = 0;
   pcb->p_s.cause = 0;
@@ -117,45 +116,42 @@ pcb_t *outProcQ(struct list_head *head, pcb_t *p)
 /* PCB TREE */
 
 /* Checks wheter p has children or not */
-const int emptyChild(const pcb_t *p) { return list_empty(p->p_child.next); }
+const int emptyChild(const pcb_t *p) {
+  return list_empty(&(p->p_child));
+}
 
 /* Inserts p as child of print */
 void insertChild(pcb_t *prnt, pcb_t *p)
 {
-  if (!prnt->p_child.next) {
-    INIT_LIST_HEAD(&prnt->p_child);
-  }
+  p->p_parent = prnt;
   list_add(&p->p_sib, &prnt->p_child);
 }
 
 /* Removes first child of p */
-pcb_t *removeChild(pcb_t *p)
+pcb_t* removeChild(pcb_t *p)
 {
   if (list_empty(&p->p_child)) {
     return NULL;
   }
 
-  list_del(&p->p_child);
-  return p;
+  struct list_head *tmp = list_next(&p->p_child);
+  pcb_t *first_child = container_of(tmp, pcb_t, p_sib);
+
+  list_del(tmp);
+  first_child->p_parent = NULL;
+
+  return first_child;
 }
 
+
 /* Removes p from his parent's children */
-pcb_t *outChild(pcb_t *p)
+pcb_t* outChild(pcb_t *p)
 {
-  pcb_t *parent = p->p_parent;
-
-  if (!parent)
+  if (p->p_parent == NULL)
     return NULL;
-
-  struct list_head *ptr;
-  list_for_each(ptr, &p->p_sib)
-  {
-    pcb_t *curr = container_of(ptr, pcb_t, p_sib);
-    if (curr == p) {
-      list_del(ptr);
-      return p;
-    }
-  }
+  
+  list_del(&p->p_sib);
+  p->p_parent = NULL;
 
   return p;
 }
