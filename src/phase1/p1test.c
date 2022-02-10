@@ -122,7 +122,6 @@ int main(void)
 
   if (!emptyChild(procp[2]))
     print_err("emptyChild: unexpected FALSE   ");
-
   /* make procp[1] through procp[9] children of procp[0] */
   print("Inserting...   \n");
   for (i = 1; i < 10; i++) {
@@ -172,6 +171,7 @@ int main(void)
     if (insertBlocked(&sem[i], procp[i]))
       print_err("insertBlocked(1): unexpected TRUE   ");
   }
+  
   print("insertBlocked test #2 started  \n");
   for (i = 0; i < 10; i++) {
     procp[i] = allocPcb();
@@ -183,10 +183,8 @@ int main(void)
   p = removeBlocked(&sem[11]);
   if (insertBlocked(&sem[11], p))
     print_err("removeBlocked: fails to return to free list   ");
-
   if (insertBlocked(&onesem, procp[9]) == FALSE)
     print_err("insertBlocked: inserted more than MAXPROC   ");
-
   print("removeBlocked test started   \n");
   for (i = 10; i < MAXPROC; i++) {
     q = removeBlocked(&sem[i]);
@@ -210,6 +208,7 @@ int main(void)
   p = outBlocked(q);
   if (p != q)
     print_err("outBlocked(1): couldn't remove from valid queue   ");
+  
   q = headBlocked(&sem[9]);
   if (q == NULL)
     print_err("headBlocked(2): NULL for an existent queue   ");
@@ -226,6 +225,5 @@ int main(void)
   print("headBlocked and outBlocked ok   \n");
   print("ASL module ok   \n");
   print("So Long and Thanks for All the Fish\n");
-
   return 0;
 }
