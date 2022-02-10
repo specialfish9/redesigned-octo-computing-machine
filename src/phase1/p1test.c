@@ -15,7 +15,7 @@
 #include "pandos_const.h"
 #include "pandos_types.h"
 
-/* #include "asl.h" */
+#include "asl.h"
 #include "pcb.h"
 #include "term_utils.h"
 #include <umps/libumps.h>
