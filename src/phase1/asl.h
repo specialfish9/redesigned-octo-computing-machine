@@ -1,16 +1,9 @@
 #ifndef ASL_H
 #define ASL_H
 
-#include "pcb.h"
 #include "pandos_types.h"
-#include "pandos_const.h"
-#include "listx.h"
 
 
-semd_t* getSemd(int *s_key);
-/*Restituisce il semaforo corrispondente alla 
-chiave passata come input. Se non esiste tale
-SEMD restituisce NULL.*/
 
 /*-----ACTIVE SEMAPHORE LIST FUNCTIONS-----*/
 
@@ -57,7 +50,7 @@ non compare nella ASL oppure se compare ma la sua
 coda dei processi è vuota.*/
 
 
-extern void initASL();
+extern void initASL(void);
 /*Inizializza la lista dei semdFree in
 modo da contenere tutti gli elementi
 della semdTable. Questo metodo
