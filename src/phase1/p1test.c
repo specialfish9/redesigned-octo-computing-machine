@@ -118,14 +118,11 @@ int main(void)
   print("insertProcQ, removeProcQ and emptyProcQ ok   \n");
   print("process queues module ok      \n");
 
-  /*
   print("checking process trees...\n");
 
   if (!emptyChild(procp[2]))
     print_err("emptyChild: unexpected FALSE   ");
-   */
   /* make procp[1] through procp[9] children of procp[0] */
-  /*
   print("Inserting...   \n");
   for (i = 1; i < 10; i++) {
     insertChild(procp[0], procp[i]);
@@ -134,10 +131,8 @@ int main(void)
 
   if (emptyChild(procp[0]))
     print_err("emptyChild: unexpected TRUE   ");
-    */
 
   /* Check outChild */
-  /*
   q = outChild(procp[1]);
   if (q == NULL || q != procp[1])
     print_err("outChild failed on first child   ");
@@ -147,10 +142,8 @@ int main(void)
   if (outChild(procp[0]) != NULL)
     print_err("outChild failed on nonexistent child   ");
   print("outChild ok   \n");
-    */
 
   /* Check removeChild */
-  /*
   print("Removing...   \n");
   for (i = 0; i < 7; i++) {
     if ((q = removeChild(procp[0])) == NULL)
@@ -167,15 +160,11 @@ int main(void)
 
   for (i = 0; i < 10; i++)
     freePcb(procp[i]);
-    */
 
   /* check ASL */
-  
   initASL();
   print("Initialized active semaphore list   \n");
-  
   /* check removeBlocked and insertBlocked */
-  
   print("insertBlocked test #1 started  \n");
   for (i = 10; i < MAXPROC; i++) {
     procp[i] = allocPcb();
@@ -191,7 +180,6 @@ int main(void)
   }
 
   /* check if semaphore descriptors are returned to free list */
-  
   p = removeBlocked(&sem[11]);
   if (insertBlocked(&sem[11], p))
     print_err("removeBlocked: fails to return to free list   ");
@@ -237,6 +225,5 @@ int main(void)
   print("headBlocked and outBlocked ok   \n");
   print("ASL module ok   \n");
   print("So Long and Thanks for All the Fish\n");
-  
   return 0;
 }
