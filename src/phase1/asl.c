@@ -5,14 +5,11 @@
 #include "pandos_const.h"
 #include "pcb.h"
 
-#include "term_utils.h"
-
-
-static struct semd_t semd_table[MAXPROC]; //array di SEMD con dimensione massima MAXPROC
-static struct list_head *semdFree_h;       //head lista dei SEMD liberi o inutilizzati
-static struct list_head semdFree;          //lista SEMD liberi
-static struct list_head *semd_h;           //hrad lista ASL
-static struct list_head semd;              //lista dei semafori attivi (ASL)
+static struct semd_t semd_table[MAXPROC]; 
+static struct list_head *semdFree_h;      
+static struct list_head semdFree;         
+static struct list_head *semd_h;          
+static struct list_head semd;              
 
 
 /*Restituisce il semaforo corrispondente alla 
@@ -20,94 +17,100 @@ chiave passata come input. Se non esiste tale
 SEMD restituisce NULL.*/
 static semd_t* getSemd(int *s_key){
     struct list_head *iter;
-    list_for_each(iter, semd_h){
+
+    list_for_each(iter, semd_h){       /*percorro tutta la lista di SEMD finchè non trovo il semaforo corrispondente a s_key*/
         struct semd_t *s = container_of(iter,semd_t,s_link);
         if(s->s_key == s_key)
             return s;
     }
-    return NULL;    //restituisce NULL se non esiste un semaforo con quella key
+    /*se non trovo il semaforo restituisco NULL*/
+    return NULL;
 }
 
 
 
-//DESCRIZIONI SOMMARIE DELLE FUNZIONI, PER QUELLE COMPLETE VEDERE FILE asl.h
+int insertBlocked(int *semAdd,pcb_t *p){ 
+    struct semd_t *s = getSemd(semAdd); 
 
-int insertBlocked(int *semAdd,pcb_t *p){    //p punta al PCB dalla coda dei processi bloccati, semAdd è la chiave per il SEMD associato a quella coda. Return TRUE se non è possibile allocare un SEMD perchè la lista dei liberi è vuota, FALSE altrimenti
-    struct semd_t *s = getSemd(semAdd);   //ottengo il semaforo su cui è bloccato p
-
-    if(s != NULL){
-        print("\t\tsem exists, inserting process, returning FALSE\n");
-        insertProcQ(&(s->s_procq),p);
-    }else{
+    if(s == NULL){      /*se il semaforo non è presente tra i SEMD*/
         if(list_empty(semdFree_h)){
-            print("\t\tlist empty, returning TRUE\n");
-            return TRUE;    //restituisco TRUE se non è possibile allocare un nuovo semaforo perchè la lista di quelli liberi è vuota
+            /*restituisco TRUE se non è possibile allocare un nuovo semaforo perchè la lista di quelli liberi è vuota*/
+            return TRUE;    
         }
         else{
-            print("\t\tsem doesn't exist, allocating new sem, returning FALSE\n");
-            struct semd_t *tmp = container_of(semdFree_h->next,semd_t,s_link);      //ottengo un nuovo SEMD dalla lista dei liberi
-            list_del(semdFree_h->next);             //elimino il SEMD dalla lista dei liberi
-            list_add(&(tmp->s_link),semd_h);        //lo inserisco nella lista dei SEMD
-
-            insertProcQ(&(tmp->s_procq),p);         //associo il processo al SEMD
+            /*trasferisco un SEMD dai liberi agli utilizzati*/
+            struct semd_t *tmp = container_of(semdFree_h->next,semd_t,s_link);
+            /*elimino il SEMD dalla lista dei liberi e lo inserisco nella lista dei SEMD*/
+            list_del(semdFree_h->next);             
+            list_add(&(tmp->s_link),semd_h);       
+            insertProcQ(&(tmp->s_procq),p); 
             tmp->s_key = semAdd;
         }
+    }else{      /*se il semaforo è già esistente*/
+        insertProcQ(&(s->s_procq),p);
     }
     
     p->p_semAdd = semAdd;
 
-    return FALSE; //restituisco FALSE come caso base
+    /*restituisco FALSE come caso base*/
+    return FALSE; 
 }
 
-pcb_t* removeBlocked(int *semAdd){  //rimuovere il primo PCB nella lista dei bloccati associati al SEMD tramite semAdd. Return del PCB, altrimenti null se non esiste
-    struct semd_t *s = getSemd(semAdd);   //ottengo il semaforo associato a semAdd
-//FORSE QUESTO IF E' SUPERFLUO
+pcb_t* removeBlocked(int *semAdd){
+    struct semd_t *s = getSemd(semAdd);
+    
     if(s == NULL)
         return NULL;
 
-    struct pcb_t *pcb = removeProcQ(&(s->s_procq));  //rimuovo il primo elemento bloccato su quel SEMD
+    struct pcb_t *pcb = removeProcQ(&(s->s_procq));  /*rimuovo il primo elemento bloccato su quel SEMD*/
     
-    if(list_empty(&(s->s_procq))){              //Se la coda dei processi bloccati per il semaforo diventa vuota
-        list_del(&(s->s_link));                 //rimuove il descrittore corrispondente dalla ASL
-        list_add(&(s->s_link),semdFree_h);      //e lo inserisce nella coda dei descrittori liberi
+    /*se la coda dei processi bloccati si svuota, trasferisco il semaforo nella coda dei SEMD liberi*/
+    if(list_empty(&(s->s_procq))){
+        list_del(&(s->s_link)); 
+        list_add(&(s->s_link),semdFree_h); 
     }
-    return pcb;       //return del PCB se compare
+    return pcb;
 }
 
-pcb_t* outBlocked(pcb_t *p){    //rimuovere PCB puntato da p->p_semAdd dalla coda del semaforo su cui è bloccato. Return null se il PCB non compare, p altrimenti
-    struct semd_t *s = getSemd(p->p_semAdd);   //ottengo il semaforo su cui è bloccato p
-//FORSE QUESTO IF E' SUPERFLUO
+pcb_t* outBlocked(pcb_t *p){   
+    struct semd_t *s = getSemd(p->p_semAdd); 
+
     if(s == NULL)       
-        return NULL;    //return NULL se il PCB non compare
-    
-    struct pcb_t *pcb = outProcQ(&(s->s_procq), p);   //elimino il PCB p dalla lista
-    
-    if(list_empty(&(s->s_procq))){              //Se la coda dei processi bloccati per il semaforo diventa vuota
-        list_del(&(s->s_link));                 //rimuove il descrittore corrispondente dalla ASL
-        list_add(&(s->s_link),semdFree_h);      //e lo inserisce nella coda dei descrittori liberi
-    }
-    return pcb;       //return del PCB se compare
-}
-
-pcb_t* headBlocked(int *semAdd){    //restituire senza rimuovere il puntatore del PCB in testa alla coda dei processi del SEMD identificato da semAdd, null se il SEMD non compare o se compare ma la sua lista dei processi è vuota
-    struct semd_t *s = getSemd(semAdd);   //ottengo il semaforo associato a semAdd
-
-    if(s == NULL || list_empty(&(s->s_procq)))  //se SEMD non compare o se la sua lista dei processi è vuota return NULL
         return NULL;
     
-    return container_of((s->s_procq).next,pcb_t,p_list);        //restituisco il puntatore del PCB in testa alla coda
+    struct pcb_t *pcb = outProcQ(&(s->s_procq), p);   /*elimino il PCB p dalla lista*/
+    
+    /*se la coda dei processi bloccati si svuota, trasferisco il semaforo nella coda dei SEMD liberi*/
+    if(list_empty(&(s->s_procq))){              
+        list_del(&(s->s_link));                 
+        list_add(&(s->s_link),semdFree_h);     
+    }
+    return pcb; 
 }
 
-void initASL(){ //inizializzare lista di semdFree per contenere tutti gli elementi di semd_table
-    INIT_LIST_HEAD(&semdFree);  //inizializzo una nuova lista di SEMD liberi
-    semdFree_h = &semdFree;     //testa della lista SEMD liberi
-    INIT_LIST_HEAD(&semd);      //inizializzo una nuova lista di semafori
-    semd_h = &semd;             //testa della lista semafori
+pcb_t* headBlocked(int *semAdd){ 
+    struct semd_t *s = getSemd(semAdd);
 
-    for(int i=0; i<MAXPROC; i++){       //inizializzo MAXPROC semafori liberi e li aggiungo a semdFree
+    /*se SEMD non compare o se la sua lista dei processi è vuota return NULL*/
+    if(s == NULL || list_empty(&(s->s_procq)))
+        return NULL;
+    
+    /*restituisco il puntatore del PCB in testa alla coda*/
+    return container_of((s->s_procq).next,pcb_t,p_list);
+}
+
+void initASL(){
+    /*inizializzo liste per SEMD e SEMD liberi + associo i rispettivi puntatori*/
+    INIT_LIST_HEAD(&semdFree);
+    semdFree_h = &semdFree;
+    INIT_LIST_HEAD(&semd);
+    semd_h = &semd;         
+
+    /*inizializzo MAXPROC semafori liberi per contenere tutti gli elementi di semdTable*/
+    for(int i=0; i<MAXPROC; i++){  
         struct semd_t *tmp = &(semd_table[i]);
-        INIT_LIST_HEAD(&(tmp->s_link));     //lista semafori
-        INIT_LIST_HEAD(&(tmp->s_procq));    //lista vuota di PCB bloccati
-        list_add(&(tmp->s_link),semdFree_h);    //aggiunta alla lista dei semafori liberi
+        INIT_LIST_HEAD(&(tmp->s_link));
+        INIT_LIST_HEAD(&(tmp->s_procq));
+        list_add(&(tmp->s_link),semdFree_h); 
     }
 }
