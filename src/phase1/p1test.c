@@ -15,7 +15,7 @@
 #include "pandos_const.h"
 #include "pandos_types.h"
 
-/* #include "asl.h" */
+#include "asl.h"
 #include "pcb.h"
 #include "term_utils.h"
 #include <umps/libumps.h>
@@ -122,7 +122,7 @@ int main(void)
 
   if (!emptyChild(procp[2]))
     print_err("emptyChild: unexpected FALSE   ");
-   */
+
   /* make procp[1] through procp[9] children of procp[0] */
   print("Inserting...   \n");
   for (i = 1; i < 10; i++) {
@@ -226,5 +226,6 @@ int main(void)
   print("headBlocked and outBlocked ok   \n");
   print("ASL module ok   \n");
   print("So Long and Thanks for All the Fish\n");
+
   return 0;
 }
