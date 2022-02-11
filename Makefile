@@ -7,7 +7,7 @@ endif
 UMPS3_DATA_DIR = $(UMPS3_DIR_PREFIX)/share/umps3
 UMPS3_INCLUDE_DIR = $(UMPS3_DIR_PREFIX)/include/umps3
 
-SRC_PATH := src/phase1
+SRC_PATH := src
 OBJ_PATH := obj
 OUT_PATH := output
 
@@ -34,24 +34,24 @@ DISK_NAME = disk0
 
 #main target
 all: kernel.core.umps disk0.umps
-	@echo "--------"
-	@echo "Done :D"
+	@echo -e "\n--------"
+	@echo -e "Done :D"
 
 # use umps3-mkdev to create the disk0 device
 disk0.umps:
-	@echo "*** DISK ***"
-	@echo "Creating disk " $@ "..."
+	@echo -e "*** DISK ***\n"
+	@echo -e "Creating disk " $@ "..."
 	$(UDEV) -d $(OUT_PATH)/$(DISK_NAME).umps
 
 # create the kernel.core.umps kernel executable file
 kernel.core.umps: kernel
-	@echo "*** " $@ " ***"
-	@echo "Creating " $@ "..."
+	@echo -e "*** " $@ " ***"
+	@echo -e "Creating " $@ "..."
 	umps3-elf2umps -k $(OUT_PATH)/$(KERNEL_NAME)
 
 kernel: $(OBJS) crtso.o libumps.o  
-	@echo "*** KERNEL ***"
-	@echo "Linking kernel..."
+	@echo -e "*** KERNEL ***\n"
+	@echo -e "Linking kernel..."
 	$(LD) \
 		$(LDFLAGS) \
 		-o $(OUT_PATH)/$(KERNEL_NAME) \
@@ -70,11 +70,11 @@ libumps.o:
 	$(CC) $(CFLAGS) -o $(OBJ_PATH)/$@ $(UMPS3_DATA_DIR)/libumps.S
 
 format:
-	@echo -e "*** FORMAT ***"
+	@echo -e "*** FORMAT ***\n"
 	@find src -iname *.[h,c]| xargs clang-format -i -style="{BasedOnStyle: llvm, BreakBeforeBraces: Linux}"
 
 clean:
-	@echo -e "*** CLEAN ***"
+	@echo -e "*** CLEAN ***\n"
 	@echo -e "Cleaning project structure..."
 	@rm -rf $(CLEAN_LIST)
 	@echo -e "-------------------------------------------"

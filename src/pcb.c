@@ -16,13 +16,11 @@ void initPcbs(void)
 }
 
 /* Inserisce il PCB puntato da p nella lista dei PCB liberi.*/
-void freePcb(pcb_t *p)
-{
-  list_add(&p->p_list, &pcbFree_h);
-}
+void freePcb(pcb_t *p) { list_add(&p->p_list, &pcbFree_h); }
 
-/* Restituisce NULL se pcbFree_h è vuota. Altrimenti rimuove un elemento da 
- * pcbFree, inizializza tutti i campi (NULL/0) e restituisce l’elemento rimosso.*/
+/* Restituisce NULL se pcbFree_h è vuota. Altrimenti rimuove un elemento da
+ * pcbFree, inizializza tutti i campi (NULL/0) e restituisce l’elemento
+ * rimosso.*/
 pcb_t *allocPcb(void)
 {
   if (list_empty(&pcbFree_h))
@@ -106,7 +104,8 @@ pcb_t *outProcQ(struct list_head *head, pcb_t *p)
       return p;
     }
   }
-  /*Se siamo arrivati alla fine del ciclo senza trovare p, il risultato è NULL */
+  /*Se siamo arrivati alla fine del ciclo senza trovare p, il risultato è NULL
+   */
   return NULL;
 }
 

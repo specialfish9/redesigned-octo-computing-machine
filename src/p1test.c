@@ -171,7 +171,7 @@ int main(void)
     if (insertBlocked(&sem[i], procp[i]))
       print_err("insertBlocked(1): unexpected TRUE   ");
   }
-  
+
   print("insertBlocked test #2 started  \n");
   for (i = 0; i < 10; i++) {
     procp[i] = allocPcb();
@@ -208,7 +208,7 @@ int main(void)
   p = outBlocked(q);
   if (p != q)
     print_err("outBlocked(1): couldn't remove from valid queue   ");
-  
+
   q = headBlocked(&sem[9]);
   if (q == NULL)
     print_err("headBlocked(2): NULL for an existent queue   ");

@@ -28,7 +28,6 @@ Format code with:
 make format
 ```
 
-TODO: rimuovere il format dal build
 
 
 
