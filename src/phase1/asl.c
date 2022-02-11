@@ -19,14 +19,13 @@ static semd_t* getSemd(int *s_key){
     struct list_head *iter;
 
     list_for_each(iter, semd_h){       /*percorro tutta la lista di SEMD finchè non trovo il semaforo corrispondente a s_key*/
-        struct semd_t *s = container_of(iter,semd_t,s_link);
-        if(s->s_key == s_key)
-            return s;
+        struct semd_t *tmp = container_of(iter,semd_t,s_link);
+        if(tmp->s_key == s_key)
+            return tmp;
     }
     /*se non trovo il semaforo restituisco NULL*/
     return NULL;
 }
-
 
 
 int insertBlocked(int *semAdd,pcb_t *p){ 
@@ -34,19 +33,19 @@ int insertBlocked(int *semAdd,pcb_t *p){
 
     if(s == NULL){      /*se il semaforo non è presente tra i SEMD*/
         if(list_empty(semdFree_h)){
-            /*restituisco TRUE se non è possibile allocare un nuovo semaforo perchè la lista di quelli liberi è vuota*/
+            /*termino restituendo TRUE se non è possibile allocare un nuovo semaforo perchè la lista di quelli liberi è vuota*/
             return TRUE;    
         }
         else{
             /*trasferisco un SEMD dai liberi agli utilizzati*/
             struct semd_t *tmp = container_of(semdFree_h->next,semd_t,s_link);
-            /*elimino il SEMD dalla lista dei liberi e lo inserisco nella lista dei SEMD*/
+            tmp->s_key = semAdd;   
+            /*elimino il SEMD dalla lista dei liberi e lo inserisco nella lista dei SEMD + inserisco il PCB*/
             list_del(semdFree_h->next);             
-            list_add(&(tmp->s_link),semd_h);       
+            list_add(&(tmp->s_link),semd_h);    
             insertProcQ(&(tmp->s_procq),p); 
-            tmp->s_key = semAdd;
         }
-    }else{      /*se il semaforo è già esistente*/
+    }else{      /*se il semaforo è già esistente inserisco il PCB*/
         insertProcQ(&(s->s_procq),p);
     }
     
@@ -99,18 +98,18 @@ pcb_t* headBlocked(int *semAdd){
     return container_of((s->s_procq).next,pcb_t,p_list);
 }
 
-void initASL(){
+void initASL(void){
     /*inizializzo liste per SEMD e SEMD liberi + associo i rispettivi puntatori*/
+    INIT_LIST_HEAD(&semd);
+    semd_h = &semd;
     INIT_LIST_HEAD(&semdFree);
     semdFree_h = &semdFree;
-    INIT_LIST_HEAD(&semd);
-    semd_h = &semd;         
 
     /*inizializzo MAXPROC semafori liberi per contenere tutti gli elementi di semdTable*/
     for(int i=0; i<MAXPROC; i++){  
         struct semd_t *tmp = &(semd_table[i]);
         INIT_LIST_HEAD(&(tmp->s_link));
         INIT_LIST_HEAD(&(tmp->s_procq));
-        list_add(&(tmp->s_link),semdFree_h); 
+        list_add_tail(&(tmp->s_link),semdFree_h); 
     }
 }
