@@ -5,16 +5,25 @@
 
 /* LIST FUNCTIONS */
 
+/* Inizializza la lista pcbFree in modo da contenere tutti gli elementi della
+ * pcbFree_table.*/
 extern void initPcbs(void);
 
+/* Inserisce il PCB puntato da p nella lista dei PCB liberi.*/
 extern void freePcb(pcb_t *);
 
+/* Restituisce NULL se pcbFree_h è vuota. Altrimenti rimuove un elemento da
+ * pcbFree, inizializza tutti i campi (NULL/0) e restituisce l’elemento
+ * rimosso.*/
 extern pcb_t *allocPcb(void);
 
+/* Crea una lista di PCB, inizializzandola come lista vuota */
 extern void mkEmptyProcQ(struct list_head *);
 
+/* Restituisce TRUE se la lista puntata da head è vuota, FALSE altrimenti.*/
 extern int emptyProcQ(struct list_head *);
 
+/*Inserisce l’elemento puntato da p nella coda dei processi puntata da head.*/
 extern void insertProcQ(struct list_head *, pcb_t *);
 
 extern pcb_t *headProcQ(struct list_head *);
