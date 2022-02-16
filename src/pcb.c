@@ -109,44 +109,52 @@ pcb_t *outProcQ(struct list_head *head, pcb_t *p)
   return NULL;
 }
 
-/* PCB TREE */
+/* ALBERO DEI PCB */
 
-/* Checks wheter p has children or not */
+/* Controlla se p ha figli */
 const int emptyChild(const pcb_t *p) { return list_empty(&(p->p_child)); }
 
-/* Inserts p as child of print */
+/* Inseririsce p come figlio di prnt */
 void insertChild(pcb_t *prnt, pcb_t *p)
 {
   p->p_parent = prnt;
   list_add(&p->p_sib, &prnt->p_child);
 }
 
-/* Removes first child of p */
+/* Rimuove il primo figlio di p */
 pcb_t *removeChild(pcb_t *p)
 {
   struct list_head *tmp;
   pcb_t *first_child;
 
+  /* Se non ha figli ritorna NULL */
   if (list_empty(&p->p_child)) {
     return NULL;
   }
 
+  /* Ricava il primo elemento della lista dei figli di p */
   tmp = list_next(&p->p_child);
   first_child = container_of(tmp, pcb_t, p_sib);
 
+  /* Cancellalo */
   list_del(tmp);
+  /* Rimuovi il collegamento con il padre */
   first_child->p_parent = NULL;
 
   return first_child;
 }
 
-/* Removes p from his parent's children */
+/* Rimuove p dai figli del padre */
 pcb_t *outChild(pcb_t *p)
 {
-
+  /* Se p è root */
   if (p->p_parent == NULL)
     return NULL;
+  
+  /* Aggiorno il puntatore ai figli del padre */
+  p->p_parent->p_child = p -> p_sib;
 
+  /* Cancello i collegamenti di p con il resto del albero */
   list_del(&p->p_sib);
   p->p_parent = NULL;
 

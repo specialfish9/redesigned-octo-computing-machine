@@ -3,7 +3,7 @@
 
 #include "pandos_types.h"
 
-/* LIST FUNCTIONS */
+/* FUNZIONI LISTA DEI PCB */
 
 extern void initPcbs(void);
 
@@ -23,24 +23,23 @@ extern pcb_t *removeProcQ(struct list_head *);
 
 extern pcb_t *outProcQ(struct list_head *, pcb_t *);
 
-/* TREES FUNCTIONS */
+/* FUNZIONI ALBERO DEI PCB */
 
-/* Returns TRUE if the PCB pointed by p hasn't got any child. FALSE otherwise */
+/* Restituisce TRUE se il PCB puntato da p non ha figli, FALSE altrimenti. */
 extern const int emptyChild(const pcb_t *p);
 
-/* Inserts the PCB pointed by p as a child of the PCB pointed by prnt */
+/* Inserisce il PCB puntato da p come figlio del PCB puntato da prnt. */
 extern void insertChild(pcb_t *prnt, pcb_t *p);
 
-/* Removes the first child of the PCB pointed by p. If p hasn't children
- * returns NULL*/
+/* Rimuove il primo figlio del PCB puntato da p. Se p non ha figli,
+ * restituisce NULL */
 extern pcb_t *removeChild(pcb_t *p);
 
-/*
- * Removes the PCB pointed by p from the list of children of his father.
- * If the PCB pointed by p hasn't a father then returns NULL, otherwise returns
- * the deleted element (p). p can be in every position, it may not be the first
- * child .
- */
+/* Rimuove il PCB puntato da p dalla lista dei figli del padre. Se il PCB 
+* puntato da p non ha un padre, restituisce NULL, altrimenti restituisce 
+* l’elemento rimosso (cioè p). A differenza della removeChild, p può trovarsi 
+* in una posizione arbitraria (ossia non è necessariamente il primo figlio del 
+* padre).*/
 extern pcb_t *outChild(pcb_t *p);
 
 #endif
