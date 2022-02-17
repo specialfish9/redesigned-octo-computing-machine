@@ -1,5 +1,6 @@
 #include "pcb.h"
 #include "listx.h"
+#include "pandos_types.h"
 #include "term_utils.h"
 
 static pcb_t pcbFree_table[MAXPROC];
@@ -40,7 +41,7 @@ pcb_t *allocPcb(void)
   pcb->p_s.cause = 0;
   pcb->p_s.status = 0;
   pcb->p_s.pc_epc = 0;
-  for (int i = 0; i < STATE_GPR_LEN; i++)
+  for (size_tt i = 0; i < STATE_GPR_LEN; i++)
     pcb->p_s.gpr[i] = 0;
   pcb->p_s.hi = 0;
   pcb->p_s.lo = 0;
@@ -117,8 +118,20 @@ const int emptyChild(const pcb_t *p) { return list_empty(&(p->p_child)); }
 /* Inseririsce p come figlio di prnt */
 void insertChild(pcb_t *prnt, pcb_t *p)
 {
-  p->p_parent = prnt;
-  list_add(&p->p_sib, &prnt->p_child);
+  /* Se prnt non ha figli */
+  if (&prnt->p_child == NULL) {
+    /* Metto p come figlio di prnt */
+    prnt->p_child = p->p_sib;
+    /* Metto prnt come padre di p */
+    p->p_parent = prnt;
+  } else {
+    /* Altrimenti prendo il primo figlio di prnt */
+    pcb_t *first_child = container_of(&prnt->p_child, pcb_t, p_sib);
+    /* e aggiungo p come suo fratello */
+    list_add_tail(&p->p_sib, &first_child->p_sib);
+    /* infine metto prnt come padre di p */
+    p->p_parent = prnt;
+  }
 }
 
 /* Rimuove il primo figlio di p */
@@ -160,3 +173,6 @@ pcb_t *outChild(pcb_t *p)
 
   return p;
 }
+
+
+
