@@ -105,8 +105,7 @@ pcb_t *outProcQ(struct list_head *head, pcb_t *p)
       return p;
     }
   }
-  /*Se siamo arrivati alla fine del ciclo senza trovare p, il risultato è NULL
-   */
+  /*Se siamo arrivati alla fine del ciclo senza trovare p, il risultato è NULL */
   return NULL;
 }
 
@@ -118,8 +117,8 @@ const int emptyChild(const pcb_t *p) { return list_empty(&(p->p_child)); }
 /* Inseririsce p come figlio di prnt */
 void insertChild(pcb_t *prnt, pcb_t *p)
 {
-    list_add_tail(&p->p_sib, &prnt->p_child); 
     p->p_parent = prnt;
+    list_add(&p->p_sib, &prnt->p_child); 
 }
 
 /* Rimuove il primo figlio di p */
@@ -151,9 +150,6 @@ pcb_t *outChild(pcb_t *p)
   /* Se p è root */
   if (p->p_parent == NULL)
     return NULL;
-  
-  /* Aggiorno il puntatore ai figli del padre */
-  p->p_parent->p_child = p -> p_sib;
 
   /* Cancello i collegamenti di p con il resto del albero */
   list_del(&p->p_sib);
