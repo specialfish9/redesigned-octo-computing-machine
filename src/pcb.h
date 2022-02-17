@@ -26,10 +26,16 @@ extern int emptyProcQ(struct list_head *);
 /*Inserisce l’elemento puntato da p nella coda dei processi puntata da head.*/
 extern void insertProcQ(struct list_head *, pcb_t *);
 
+/* Restituisce il primo elemento nella lista. Se la lista è vuota il risultato è
+ * NULL.*/
 extern pcb_t *headProcQ(struct list_head *);
 
+/* Rimuove il primo elemento presente nella lista data. Se la lista è vuota il
+ * risultato è NULL.*/
 extern pcb_t *removeProcQ(struct list_head *);
 
+/* Elimina il pcb "p" dalla lista data e lo restituisce. Se p non è presente, il
+ * risultato è NULL. */
 extern pcb_t *outProcQ(struct list_head *, pcb_t *);
 
 /* TREES FUNCTIONS */

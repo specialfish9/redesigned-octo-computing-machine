@@ -7,7 +7,7 @@ static struct list_head pcbFree_h;
 
 
 void initPcbs(void)
-{/*Inizzializzo la lista pcbFree_h come vuota, poi la riempio con gli elementi della pcbFree_table inserendoli in coda*/
+{/*Inizializzo la lista pcbFree_h come vuota, poi la riempio con gli elementi della pcbFree_table inserendoli in coda*/
   INIT_LIST_HEAD(&pcbFree_h);
   for (size_tt i = 0; i < MAXPROC; i++) {
     list_add_tail(&pcbFree_table[i].p_list, &pcbFree_h);
@@ -52,25 +52,25 @@ int emptyProcQ(struct list_head *head) { return list_empty(head); }
 
 void insertProcQ(struct list_head *head, pcb_t *p){ list_add_tail(&p->p_list, head);}
 
-/* Restituisce il primo elemento nella lista. Se la lista è vuota il risultato è
- * NULL.*/
+
 pcb_t *headProcQ(struct list_head *head)
 {
+  /* Controllo che la lista non sia vuota */
   if (emptyProcQ(head))
     return NULL;
   else
+    /* se non lo è restituisco il primo elemento */
     return container_of(head->next, pcb_t, p_list);
 }
 
-/* Rimuove il primo elemento presente nella lista data. Se la lista è vuota il
- * risultato è NULL.*/
+
 pcb_t *removeProcQ(struct list_head *head)
 {
   /* Controllo che la lista non sia vuota */
   if (emptyProcQ(head))
     return NULL;
   else {
-    /* In caso contrario, ricavo il primo elemento della lista, lo elimino dalla
+    /* Se non lo è, ricavo il primo elemento della lista, lo elimino dalla
      * lista e lo restituisco */
     pcb_t *pcb = headProcQ(head);
     list_del(head->next);
@@ -78,8 +78,7 @@ pcb_t *removeProcQ(struct list_head *head)
   }
 }
 
-/* Elimina il pcb "p" dalla lista data e lo restituisce. Se p non è presente, il
- * risultato è NULL. */
+
 pcb_t *outProcQ(struct list_head *head, pcb_t *p)
 {
   struct list_head *iter;
