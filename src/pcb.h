@@ -1,9 +1,15 @@
+/*********************************pcb.h****************************************
+*
+*  Dichiarazione delle funzioni che gestiscono la coda d e l'albero dei  PCB.
+*
+******************************************************************************/
+
 #ifndef PCB_H
 #define PCB_H
 
 #include "pandos_types.h"
 
-/* FUNZIONI LISTA DEI PCB */
+/* Coda dei PCB */
 
 extern void initPcbs(void);
 
