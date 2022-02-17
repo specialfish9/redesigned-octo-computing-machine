@@ -1,7 +1,12 @@
+/*********************************pcb.c****************************************
+ *
+ *  Implementazioni delle funzioni che gestiscono la coda e l'albero dei PCB.
+ *
+ ******************************************************************************/
+
 #include "pcb.h"
 #include "listx.h"
 #include "pandos_types.h"
-#include "term_utils.h"
 
 static pcb_t pcbFree_table[MAXPROC];
 static struct list_head pcbFree_h;
@@ -105,7 +110,8 @@ pcb_t *outProcQ(struct list_head *head, pcb_t *p)
       return p;
     }
   }
-  /*Se siamo arrivati alla fine del ciclo senza trovare p, il risultato è NULL */
+  /*Se siamo arrivati alla fine del ciclo senza trovare p, il risultato è NULL
+   */
   return NULL;
 }
 
@@ -117,8 +123,8 @@ const int emptyChild(const pcb_t *p) { return list_empty(&(p->p_child)); }
 /* Inseririsce p come figlio di prnt */
 void insertChild(pcb_t *prnt, pcb_t *p)
 {
-    p->p_parent = prnt;
-    list_add(&p->p_sib, &prnt->p_child); 
+  p->p_parent = prnt;
+  list_add(&p->p_sib, &prnt->p_child);
 }
 
 /* Rimuove il primo figlio di p */
@@ -157,6 +163,3 @@ pcb_t *outChild(pcb_t *p)
 
   return p;
 }
-
-
-

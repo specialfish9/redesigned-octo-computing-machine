@@ -1,13 +1,16 @@
+/******************************term_utils.h************************************
+ *
+ * Utility per stampare nel terminale.
+ *
+ ******************************************************************************/
 #ifndef TERM_UTILS_H
 #define TERM_UTILS_H
 
-/* This function placess the specified character string in okbuf and
- *	causes the string to be written out to terminal0 */
-extern void print(const char *strp);
+/* Stampa su terminal0 la stringa passata in input */
+extern void print(const char *);
 
-/* This function placess the specified character string in errbuf and
- *	causes the string to be written out to terminal0.  After this is done
- *	the system shuts down with a panic message */
-extern void print_err(const char *strp);
+/* Stampa su terminal0 la stringa passata in input e fa terminare l'esecuzione
+ * con un messaggio di PANIC */
+extern void print_err(const char *);
 
 #endif

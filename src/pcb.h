@@ -1,15 +1,15 @@
 /*********************************pcb.h****************************************
-*
-*  Dichiarazione delle funzioni che gestiscono la coda d e l'albero dei  PCB.
-*
-******************************************************************************/
+ *
+ *  Dichiarazione delle funzioni che gestiscono la coda e l'albero dei PCB.
+ *
+ ******************************************************************************/
 
 #ifndef PCB_H
 #define PCB_H
 
 #include "pandos_types.h"
 
-/* Coda dei PCB */
+/* CODA DEI PCB */
 
 extern void initPcbs(void);
 
@@ -29,7 +29,7 @@ extern pcb_t *removeProcQ(struct list_head *);
 
 extern pcb_t *outProcQ(struct list_head *, pcb_t *);
 
-/* FUNZIONI ALBERO DEI PCB */
+/* ALBERO DEI PCB */
 
 /* Restituisce TRUE se il PCB puntato da p non ha figli, FALSE altrimenti. */
 extern const int emptyChild(const pcb_t *p);
@@ -41,11 +41,11 @@ extern void insertChild(pcb_t *prnt, pcb_t *p);
  * restituisce NULL */
 extern pcb_t *removeChild(pcb_t *p);
 
-/* Rimuove il PCB puntato da p dalla lista dei figli del padre. Se il PCB 
-* puntato da p non ha un padre, restituisce NULL, altrimenti restituisce 
-* l’elemento rimosso (cioè p). A differenza della removeChild, p può trovarsi 
-* in una posizione arbitraria (ossia non è necessariamente il primo figlio del 
-* padre).*/
+/* Rimuove il PCB puntato da p dalla lista dei figli del padre. Se il PCB
+ * puntato da p non ha un padre, restituisce NULL, altrimenti restituisce
+ * l’elemento rimosso (cioè p). A differenza della removeChild, p può trovarsi
+ * in una posizione arbitraria (ossia non è necessariamente il primo figlio del
+ * padre).*/
 extern pcb_t *outChild(pcb_t *p);
 
 #endif

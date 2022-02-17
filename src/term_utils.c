@@ -1,3 +1,8 @@
+/******************************term_utils.c************************************
+ *
+ * Implementazione di term_utils.h.
+ *
+ ******************************************************************************/
 #include "term_utils.h"
 
 #include "pandos_const.h"
@@ -17,15 +22,14 @@ static char okbuf[2048]; /* sequence of progress messages */
 static char errbuf[128]; /* contains reason for failing */
 static char *mp = okbuf;
 
-/* This function returns the terminal transmitter status value given its address
- */
-static devreg termstat(const memaddr *stataddr)
+/* Ritorna lo stato del terminale dato il suo indirizzo */
+inline static devreg termstat(const memaddr *stataddr)
 {
   return ((*stataddr) & STATUSMASK);
 }
 
-/* This function prints a string on specified terminal and returns TRUE if
- * print was successful, FALSE if not   */
+/* Stampa una stringa in un terminale specificato e ritorna TRUE se la stampa
+ * ha avuto successo, FALSE altrimenti */
 static unsigned int termprint(const char *str, const unsigned int term)
 {
   memaddr *statusp;
@@ -74,8 +78,6 @@ static unsigned int termprint(const char *str, const unsigned int term)
   return (!error);
 }
 
-/* This function placess the specified character string in okbuf and
- *	causes the string to be written out to terminal0 */
 void print(const char *strp)
 {
   const char *tstrp = strp;
@@ -85,9 +87,6 @@ void print(const char *strp)
   termprint(tstrp, 0);
 }
 
-/* This function placess the specified character string in errbuf and
- *	causes the string to be written out to terminal0.  After this is done
- *	the system shuts down with a panic message */
 void print_err(const char *strp)
 {
   char *ep = errbuf;

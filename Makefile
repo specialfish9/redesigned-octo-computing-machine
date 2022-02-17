@@ -33,24 +33,26 @@ KERNEL_NAME = ROCM_kernel
 DISK_NAME = disk0
 
 #main target
-all: kernel.core.umps disk0.umps
-	@echo -e "\n--------"
-	@echo -e "Done :D"
+all: figlet kernel.core.umps disk0.umps
+	@echo -e "\n\n\nDone :D"
 
 # use umps3-mkdev to create the disk0 device
 disk0.umps:
-	@echo -e "*** DISK ***\n"
+	@echo -e "------------"
+	@echo -e "*** DISK ***"
 	@echo -e "Creating disk " $@ "..."
 	$(UDEV) -d $(OUT_PATH)/$(DISK_NAME).umps
 
 # create the kernel.core.umps kernel executable file
 kernel.core.umps: kernel
+	@echo -e "-----------"
 	@echo -e "*** " $@ " ***"
 	@echo -e "Creating " $@ "..."
 	umps3-elf2umps -k $(OUT_PATH)/$(KERNEL_NAME)
 
 kernel: $(OBJS) crtso.o libumps.o  
-	@echo -e "*** KERNEL ***\n"
+	@echo -e "--------------"
+	@echo -e "*** KERNEL ***"
 	@echo -e "Linking kernel..."
 	$(LD) \
 		$(LDFLAGS) \
@@ -70,14 +72,24 @@ libumps.o:
 	$(CC) $(CFLAGS) -o $(OBJ_PATH)/$@ $(UMPS3_DATA_DIR)/libumps.S
 
 format:
-	@echo -e "*** FORMAT ***\n"
+	@echo -e "--------------"
+	@echo -e "*** FORMAT ***"
 	@find src -iname *.[h,c]| xargs clang-format -i -style="{BasedOnStyle: llvm, BreakBeforeBraces: Linux}"
 
 clean:
-	@echo -e "*** CLEAN ***\n"
+	@echo -e "-------------"
+	@echo -e "*** CLEAN ***"
 	@echo -e "Cleaning project structure..."
 	@rm -rf $(CLEAN_LIST)
 	@echo -e "-------------------------------------------"
 	@echo -e "Un progetto pulito è un progetto felice :D"
 	@echo -e "-------------------------------------------"
 
+
+figlet:
+	@echo -e "\e[0;32moooooooooo    ooooooo     oooooooo8 oooo     oooo "
+	@echo -e "\e[0;32m 888    888 o888   888o o888     88  8888o   888  "
+	@echo -e "\e[0;32m 888oooo88  888     888 888          88 888o8 88  "
+	@echo -e "\e[0;32m 888  88o   888o   o888 888o     oo  88  888  88  "
+	@echo -e "\e[0;32mo888o  88o8   88ooo88    888oooo88  o88o  8  o88o "
+	@echo -e "\e[0m\n\n\n"
