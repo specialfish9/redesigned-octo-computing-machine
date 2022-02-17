@@ -34,7 +34,7 @@ DISK_NAME = disk0
 
 #main target
 all: figlet kernel.core.umps disk0.umps
-	@echo -e "\n\n\nDone :D"
+	@echo -e "Done :D"
 
 # use umps3-mkdev to create the disk0 device
 disk0.umps:
@@ -54,10 +54,7 @@ kernel: $(OBJS) crtso.o libumps.o
 	@echo -e "--------------"
 	@echo -e "*** KERNEL ***"
 	@echo -e "Linking kernel..."
-	$(LD) \
-		$(LDFLAGS) \
-		-o $(OUT_PATH)/$(KERNEL_NAME) \
-		$(addprefix $(OBJ_PATH)/,$^)
+	$(LD) $(LDFLAGS) -o $(OUT_PATH)/$(KERNEL_NAME) $(addprefix $(OBJ_PATH)/,$^)
 
 %.o: $(SRC_PATH)/%.c
 	@echo -e "Building " $@ "..."
@@ -92,4 +89,4 @@ figlet:
 	@echo -e "\e[0;32m 888oooo88  888     888 888          88 888o8 88  "
 	@echo -e "\e[0;32m 888  88o   888o   o888 888o     oo  88  888  88  "
 	@echo -e "\e[0;32mo888o  88o8   88ooo88    888oooo88  o88o  8  o88o "
-	@echo -e "\e[0m\n\n\n"
+	@echo -e "\e[0m"
