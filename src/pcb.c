@@ -118,20 +118,8 @@ const int emptyChild(const pcb_t *p) { return list_empty(&(p->p_child)); }
 /* Inseririsce p come figlio di prnt */
 void insertChild(pcb_t *prnt, pcb_t *p)
 {
-  /* Se prnt non ha figli */
-  if (&prnt->p_child == NULL) {
-    /* Metto p come figlio di prnt */
-    prnt->p_child = p->p_sib;
-    /* Metto prnt come padre di p */
+    list_add_tail(&p->p_sib, &prnt->p_child); 
     p->p_parent = prnt;
-  } else {
-    /* Altrimenti prendo il primo figlio di prnt */
-    pcb_t *first_child = container_of(&prnt->p_child, pcb_t, p_sib);
-    /* e aggiungo p come suo fratello */
-    list_add_tail(&p->p_sib, &first_child->p_sib);
-    /* infine metto prnt come padre di p */
-    p->p_parent = prnt;
-  }
 }
 
 /* Rimuove il primo figlio di p */
