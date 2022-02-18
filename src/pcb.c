@@ -73,7 +73,8 @@ pcb_t *removeProcQ(struct list_head *head)
     /* Se non lo è, ricavo il primo elemento della lista, lo elimino dalla
      * lista e lo restituisco */
     pcb_t *pcb = headProcQ(head);
-    list_del(head->next);
+    list_del(&(pcb->p_list));
+    INIT_LIST_HEAD(&(pcb->p_list));
     return pcb;
   }
 }
@@ -88,8 +89,9 @@ pcb_t *outProcQ(struct list_head *head, pcb_t *p)
   {
     /* Se l'elemento della lista in esame punta al p_list del pcb che cerchiamo,
      * esso viene eliminato e restituito. */
-    if (iter == &p->p_list) {
+    if (iter == &(p->p_list)) {
       list_del(iter);
+      INIT_LIST_HEAD(iter);
       return p;
     }
   }
