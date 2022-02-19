@@ -20,7 +20,7 @@
 
 typedef unsigned int devreg;
 
-static char okbuf[MAX_BUF];      
+static char okbuf[MAX_BUF];
 static char errbuf[MAX_ERR_BUF];
 static char *mp = okbuf;
 
@@ -35,10 +35,9 @@ static unsigned int termprint(const char *str, const unsigned int term);
 /* int to string */
 static void _itoa(const int number, char *buffer);
 /* Concatena due stringhe */
-static void _strcat(const char* first, const char* second, char* buffer);
+static void _strcat(const char *first, const char *second, char *buffer);
 /* Inverte due caratteri */
 inline static void _swap(char *x, char *y);
-
 
 inline static devreg termstat(const memaddr *stataddr)
 {
@@ -115,7 +114,8 @@ void print_err(const char *strp)
   PANIC();
 }
 
-void dbg_var(const char *name, const int var) {
+void dbg_var(const char *name, const int var)
+{
   char var_str[100], res[MAX_BUF];
   const char c[] = " : ";
 
@@ -125,7 +125,6 @@ void dbg_var(const char *name, const int var) {
   print(res);
   print("\n");
 }
-
 
 /* Funzioni per la manipolazione di stringhe */
 
@@ -167,16 +166,16 @@ static void _itoa(const int number, char *buffer)
   }
 }
 
-static void _strcat(const char* first, const char* second, char* buffer) {
+static void _strcat(const char *first, const char *second, char *buffer)
+{
   const char *ptr;
-  char* buff_ptr;
+  char *buff_ptr;
 
-  for(ptr = first, buff_ptr = buffer; *ptr; ptr++, buff_ptr++)
+  for (ptr = first, buff_ptr = buffer; *ptr; ptr++, buff_ptr++)
     *buff_ptr = *ptr;
 
-  for(ptr = second; *ptr; ptr++, buff_ptr++)
+  for (ptr = second; *ptr; ptr++, buff_ptr++)
     *buff_ptr = *ptr;
 
   *buff_ptr = '\0';
 }
-

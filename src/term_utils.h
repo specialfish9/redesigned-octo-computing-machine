@@ -9,6 +9,7 @@
 /* Ottieni il nome della variabile come stringa */
 #define NAME_OF(name) #name
 
+/* Utility di debug: stampa il nome di ina varibile seguito dal suo valore.*/
 #define DBG(name) dbg_var(#name, name)
 
 /* Stampa su terminal0 la stringa passata in input */
@@ -19,7 +20,7 @@ extern void print(const char *);
 extern void print_err(const char *);
 
 /* Utility per il debug, stampa il nome di una variabile di tipo int, seguita
-* dal suo valore.*/
-extern void dbg_var(const char*, const int);
+ * dal suo valore.*/
+extern void dbg_var(const char *, const int);
 
 #endif

@@ -34,33 +34,33 @@ int main(void)
   int i;
 
   print("Phase 1 test\n");
-  initPcbs();
+  init_pcbs();
   print("Initialized process control blocks   \n");
 
   /* Check allocProc */
   for (i = 0; i < MAXPROC; i++) {
-    if ((procp[i] = allocPcb()) == NULL)
-      print_err("allocPcb: unexpected NULL   ");
+    if ((procp[i] = alloc_pcb()) == NULL)
+      print_err("alloc_pcb: unexpected NULL   ");
   }
-  if (allocPcb() != NULL) {
-    print_err("allocPcb: allocated more than MAXPROC entries   ");
+  if (alloc_pcb() != NULL) {
+    print_err("alloc_pcb: allocated more than MAXPROC entries   ");
   }
-  print("allocPcb ok   \n");
+  print("alloc_pcb ok   \n");
 
   /* return the last 10 entries back to free list */
 
   for (i = 10; i < MAXPROC; i++)
-    freePcb(procp[i]);
+    free_pcb(procp[i]);
   print("freed 10 entries   \n");
 
   /* create a 10-element process queue */
   LIST_HEAD(qa);
-  if (!emptyProcQ(&qa))
-    print_err("emptyProcQ: unexpected FALSE   ");
+  if (!empty_proc_q(&qa))
+    print_err("empty_proc_q: unexpected FALSE   ");
   print("Inserting...   \n");
   for (i = 0; i < 10; i++) {
-    if ((q = allocPcb()) == NULL)
-      print_err("allocPcb: unexpected NULL while insert   ");
+    if ((q = alloc_pcb()) == NULL)
+      print_err("alloc_pcb: unexpected NULL while insert   ");
     switch (i) {
     case 0:
       firstproc = q;
@@ -74,155 +74,155 @@ int main(void)
     default:
       break;
     }
-    insertProcQ(&qa, q);
+    insert_proc_q(&qa, q);
   }
   print("inserted 10 elements   \n");
 
-  if (emptyProcQ(&qa))
-    print_err("emptyProcQ: unexpected TRUE");
+  if (empty_proc_q(&qa))
+    print_err("empty_proc_q: unexpected TRUE");
 
   /* Check outProc and headProc */
 
-  if (headProcQ(&qa) != firstproc)
-    print_err("headProcQ failed   ");
-  q = outProcQ(&qa, firstproc);
+  if (head_proc_q(&qa) != firstproc)
+    print_err("head_proc_q failed   ");
+  q = out_proc_q(&qa, firstproc);
   if (q == NULL || q != firstproc)
-    print_err("outProcQ failed on first entry   ");
-  freePcb(q);
+    print_err("out_proc_q failed on first entry   ");
+  free_pcb(q);
 
-  q = outProcQ(&qa, midproc);
+  q = out_proc_q(&qa, midproc);
   if (q == NULL || q != midproc)
-    print_err("outProcQ failed on middle entry   ");
-  freePcb(q);
-  if (outProcQ(&qa, procp[0]) != NULL)
-    print_err("outProcQ failed on nonexistent entry   ");
-  print("outProcQ ok   \n");
+    print_err("out_proc_q failed on middle entry   ");
+  free_pcb(q);
+  if (out_proc_q(&qa, procp[0]) != NULL)
+    print_err("out_proc_q failed on nonexistent entry   ");
+  print("out_proc_q ok   \n");
 
   /* Check if removeProc and insertProc remove in the correct order */
 
   print("Removing...   \n");
   for (i = 0; i < 8; i++) {
-    if ((q = removeProcQ(&qa)) == NULL)
-      print_err("removeProcQ: unexpected NULL   ");
-    freePcb(q);
+    if ((q = remove_proc_q(&qa)) == NULL)
+      print_err("remove_proc_q: unexpected NULL   ");
+    free_pcb(q);
   }
 
   if (q != lastproc)
-    print_err("removeProcQ: failed on last entry   ");
-  if (removeProcQ(&qa) != NULL)
-    print_err("removeProcQ: removes too many entries   ");
+    print_err("remove_proc_q: failed on last entry   ");
+  if (remove_proc_q(&qa) != NULL)
+    print_err("remove_proc_q: removes too many entries   ");
 
-  if (!emptyProcQ(&qa))
-    print_err("emptyProcQ: unexpected FALSE   ");
+  if (!empty_proc_q(&qa))
+    print_err("empty_proc_q: unexpected FALSE   ");
 
-  print("insertProcQ, removeProcQ and emptyProcQ ok   \n");
+  print("insert_proc_q, remove_proc_q and empty_proc_q ok   \n");
   print("process queues module ok      \n");
 
   print("checking process trees...\n");
 
-  if (!emptyChild(procp[2]))
-    print_err("emptyChild: unexpected FALSE   ");
+  if (!empty_child(procp[2]))
+    print_err("empty_child: unexpected FALSE   ");
   /* make procp[1] through procp[9] children of procp[0] */
   print("Inserting...   \n");
   for (i = 1; i < 10; i++) {
-    insertChild(procp[0], procp[i]);
+    insert_child(procp[0], procp[i]);
   }
   print("Inserted 9 children   \n");
 
-  if (emptyChild(procp[0]))
-    print_err("emptyChild: unexpected TRUE   ");
+  if (empty_child(procp[0]))
+    print_err("empty_child: unexpected TRUE   ");
 
-  /* Check outChild */
-  q = outChild(procp[1]);
+  /* Check out_child */
+  q = out_child(procp[1]);
   if (q == NULL || q != procp[1])
-    print_err("outChild failed on first child   ");
-  q = outChild(procp[4]);
+    print_err("out_child failed on first child   ");
+  q = out_child(procp[4]);
   if (q == NULL || q != procp[4])
-    print_err("outChild failed on middle child   ");
-  if (outChild(procp[0]) != NULL)
-    print_err("outChild failed on nonexistent child   ");
-  print("outChild ok   \n");
+    print_err("out_child failed on middle child   ");
+  if (out_child(procp[0]) != NULL)
+    print_err("out_child failed on nonexistent child   ");
+  print("out_child ok   \n");
 
-  /* Check removeChild */
+  /* Check remove_child */
   print("Removing...   \n");
   for (i = 0; i < 7; i++) {
-    if ((q = removeChild(procp[0])) == NULL)
-      print_err("removeChild: unexpected NULL   ");
+    if ((q = remove_child(procp[0])) == NULL)
+      print_err("remove_child: unexpected NULL   ");
   }
-  if (removeChild(procp[0]) != NULL)
-    print_err("removeChild: removes too many children   ");
+  if (remove_child(procp[0]) != NULL)
+    print_err("remove_child: removes too many children   ");
 
-  if (!emptyChild(procp[0]))
-    print_err("emptyChild: unexpected FALSE   ");
+  if (!empty_child(procp[0]))
+    print_err("empty_child: unexpected FALSE   ");
 
-  print("insertChild, removeChild and emptyChild ok   \n");
+  print("insert_child, remove_child and empty_child ok   \n");
   print("process tree module ok      \n");
 
   for (i = 0; i < 10; i++)
-    freePcb(procp[i]);
+    free_pcb(procp[i]);
 
   /* check ASL */
-  initASL();
+  init_asl();
   print("Initialized active semaphore list   \n");
-  /* check removeBlocked and insertBlocked */
-  print("insertBlocked test #1 started  \n");
+  /* check remove_blocked and insert_blocked */
+  print("insert_blocked test #1 started  \n");
   for (i = 10; i < MAXPROC; i++) {
-    procp[i] = allocPcb();
-    if (insertBlocked(&sem[i], procp[i]))
-      print_err("insertBlocked(1): unexpected TRUE   ");
+    procp[i] = alloc_pcb();
+    if (insert_blocked(&sem[i], procp[i]))
+      print_err("insert_blocked(1): unexpected TRUE   ");
   }
 
-  print("insertBlocked test #2 started  \n");
+  print("insert_blocked test #2 started  \n");
   for (i = 0; i < 10; i++) {
-    procp[i] = allocPcb();
-    if (insertBlocked(&sem[i], procp[i]))
-      print_err("insertBlocked(2): unexpected TRUE   ");
+    procp[i] = alloc_pcb();
+    if (insert_blocked(&sem[i], procp[i]))
+      print_err("insert_blocked(2): unexpected TRUE   ");
   }
 
   /* check if semaphore descriptors are returned to free list */
-  p = removeBlocked(&sem[11]);
-  if (insertBlocked(&sem[11], p))
-    print_err("removeBlocked: fails to return to free list   ");
-  if (insertBlocked(&onesem, procp[9]) == FALSE)
-    print_err("insertBlocked: inserted more than MAXPROC   ");
-  print("removeBlocked test started   \n");
+  p = remove_blocked(&sem[11]);
+  if (insert_blocked(&sem[11], p))
+    print_err("remove_blocked: fails to return to free list   ");
+  if (insert_blocked(&onesem, procp[9]) == FALSE)
+    print_err("insert_blocked: inserted more than MAXPROC   ");
+  print("remove_blocked test started   \n");
   for (i = 10; i < MAXPROC; i++) {
-    q = removeBlocked(&sem[i]);
+    q = remove_blocked(&sem[i]);
     if (q == NULL)
-      print_err("removeBlocked: wouldn't remove   ");
+      print_err("remove_blocked: wouldn't remove   ");
     if (q != procp[i])
-      print_err("removeBlocked: removed wrong element   ");
-    if (insertBlocked(&sem[i - 10], q))
-      print_err("insertBlocked(3): unexpected TRUE   ");
+      print_err("remove_blocked: removed wrong element   ");
+    if (insert_blocked(&sem[i - 10], q))
+      print_err("insert_blocked(3): unexpected TRUE   ");
   }
-  if (removeBlocked(&sem[11]) != NULL)
-    print_err("removeBlocked: removed nonexistent blocked proc   ");
-  print("insertBlocked and removeBlocked ok   \n");
+  if (remove_blocked(&sem[11]) != NULL)
+    print_err("remove_blocked: removed nonexistent blocked proc   ");
+  print("insert_blocked and remove_blocked ok   \n");
 
-  if (headBlocked(&sem[11]) != NULL)
-    print_err("headBlocked: nonNULL for a nonexistent queue   ");
-  if ((q = headBlocked(&sem[9])) == NULL)
-    print_err("headBlocked(1): NULL for an existent queue   ");
+  if (head_blocked(&sem[11]) != NULL)
+    print_err("head_blocked: nonNULL for a nonexistent queue   ");
+  if ((q = head_blocked(&sem[9])) == NULL)
+    print_err("head_blocked(1): NULL for an existent queue   ");
   if (q != procp[9])
-    print_err("headBlocked(1): wrong process returned   ");
-  p = outBlocked(q);
+    print_err("head_blocked(1): wrong process returned   ");
+  p = out_blocked(q);
   if (p != q)
-    print_err("outBlocked(1): couldn't remove from valid queue   ");
+    print_err("out_blocked(1): couldn't remove from valid queue   ");
 
-  q = headBlocked(&sem[9]);
+  q = head_blocked(&sem[9]);
   if (q == NULL)
-    print_err("headBlocked(2): NULL for an existent queue   ");
+    print_err("head_blocked(2): NULL for an existent queue   ");
   if (q != procp[19])
-    print_err("headBlocked(2): wrong process returned   ");
-  p = outBlocked(q);
+    print_err("head_blocked(2): wrong process returned   ");
+  p = out_blocked(q);
   if (p != q)
-    print_err("outBlocked(2): couldn't remove from valid queue   ");
-  p = outBlocked(q);
+    print_err("out_blocked(2): couldn't remove from valid queue   ");
+  p = out_blocked(q);
   if (p != NULL)
-    print_err("outBlocked: removed same process twice.");
-  if (headBlocked(&sem[9]) != NULL)
-    print_err("out/headBlocked: unexpected nonempty queue   ");
-  print("headBlocked and outBlocked ok   \n");
+    print_err("out_blocked: removed same process twice.");
+  if (head_blocked(&sem[9]) != NULL)
+    print_err("out/head_blocked: unexpected nonempty queue   ");
+  print("head_blocked and out_blocked ok   \n");
   print("ASL module ok   \n");
   print("So Long and Thanks for All the Fish\n");
   return 0;

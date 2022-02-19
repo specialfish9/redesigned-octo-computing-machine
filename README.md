@@ -1,4 +1,5 @@
 # Redesigned Octo Computing Machine
+## An implementation of the Pandos+ operating system
 
 ### Dependences:
 1. [umps3](https://github.com/virtualsquare/umps3)
