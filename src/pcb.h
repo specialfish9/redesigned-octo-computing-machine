@@ -11,7 +11,7 @@
 
 /* CODA DEI PCB */
 
-  /* Inizializza la lista pcbFree in modo da contenere tutti gli elementi della
+/* Inizializza la lista pcbFree in modo da contenere tutti gli elementi della
  * pcbFree_table.*/
 extern void init_pcbs(void);
 
@@ -40,11 +40,9 @@ extern pcb_t *head_proc_q(struct list_head *);
  * risultato è NULL.*/
 extern pcb_t *remove_proc_q(struct list_head *);
 
-
 /* Elimina il pcb "p" dalla lista data e lo restituisce. Se p non è presente, il
  * risultato è NULL. */
 extern pcb_t *out_proc_q(struct list_head *, pcb_t *);
-
 
 /* ALBERO DEI PCB */
 
