@@ -15,6 +15,8 @@ static struct list_head pcb_free_h;
  * pcb_free_table.*/
 void init_pcbs(void)
 {
+  /*Inizializzo la lista pcbFree_h come vuota, poi la riempio con gli elementi
+   * della pcbFree_table inserendoli in coda*/
   INIT_LIST_HEAD(&pcb_free_h);
   for (size_tt i = 0; i < MAXPROC; i++) {
     list_add_tail(&pcb_free_table[i].p_list, &pcb_free_h);
@@ -29,8 +31,10 @@ void free_pcb(pcb_t *p) { list_add(&p->p_list, &pcb_free_h); }
  * rimosso.*/
 pcb_t *alloc_pcb(void)
 {
+  /*Controllo se pcbFree_h è vuota*/
   if (list_empty(&pcb_free_h))
     return NULL;
+  /*Se non è vuota copio i suoi elementi e la svuoto */
   pcb_t *pcb = container_of(pcb_free_h.next, pcb_t, p_list);
   list_del(pcb_free_h.next);
 
@@ -72,9 +76,11 @@ void insert_proc_q(struct list_head *head, pcb_t *p)
  * NULL.*/
 pcb_t *head_proc_q(struct list_head *head)
 {
+  /* Controllo che la lista non sia vuota */
   if (empty_proc_q(head))
     return NULL;
   else
+    /* se non lo è restituisco il primo elemento */
     return container_of(head->next, pcb_t, p_list);
 }
 
@@ -86,10 +92,11 @@ pcb_t *remove_proc_q(struct list_head *head)
   if (empty_proc_q(head))
     return NULL;
   else {
-    /* In caso contrario, ricavo il primo elemento della lista, lo elimino dalla
+    /* Se non lo è, ricavo il primo elemento della lista, lo elimino dalla
      * lista e lo restituisco */
     pcb_t *pcb = head_proc_q(head);
-    list_del(head->next);
+    list_del(&(pcb->p_list));
+    INIT_LIST_HEAD(&(pcb->p_list));
     return pcb;
   }
 }
@@ -105,8 +112,9 @@ pcb_t *out_proc_q(struct list_head *head, pcb_t *p)
   {
     /* Se l'elemento della lista in esame punta al p_list del pcb che cerchiamo,
      * esso viene eliminato e restituito. */
-    if (iter == &p->p_list) {
+    if (iter == &(p->p_list)) {
       list_del(iter);
+      INIT_LIST_HEAD(iter);
       return p;
     }
   }

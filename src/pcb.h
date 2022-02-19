@@ -11,22 +11,37 @@
 
 /* CODA DEI PCB */
 
+/* Inizializza la lista pcbFree in modo da contenere tutti gli elementi della
+ * pcbFree_table.*/
 extern void init_pcbs(void);
 
+/* Inserisce il PCB puntato da p nella lista dei PCB liberi.*/
 extern void free_pcb(pcb_t *);
 
+/* Restituisce NULL se pcbFree_h è vuota. Altrimenti rimuove un elemento da
+ * pcbFree, inizializza tutti i campi (NULL/0) e restituisce l’elemento
+ * rimosso.*/
 extern pcb_t *alloc_pcb(void);
 
+/* Crea una lista di PCB, inizializzandola come lista vuota */
 extern void mk_empty_proc_q(struct list_head *);
 
+/* Restituisce TRUE se la lista puntata da head è vuota, FALSE altrimenti.*/
 extern int empty_proc_q(struct list_head *);
 
+/*Inserisce l’elemento puntato da p nella coda dei processi puntata da head.*/
 extern void insert_proc_q(struct list_head *, pcb_t *);
 
+/* Restituisce il primo elemento nella lista. Se la lista è vuota il risultato è
+ * NULL.*/
 extern pcb_t *head_proc_q(struct list_head *);
 
+/* Rimuove il primo elemento presente nella lista data. Se la lista è vuota il
+ * risultato è NULL.*/
 extern pcb_t *remove_proc_q(struct list_head *);
 
+/* Elimina il pcb "p" dalla lista data e lo restituisce. Se p non è presente, il
+ * risultato è NULL. */
 extern pcb_t *out_proc_q(struct list_head *, pcb_t *);
 
 /* ALBERO DEI PCB */
