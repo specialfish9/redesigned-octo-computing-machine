@@ -1,4 +1,4 @@
-# Redesigned Octo Computing Machine
+# Really Optimistic Computing Machine
 ## An implementation of the Pandos+ operating system
 
 ### Dependences:

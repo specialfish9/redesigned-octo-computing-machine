@@ -82,7 +82,6 @@ clean:
 	@echo -e "Un progetto pulito è un progetto felice :D"
 	@echo -e "-------------------------------------------"
 
-
 figlet:
 	@echo -e "\e[0;32moooooooooo    ooooooo     oooooooo8 oooo     oooo "
 	@echo -e "\e[0;32m 888    888 o888   888o o888     88  8888o   888  "
