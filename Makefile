@@ -78,9 +78,6 @@ clean:
 	@echo -e "*** CLEAN ***"
 	@echo -e "Cleaning project structure..."
 	@rm -rf $(CLEAN_LIST)
-	@echo -e "-------------------------------------------"
-	@echo -e "Un progetto pulito è un progetto felice :D"
-	@echo -e "-------------------------------------------"
 
 figlet:
 	@echo -e "\e[0;32moooooooooo    ooooooo     oooooooo8 oooo     oooo "
