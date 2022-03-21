@@ -5,7 +5,7 @@ else
 endif
 
 UMPS3_DATA_DIR = $(UMPS3_DIR_PREFIX)/share/umps3
-UMPS3_INCLUDE_DIR = $(UMPS3_DIR_PREFIX)/include/umps3
+UMPS3_INCLUDE_DIR = $(UMPS3_DIR_PREFIX)/include
 
 SRC_PATH := src
 OBJ_PATH := obj
