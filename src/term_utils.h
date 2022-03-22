@@ -13,11 +13,11 @@
 #define DBG(name) dbg_var(#name, name)
 
 /* Stampa su terminal0 la stringa passata in input */
-extern void print(const char *);
+extern void print1(const char *);
 
 /* Stampa su terminal0 la stringa passata in input e fa terminare l'esecuzione
  * con un messaggio di PANIC */
-extern void print_err(const char *);
+extern void print1_err(const char *);
 
 /* Utility per il debug, stampa il nome di una variabile di tipo int, seguita
  * dal suo valore.*/

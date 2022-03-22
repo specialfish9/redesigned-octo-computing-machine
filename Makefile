@@ -19,7 +19,7 @@ CLEAN_LIST := $(OUT_PATH)/* \
 				$(OBJ_PATH)/* \
 
 CFLAGS = -ffreestanding -ansi -Wall -c -mips1 -mabi=32 -mfp32 \
-				 -mno-gpopt -G 0 -fno-pic -mno-abicalls -EL -I$(UMPS3_INCLUDE_DIR) -std=gnu99
+				 -mno-gpopt -G 0 -fno-pic -mno-abicalls -EL  -std=gnu99
 
 LDFLAGS = -G 0 -nostdlib -T $(UMPS3_DATA_DIR)/umpscore.ldscript -m elf32ltsmip
 
@@ -38,43 +38,38 @@ all: figlet kernel.core.umps disk0.umps
 
 # use umps3-mkdev to create the disk0 device
 disk0.umps:
-	@echo -e "------------"
 	@echo -e "*** DISK ***"
 	@echo -e "Creating disk " $@ "..."
-	$(UDEV) -d $(OUT_PATH)/$(DISK_NAME).umps
+	@$(UDEV) -d $(OUT_PATH)/$(DISK_NAME).umps
 
 # create the kernel.core.umps kernel executable file
 kernel.core.umps: kernel
-	@echo -e "-----------"
 	@echo -e "*** " $@ " ***"
 	@echo -e "Creating " $@ "..."
-	umps3-elf2umps -k $(OUT_PATH)/$(KERNEL_NAME)
+	@umps3-elf2umps -k $(OUT_PATH)/$(KERNEL_NAME)
 
 kernel: $(OBJS) crtso.o libumps.o  
-	@echo -e "--------------"
 	@echo -e "*** KERNEL ***"
 	@echo -e "Linking kernel..."
-	$(LD) $(LDFLAGS) -o $(OUT_PATH)/$(KERNEL_NAME) $(addprefix $(OBJ_PATH)/,$^)
+	@$(LD) $(LDFLAGS) -o $(OUT_PATH)/$(KERNEL_NAME) $(addprefix $(OBJ_PATH)/,$^)
 
 %.o: $(SRC_PATH)/%.c
 	@echo -e "Building " $@ "..."
-	$(CC) $(CFLAGS) -o $(OBJ_PATH)/$@ $<
+	@$(CC) $(CFLAGS) -I$(UMPS3_INCLUDE_DIR) -o $(OBJ_PATH)/$@ $<
 
 crtso.o:
 	@echo -e "Building " $@ "..."
-	$(CC) $(CFLAGS) -o $(OBJ_PATH)/$@ $(UMPS3_DATA_DIR)/crtso.S
+	@$(CC) $(CFLAGS) -I$(UMPS3_INCLUDE_DIR)/umps3 -o $(OBJ_PATH)/$@ $(UMPS3_DATA_DIR)/crtso.S
 
 libumps.o:
 	@echo -e "Building " $@ "..."
-	$(CC) $(CFLAGS) -o $(OBJ_PATH)/$@ $(UMPS3_DATA_DIR)/libumps.S
+	@$(CC) $(CFLAGS) -I$(UMPS3_INCLUDE_DIR)/umps3 -o $(OBJ_PATH)/$@ $(UMPS3_DATA_DIR)/libumps.S
 
 format:
-	@echo -e "--------------"
 	@echo -e "*** FORMAT ***"
 	@find src -iname *.[h,c]| xargs clang-format -i -style="{BasedOnStyle: llvm, BreakBeforeBraces: Linux}"
 
 clean:
-	@echo -e "-------------"
 	@echo -e "*** CLEAN ***"
 	@echo -e "Cleaning project structure..."
 	@rm -rf $(CLEAN_LIST)
