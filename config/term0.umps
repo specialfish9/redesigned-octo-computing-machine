@@ -1,7 +1,10 @@
 Init passup vector...done!
 Init data structures...done!
-Init interval timer...done!
+Loading interval timer...done!
 Init devices...done!
-Init scheduler...done!
+Creating init process...
+done!
 Starting init process...
+[Schedulah]Chosing next process...
+[Schedulah]Loading high priority process with PID 
 1

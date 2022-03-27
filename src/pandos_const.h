@@ -53,11 +53,11 @@
 
 /* Status register constants */
 #define ALLOFF 0x00000000
-#define USERPON 0x00000008
-#define IEPON 0x00000004
-#define IECON 0x00000001
-#define IMON 0x0000FF00
-#define TEBITON 0x08000000
+#define USERPON 0x00000008 /* User mode P */
+#define IEPON 0x00000004 /* Interrupt Enable P On*/
+#define IECON 0x00000001 /* Interrupt Enable C On*/
+#define IMON 0x0000FF00 /* Enable interrupt mask */
+#define TEBITON 0x08000000 /* Enable local timer */
 #define DISABLEINTS 0xFFFFFFFE
 
 /* Cause register constants */

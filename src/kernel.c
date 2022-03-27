@@ -1,10 +1,9 @@
 #include "asl.h"
 #include "listx.h"
-#include "pandos_const.h"
-#include "pandos_types.h"
 #include "pcb.h"
 #include "scheduler.h"
 #include "term_utils.h"
+#include <umps3/umps/libumps.h>
 
 #define DEV_NUM 10 /* TODO */
 
@@ -19,7 +18,6 @@ static passupvector_t *passup_vec;
 inline static void create_init_proc(pcb_t *proc);
 inline static void init_passup_vector(void);
 inline static void init_data_structures(void);
-inline static void init_interval_timer(void);
 inline static void init_devices(void);
 
 static void uTLB_RefillHandler(void);
@@ -37,19 +35,20 @@ int main(int argc, char *argv[])
   init_data_structures();
   print1("done!\n");
 
-  print1("Init interval timer...");
-  init_interval_timer();
+  print1("Loading interval timer...");
+  LDIT(INTERVALTMR);
   print1("done!\n");
 
   print1("Init devices...");
   init_devices();
   print1("done!\n");
 
-  print1("Init scheduler...");
+  print1("Creating init process...\n");
+  create_init_proc(act_proc);
   print1("done!\n");
 
   print1("Starting init process...\n");
-  // scheduler_next(act_proc, procs_count, sb_procs, &h_queue, &l_queue);
+  scheduler_next(act_proc, procs_count, sb_procs, &h_queue, &l_queue);
 
   return 0;
 }
@@ -81,19 +80,20 @@ void init_data_structures(void)
     dev_sem[i++] = 0;
 }
 
-void init_interval_timer(void) { /* TODO */ }
 
 void create_init_proc(pcb_t *proc)
 {
-  proc = alloc_pcb();
-  /* TODO: capire come diavolo:
-   * 1. si abilitano gli interrupt
-   * 2. si mette in kernel mode
-   */
+  if ((proc = alloc_pcb()) == NULL) {
+    print1_err("Impossible to allocate init process PCB");
+    PANIC();
+  }
+
+  proc->p_s.status = ALLOFF | IEPON | IMON | TEBITON;
   proc->p_s.pc_epc = (memaddr)test; /* TODO assicurarsi che pc_epc = s_pc */
   RAMTOP(proc->p_s.reg_sp);
   RAMTOP(proc->p_s.reg_t9);
   proc->p_prio = PROCESS_PRIO_HIGH;
+  proc->p_pid = 1; // TODO
 
   procs_count++;
   insert_proc_q(&h_queue, proc);

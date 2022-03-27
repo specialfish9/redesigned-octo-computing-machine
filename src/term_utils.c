@@ -126,6 +126,13 @@ void dbg_var(const char *name, const int var)
   print1("\n");
 }
 
+void print1_int(const int n) {
+  char b[10];
+  _itoa(n, b);
+  print1(b);
+  print1("\n");
+}
+
 /* Funzioni per la manipolazione di stringhe */
 
 inline static void _swap(char *x, char *y)

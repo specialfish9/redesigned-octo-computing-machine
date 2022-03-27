@@ -19,6 +19,7 @@ extern void print1(const char *);
  * con un messaggio di PANIC */
 extern void print1_err(const char *);
 
+extern void print1_int(const int); 
 /* Utility per il debug, stampa il nome di una variabile di tipo int, seguita
  * dal suo valore.*/
 extern void dbg_var(const char *, const int);
