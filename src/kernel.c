@@ -1,10 +1,10 @@
 #include "asl.h"
 #include "listx.h"
-#include "pandos_types.h"
 #include "pandos_const.h"
+#include "pandos_types.h"
 #include "pcb.h"
-#include "term_utils.h"
 #include "scheduler.h"
+#include "term_utils.h"
 
 #define DEV_NUM 10 /* TODO */
 
@@ -12,7 +12,8 @@ static size_tt procs_count;
 static size_tt sb_procs;
 static pcb_t *act_proc;
 static int dev_sem[DEV_NUM];
-static struct list_head ready_queue;
+static struct list_head l_queue;
+static struct list_head h_queue;
 static passupvector_t *passup_vec;
 
 inline static void create_init_proc(pcb_t *proc);
@@ -20,7 +21,6 @@ inline static void init_passup_vector(void);
 inline static void init_data_structures(void);
 inline static void init_interval_timer(void);
 inline static void init_devices(void);
-inline static void init_scheduler(void);
 
 static void uTLB_RefillHandler(void);
 static void exception_handler(void);
@@ -45,13 +45,11 @@ int main(int argc, char *argv[])
   init_devices();
   print1("done!\n");
 
-  print1("?");
   print1("Init scheduler...");
-  init_scheduler();
   print1("done!\n");
-  
+
   print1("Starting init process...\n");
-  scheduler_next(act_proc, procs_count, sb_procs);
+  scheduler_next(act_proc, procs_count, sb_procs, &h_queue, &l_queue);
 
   return 0;
 }
@@ -75,18 +73,15 @@ void init_data_structures(void)
   procs_count = 0;
   sb_procs = 0;
   act_proc = NULL;
-  mk_empty_proc_q(&ready_queue);
+  mk_empty_proc_q(&l_queue);
+  mk_empty_proc_q(&h_queue);
 
   i = 0;
   while (i < DEV_NUM)
     dev_sem[i++] = 0;
 }
 
-void init_interval_timer(void)
-{
-  /* TODO */
-
-}
+void init_interval_timer(void) { /* TODO */ }
 
 void create_init_proc(pcb_t *proc)
 {
@@ -101,22 +96,16 @@ void create_init_proc(pcb_t *proc)
   proc->p_prio = PROCESS_PRIO_HIGH;
 
   procs_count++;
-  insert_proc_q(&ready_queue, proc);
+  insert_proc_q(&h_queue, proc);
 }
 
 void init_devices(void)
 {
-  size_tt i= 0;
+  size_tt i = 0;
 
   while (i++ < DEV_NUM) {
     dev_sem[i] = 0;
   }
-}
-
-void init_scheduler(void)
-{
-  print1("0");
-  scheduler_init(&ready_queue);
 }
 
 void uTLB_RefillHandler(void)
