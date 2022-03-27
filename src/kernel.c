@@ -49,7 +49,7 @@ int main(int argc, char *argv[])
   print1("done!\n");
 
   print1("Starting init process...\n");
-  scheduler_next(act_proc, procs_count, sb_procs, &h_queue, &l_queue);
+  // scheduler_next(act_proc, procs_count, sb_procs, &h_queue, &l_queue);
 
   return 0;
 }
