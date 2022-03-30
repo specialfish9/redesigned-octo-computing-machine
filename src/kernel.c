@@ -25,7 +25,7 @@ static void exception_handler(void);
 
 extern void test();
 
-int main(int argc, char *argv[])
+int main(void)
 {
   print1("Init passup vector...");
   init_passup_vector();
@@ -108,10 +108,17 @@ void init_devices(void)
   }
 }
 
-void uTLB_RefillHandler(void)
-{ /* place holder */
-}
-
 void exception_handler(void)
 { /* place holder */
+}
+/* TLB-Refill Handler */
+/* One can place debug calls here, but not calls to print */
+void uTLB_RefillHandler()
+{
+
+  setENTRYHI(0x80000000);
+  setENTRYLO(0x00000000);
+  TLBWR();
+
+  LDST((state_t *)0x0FFFF000);
 }

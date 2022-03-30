@@ -2,7 +2,7 @@
 #include "listx.h"
 #include "pcb.h"
 #include "term_utils.h"
-#include <umps3/umps/const.h>
+#include "pandos_const.h"
 #include <umps3/umps/libumps.h>
 
 #define LOG(s) print1("[Schedulah]" s)
@@ -24,9 +24,9 @@ void scheduler_next(pcb_t *current, const size_tt proc_count,
   } else if (empty_proc_q(l_queue)) {
     /* Scegli un processo a priorità bassa */
     current = remove_proc_q(l_queue);
-    /* TODO load 5 millisec on the plt */
     LOG("Loading low priority process with PID ");
     print1_int(current->p_pid);
+    setTIMER(TIMESLICE);
     LDST(&current->p_s);
 
   } else if (!proc_count) {
