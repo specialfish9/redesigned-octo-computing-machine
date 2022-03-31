@@ -2,6 +2,6 @@
 #define KLOG_H
 
 void kprint(char*);
-void kprint_hex(char*);
+void kprint_hex(unsigned int);
 #endif
 
