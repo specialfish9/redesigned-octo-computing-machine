@@ -5,6 +5,28 @@
 #include "pandos_const.h"
 #include <umps3/umps/libumps.h>
 
+//static int create_process(state_t *statep, int prio, support_t * suppportp);
+
+//static void termniate_process(int pid);
+
+static void passeren(int *semaddr);
+
+static void passeren(int *semaddr);
+
+//static void verhogen(int *semaddr);
+
+//static int do_io(int *cmd_addr, int cmd_val);
+
+//static int get_cpu_time(void);
+
+//static int wait_for_clock(void);
+
+//static support_t* get_support_data(void);
+
+//static int get_proc_id(int parent);
+
+//static int yield(void);
+
 static void passeren(int *semaddr){
     /*https://it.wikipedia.org/wiki/Semaforo_(informatica)#:~:text=Esempi%20di%20uso%20di%20semafori%5Bmodifica%20%7C%20modifica%20wikitesto%5D*/
     (*semaddr)--;
@@ -20,10 +42,11 @@ static void verhogen(int *semaddr){
 
 static int wait_for_clock(){
     //passeren su semaforo di interval timer + blocca processo invocante fino a prossimo tick del dispositivo
+  return 0;
 }
 
 
-void unsigned int SYSCALL(unsigned int number, unsigned int arg1, unsigned int arg2, unsigned int arg3)
+void handle_syscall(unsigned int number, unsigned int arg1, unsigned int arg2, unsigned int arg3)
 {
     switch (number){
         case PASSEREN:

@@ -118,6 +118,16 @@ void exception_handler(void)
 { /* place holder */
   print1("EXCEPTION HANDLER FIRED");
   kprint("exc handl");
+  /*
+Per distinguere effettivamente di che eccezione si
+tratta bisogna leggere il registro Cause.ExcCode:
+- 0 = Interrupt
+- 1-3 = TLB Trap
+- 4-7,9-12 = Program Trap
+- 8 = Syscall
+
+per TLB trap e PROGRAM trap passa il controllo a support struct del processo o ammaizzalo
+   */
 }
 /* TLB-Refill Handler */
 /* One can place debug calls here, but not calls to print */
