@@ -17,6 +17,7 @@
 
 #include "pandos_const.h"
 #include "pandos_types.h"
+#include "term_utils.h"
 #include <umps3/umps/libumps.h>
 
 typedef unsigned int devregtr;
@@ -104,7 +105,7 @@ extern void p5mm();
 /* a procedure to print on terminal 0 */
 void print(char *msg)
 {
-
+  
   char *s = msg;
   devregtr *base = (devregtr *)(TERM0ADDR);
   devregtr *command = base + 3;
@@ -129,7 +130,7 @@ void print(char *msg)
 /*                                                                   */
 void test()
 {
-  print("Starting test...\n");
+  print1("TEST INIT\n"); /* TODO */
   SYSCALL(VERHOGEN, (int)&sem_testsem, 0, 0); /* V(sem_testsem)   */
 
   print("p1 v(sem_testsem)\n");

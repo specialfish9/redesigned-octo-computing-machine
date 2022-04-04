@@ -2,9 +2,8 @@ Init passup vector...done!
 Init data structures...done!
 Loading interval timer...done!
 Init devices...done!
-Creating init process...
-done!
+Creating init process...done!
 Starting init process...
-[Schedulah]Chosing next process...
-[Schedulah]Loading high priority process with PID 
-1
+[Scheduler]Chosing next process...
+[Scheduler]Loading low priority process with PID 1
+TEST INITEXCEPTION HANDLER FIREDEXCEPTION HANDLER FIREDEXCEPTION HANDLER FIREDkernel panic()
