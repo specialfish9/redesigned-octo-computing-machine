@@ -1,10 +1,15 @@
 #include "asl.h"
 #include "klog.h"
+#include "listx.h"
+#include "pandos_const.h"
+#include "pandos_types.h"
 #include "pcb.h"
 #include "scheduler.h"
+#include "exceptions.h"
 #include "term_utils.h"
 #include <umps3/umps/cp0.h>
 #include <umps3/umps/libumps.h>
+#include <umps3/umps/types.h>
 
 #define DEV_NUM 10 /* TODO */
 
@@ -140,4 +145,44 @@ void uTLB_RefillHandler()
   TLBWR();
 
   LDST((state_t *)0x0FFFF000);
+}
+
+void handle_syscall(int number, void *arg1, void *arg2, void *arg3)
+{
+  switch (number) {
+    case CREATEPROCESS: {
+        int status, prio;
+        pcb_t *new_proc;
+        support_t *support;
+    
+        prio = (int) arg2;
+        status = create_process((state_t*) arg1, prio, support);
+
+        if (status > 0) {
+          new_proc = container_of(support, pcb_t, p_supportStruct);
+          if(prio == PROCESS_PRIO_HIGH)  {
+            insert_proc_q(&h_queue, new_proc); 
+          } else if (prio == PROCESS_PRIO_LOW) {
+            insert_proc_q(&l_queue, new_proc);
+          }
+          insert_child(act_proc, new_proc); 
+          procs_count++; 
+        } else { /* TODO */ } 
+        break;
+    }
+    case PASSEREN:{
+      // passeren(arg1); //forse va un puntatore
+      break;
+    }
+    case VERHOGEN: {
+      // verhogen(arg1); //forse va un puntatore
+      break;
+    }
+    case CLOCKWAIT: {
+      // int tmp = wait_for_clock();
+      break;
+    }
+    default:
+      break;
+    }
 }
