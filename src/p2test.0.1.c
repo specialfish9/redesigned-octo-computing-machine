@@ -105,7 +105,7 @@ extern void p5mm();
 /* a procedure to print on terminal 0 */
 void print(char *msg)
 {
-  
+
   char *s = msg;
   devregtr *base = (devregtr *)(TERM0ADDR);
   devregtr *command = base + 3;
@@ -123,14 +123,13 @@ void print(char *msg)
   SYSCALL(VERHOGEN, (int)&sem_term_mut, 0, 0); /* V(sem_term_mut) */
 }
 
-
 /*********************************************************************/
 /*                                                                   */
 /*                 p1 -- the root process                            */
 /*                                                                   */
 void test()
 {
-  print1("TEST INIT\n"); /* TODO */
+  print1("TEST INIT\n");                      /* TODO */
   SYSCALL(VERHOGEN, (int)&sem_testsem, 0, 0); /* V(sem_testsem)   */
 
   print("p1 v(sem_testsem)\n");

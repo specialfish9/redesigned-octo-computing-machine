@@ -6,8 +6,8 @@
 
 #include "pcb.h"
 #include "listx.h"
-#include "term_utils.h"
 #include "pandos_types.h"
+#include "term_utils.h"
 
 static pcb_t pcb_free_table[MAXPROC];
 static struct list_head pcb_free_h;
