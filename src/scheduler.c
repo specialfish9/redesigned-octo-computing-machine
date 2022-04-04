@@ -1,9 +1,9 @@
 #include "scheduler.h"
 #include "klog.h"
 #include "listx.h"
+#include "pandos_const.h"
 #include "pcb.h"
 #include "term_utils.h"
-#include "pandos_const.h"
 #include <umps3/umps/libumps.h>
 
 #define LOG(s) print1("[Scheduler]" s)
@@ -12,7 +12,7 @@ void scheduler_next(pcb_t *current, const size_tt proc_count,
                     const size_tt sb_count, struct list_head *h_queue,
                     struct list_head *l_queue)
 {
-  
+
   LOG("Chosing next process...\n");
 
   if (empty_proc_q(h_queue) == FALSE) {

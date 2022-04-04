@@ -126,7 +126,8 @@ void dbg_var(const char *name, const int var)
   print1("\n");
 }
 
-void print1_int(const int n) {
+void print1_int(const int n)
+{
   char b[10];
   _itoa(n, b);
   print1(b);

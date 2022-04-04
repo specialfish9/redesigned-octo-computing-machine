@@ -25,7 +25,7 @@ extern int insert_blocked(int *semAdd, pcb_t *p);
  * descrittori liberi*/
 extern pcb_t *remove_blocked(int *semAdd);
 
- /* Ritorna il primo PCB dalla coda dei processi bloccati (s_procq) associata al
+/* Ritorna il primo PCB dalla coda dei processi bloccati (s_procq) associata al
  * SEMD della ASL con chiave semAdd. Se tale descrittore non esiste nella ASL,
  * restituisce NULL. Altrimenti, restituisce l’elemento rimosso. Se la coda dei
  * processi bloccati per il semaforo diventa vuota, rimuove il descrittore

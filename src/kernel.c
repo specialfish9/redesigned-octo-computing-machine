@@ -1,10 +1,10 @@
 #include "asl.h"
+#include "klog.h"
 #include "pcb.h"
 #include "scheduler.h"
 #include "term_utils.h"
-#include "klog.h"
-#include <umps3/umps/libumps.h>
 #include <umps3/umps/cp0.h>
+#include <umps3/umps/libumps.h>
 
 #define DEV_NUM 10 /* TODO */
 
@@ -42,7 +42,6 @@ int main(void)
   LDIT(100000); /* 100 millisecs */
   print1("done!\n");
   kprint("IT load done");
-
 
   print1("Init devices...");
   init_devices();
@@ -95,7 +94,7 @@ void create_init_proc(void)
     PANIC();
   }
 
-  proc->p_s.pc_epc = proc->p_s.reg_t9 = (memaddr)test; 
+  proc->p_s.pc_epc = proc->p_s.reg_t9 = (memaddr)test;
   proc->p_s.status |= STATUS_TE | STATUS_IM_MASK | STATUS_KUc | STATUS_IEc;
   RAMTOP(proc->p_s.reg_sp);
   proc->p_prio = PROCESS_PRIO_LOW;
@@ -126,7 +125,8 @@ tratta bisogna leggere il registro Cause.ExcCode:
 - 4-7,9-12 = Program Trap
 - 8 = Syscall
 
-per TLB trap e PROGRAM trap passa il controllo a support struct del processo o ammaizzalo
+per TLB trap e PROGRAM trap passa il controllo a support struct del processo o
+ammaizzalo
    */
 }
 /* TLB-Refill Handler */
@@ -141,4 +141,3 @@ void uTLB_RefillHandler()
 
   LDST((state_t *)0x0FFFF000);
 }
-
