@@ -6,6 +6,7 @@
 
 #include "pcb.h"
 #include "listx.h"
+#include "term_utils.h"
 #include "pandos_types.h"
 
 static pcb_t pcb_free_table[MAXPROC];
@@ -31,10 +32,11 @@ void free_pcb(pcb_t *p) { list_add(&p->p_list, &pcb_free_h); }
  * rimosso.*/
 pcb_t *alloc_pcb(void)
 {
-  /*Controllo se pcbFree_h è vuota*/
+  /* Controllo se pcbFree_h è vuota */
   if (list_empty(&pcb_free_h))
     return NULL;
-  /*Se non è vuota copio i suoi elementi e la svuoto */
+
+  /* Se non è vuota copio i suoi elementi e la svuoto */
   pcb_t *pcb = container_of(pcb_free_h.next, pcb_t, p_list);
   list_del(pcb_free_h.next);
 
@@ -54,9 +56,10 @@ pcb_t *alloc_pcb(void)
     pcb->p_s.gpr[i] = 0;
   pcb->p_s.hi = 0;
   pcb->p_s.lo = 0;
-
+  pcb->p_supportStruct = NULL;
   pcb->p_time = 0;
   pcb->p_semAdd = NULL;
+
   return pcb;
 }
 

@@ -7,7 +7,7 @@
 
 #include "pandos_const.h"
 #include "pandos_types.h"
-#include <umps/libumps.h>
+#include <umps3/umps/libumps.h>
 
 #define TRANSMITTED 5
 #define ACK 1
@@ -92,7 +92,7 @@ static unsigned int termprint(const char *str, const unsigned int term)
   return (!error);
 }
 
-void print(const char *strp)
+void print1(const char *strp)
 {
   const char *tstrp = strp;
   while ((*mp++ = *strp++) != '\0')
@@ -101,7 +101,7 @@ void print(const char *strp)
   termprint(tstrp, 0);
 }
 
-void print_err(const char *strp)
+void print1_err(const char *strp)
 {
   char *ep = errbuf;
   const char *tstrp = strp;
@@ -122,8 +122,15 @@ void dbg_var(const char *name, const int var)
   _itoa(var, var_str);
   _strcat(name, c, res);
   _strcat(res, var_str, res);
-  print(res);
-  print("\n");
+  print1(res);
+  print1("\n");
+}
+
+void print1_int(const int n) {
+  char b[10];
+  _itoa(n, b);
+  print1(b);
+  print1("\n");
 }
 
 /* Funzioni per la manipolazione di stringhe */
