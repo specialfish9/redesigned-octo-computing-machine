@@ -11,9 +11,7 @@
 
 static void passeren(int *semaddr);
 
-static void passeren(int *semaddr);
-
-// static void verhogen(int *semaddr);
+static void verhogen(int *semaddr);
 
 // static int do_io(int *cmd_addr, int cmd_val);
 
