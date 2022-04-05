@@ -9,8 +9,8 @@
   @param prio: priorità da assegnare al processo.
   @param supportp: puntatore alla struttura supporto del processo.
   @return Il PID de processo se la syscall ha successo -1 altrimenti
- */ 
-extern int create_process(state_t *statep, int prio, support_t * suppportp);
+ */
+extern int create_process(state_t *statep, int prio, support_t *suppportp);
 
 // extern void termniate_process(int pid);
 

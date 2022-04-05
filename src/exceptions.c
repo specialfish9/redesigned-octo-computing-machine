@@ -1,28 +1,20 @@
 #include "exceptions.h"
-#include "listx.h"
-#include "pandos_const.h"
 #include "pandos_types.h"
-#include "pcb.h"
-#include "term_utils.h"
-#include <umps3/umps/libumps.h>
-#include <umps3/umps/types.h>
+#include "scheduler.h"
 
-static unsigned int pid_count = 1;
+extern pcb_t *act_proc;
 
-int create_process(state_t *statep, int prio, support_t *supportp) 
+int create_process(state_t *statep, int prio, support_t *supportp)
 {
-  pcb_t *result;
+  const pcb_t *const new_proc = mk_proc(statep, prio, supportp);
+  if (new_proc == NULL)
+    return -1;
 
-  result = alloc_pcb();
-  result->p_supportStruct = supportp;
-  result->p_prio = prio;
-  result->p_s = *statep;
-  result->p_pid = ++pid_count;
-
-  return result->p_pid;
+  act_proc->p_s.reg_v0 = new_proc->p_pid;
+  return new_proc->p_pid;
 }
 
- void passeren(int *semaddr)
+void passeren(int *semaddr)
 {
   /*https://it.wikipedia.org/wiki/Semaforo_(informatica)#:~:text=Esempi%20di%20uso%20di%20semafori%5Bmodifica%20%7C%20modifica%20wikitesto%5D*/
   (*semaddr)--;
@@ -31,16 +23,15 @@ int create_process(state_t *statep, int prio, support_t *supportp)
   }
 }
 
- void verhogen(int *semaddr)
+void verhogen(int *semaddr)
 {
   (*semaddr)++;
   // rimuovo il primo processo e lo rendo attivo
 }
 
- int wait_for_clock()
+int wait_for_clock()
 {
   // passeren su semaforo di interval timer + blocca processo invocante fino a
   // prossimo tick del dispositivo
   return 0;
 }
-

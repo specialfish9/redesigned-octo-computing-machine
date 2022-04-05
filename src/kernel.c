@@ -1,11 +1,11 @@
 #include "asl.h"
+#include "exceptions.h"
 #include "klog.h"
 #include "listx.h"
 #include "pandos_const.h"
 #include "pandos_types.h"
 #include "pcb.h"
 #include "scheduler.h"
-#include "exceptions.h"
 #include "term_utils.h"
 #include <umps3/umps/cp0.h>
 #include <umps3/umps/libumps.h>
@@ -13,21 +13,15 @@
 
 #define DEV_NUM 10 /* TODO */
 
-static size_tt procs_count;
-static size_tt sb_procs;
-static pcb_t *act_proc;
 static int dev_sem[DEV_NUM];
-static struct list_head l_queue;
-static struct list_head h_queue;
 static passupvector_t *passup_vec;
 
-inline static void create_init_proc(void);
 inline static void init_passup_vector(void);
 inline static void init_data_structures(void);
 inline static void init_devices(void);
 
-static void uTLB_RefillHandler(void);
-static void exception_handler(void);
+inline static void uTLB_RefillHandler(void);
+inline static void exception_handler(void);
 
 extern void test();
 
@@ -53,12 +47,12 @@ int main(void)
   print1("done!\n");
 
   print1("Creating init process...");
-  create_init_proc();
+  create_init_proc((memaddr)test);
   print1("done!\n");
   kprint("Init proc done");
 
   print1("Starting init process...\n");
-  scheduler_next(act_proc, procs_count, sb_procs, &h_queue, &l_queue);
+  scheduler_next();
 
   return 0;
 }
@@ -79,34 +73,11 @@ void init_data_structures(void)
   init_pcbs();
   init_asl();
 
-  procs_count = 0;
-  sb_procs = 0;
-  act_proc = NULL;
-  mk_empty_proc_q(&l_queue);
-  mk_empty_proc_q(&h_queue);
+  init_scheduler();
 
   i = 0;
   while (i < DEV_NUM)
     dev_sem[i++] = 0;
-}
-
-void create_init_proc(void)
-{
-  pcb_t *proc;
-
-  if ((proc = alloc_pcb()) == NULL) {
-    kprint("Impossible to allocate init process PCB");
-    PANIC();
-  }
-
-  proc->p_s.pc_epc = proc->p_s.reg_t9 = (memaddr)test;
-  proc->p_s.status |= STATUS_TE | STATUS_IM_MASK | STATUS_KUc | STATUS_IEc;
-  RAMTOP(proc->p_s.reg_sp);
-  proc->p_prio = PROCESS_PRIO_LOW;
-  proc->p_pid = 1; // TODO
-
-  procs_count++;
-  insert_proc_q(&l_queue, proc);
 }
 
 void init_devices(void)
@@ -132,6 +103,8 @@ tratta bisogna leggere il registro Cause.ExcCode:
 
 per TLB trap e PROGRAM trap passa il controllo a support struct del processo o
 ammaizzalo
+Any attempt to request one of these services
+while in user-mode should trigger a Program Trap exception respons
    */
 }
 /* TLB-Refill Handler */
@@ -147,42 +120,37 @@ void uTLB_RefillHandler()
   LDST((state_t *)0x0FFFF000);
 }
 
-void handle_syscall(int number, void *arg1, void *arg2, void *arg3)
+void handle_syscall(int number, unsigned int arg1, unsigned int arg2,
+                    unsigned int arg3)
 {
-  switch (number) {
-    case CREATEPROCESS: {
-        int status, prio;
-        pcb_t *new_proc;
-        support_t *support;
-    
-        prio = (int) arg2;
-        status = create_process((state_t*) arg1, prio, support);
 
-        if (status > 0) {
-          new_proc = container_of(support, pcb_t, p_supportStruct);
-          if(prio == PROCESS_PRIO_HIGH)  {
-            insert_proc_q(&h_queue, new_proc); 
-          } else if (prio == PROCESS_PRIO_LOW) {
-            insert_proc_q(&l_queue, new_proc);
-          }
-          insert_child(act_proc, new_proc); 
-          procs_count++; 
-        } else { /* TODO */ } 
-        break;
+  switch (number) {
+  case CREATEPROCESS: {
+    int status;
+    status = create_process((state_t *)arg1, (int)arg2, (support_t *)arg3);
+    /* Errore */
+    if (status < 0) {
+    } else {
+      /* Successo */
     }
-    case PASSEREN:{
-      // passeren(arg1); //forse va un puntatore
-      break;
-    }
-    case VERHOGEN: {
-      // verhogen(arg1); //forse va un puntatore
-      break;
-    }
-    case CLOCKWAIT: {
-      // int tmp = wait_for_clock();
-      break;
-    }
-    default:
-      break;
-    }
+    break;
+  }
+  case PASSEREN: {
+    // passeren(arg1); //forse va un puntatore
+    break;
+  }
+  case VERHOGEN: {
+    // verhogen(arg1); //forse va un puntatore
+    break;
+  }
+  case CLOCKWAIT: {
+    // int tmp = wait_for_clock();
+    break;
+  }
+  default:
+    /* TODO Any
+attempt to request a non-existent Nucleus service should trigger a Program
+Trap exception too*/
+    break;
+  }
 }
