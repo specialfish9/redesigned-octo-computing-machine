@@ -10,7 +10,6 @@ int create_process(state_t *statep, int prio, support_t *supportp)
   if (new_proc == NULL)
     return -1;
 
-  act_proc->p_s.reg_v0 = new_proc->p_pid;
   return new_proc->p_pid;
 }
 

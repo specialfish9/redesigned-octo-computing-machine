@@ -16,7 +16,7 @@ static struct list_head l_queue;
 static struct list_head h_queue;
 static unsigned int pid_count = 1;
 
-static void memcpy(void*, void*, size_tt);
+static void memcpy(void *, void *, size_tt);
 
 inline void init_scheduler(void)
 {
@@ -118,7 +118,7 @@ inline void memcpy(void *dest, void *src, size_tt n)
   size_tt i;
   char *csrc = (char *)src;
   char *cdest = (char *)dest;
-  
+
   for (i = 0; i < n; i++)
-      cdest[i] = csrc[i];
+    cdest[i] = csrc[i];
 }

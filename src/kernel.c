@@ -7,6 +7,7 @@
 #include "pcb.h"
 #include "scheduler.h"
 #include "term_utils.h"
+#include <umps3/umps/const.h>
 #include <umps3/umps/cp0.h>
 #include <umps3/umps/libumps.h>
 #include <umps3/umps/types.h>
@@ -16,10 +17,13 @@
 static int dev_sem[DEV_NUM];
 static passupvector_t *passup_vec;
 
+/* FUNZIONI DI INIZIALIZZAZIONE */
 inline static void init_passup_vector(void);
 inline static void init_data_structures(void);
 inline static void init_devices(void);
 
+/* HANDLERS */
+inline static void handle_syscall(state_t *const saved_state);
 inline static void uTLB_RefillHandler(void);
 inline static void exception_handler(void);
 
@@ -30,17 +34,17 @@ int main(void)
   print1("Init passup vector...");
   init_passup_vector();
   print1("done!\n");
-  kprint("Init pv done");
+  kprint("Init pv done|");
 
   print1("Init data structures...");
   init_data_structures();
   print1("done!\n");
-  kprint("Init data str done");
+  kprint("Init data str done|");
 
   print1("Loading interval timer...");
   LDIT(100000); /* 100 millisecs */
   print1("done!\n");
-  kprint("IT load done");
+  kprint("IT load done|");
 
   print1("Init devices...");
   init_devices();
@@ -49,7 +53,7 @@ int main(void)
   print1("Creating init process...");
   create_init_proc((memaddr)test);
   print1("done!\n");
-  kprint("Init proc done");
+  kprint("Init proc done|");
 
   print1("Starting init process...\n");
   scheduler_next();
@@ -90,67 +94,92 @@ void init_devices(void)
 }
 
 void exception_handler(void)
-{ /* place holder */
-  print1("EXCEPTION HANDLER FIRED");
-  kprint("exc handl");
+{
+  unsigned int cause, KUp;
+  state_t *state;
+
+  cause = CAUSE_GET_EXCCODE(getCAUSE());
+  print1("EXCEPTION HANDLER FIRED\n");
+  kprint("exc handl called with code: ");
+  kprint_hex(cause);
+  kprint("|");
   /*
-Per distinguere effettivamente di che eccezione si
-tratta bisogna leggere il registro Cause.ExcCode:
-- 0 = Interrupt
-- 1-3 = TLB Trap
-- 4-7,9-12 = Program Trap
-- 8 = Syscall
 
 per TLB trap e PROGRAM trap passa il controllo a support struct del processo o
 ammaizzalo
-Any attempt to request one of these services
-while in user-mode should trigger a Program Trap exception respons
    */
+  if (cause == EXC_INT) {
+    /* Interrupts */
+    /* TODO */
+  } else if (cause == EXC_MOD || cause == EXC_TLBL || cause == EXC_TLBS) {
+    /* TLB trap */
+    /* TODO */
+    //} else if (cause >= 4 && cause <= 7) || (cause >= 9 && cause <= 12)) {
+  } else if (cause == EXC_ADEL || cause == EXC_ADES || cause == EXC_IBE ||
+             cause == EXC_DBE || cause == EXC_BP || cause == EXC_RI ||
+             cause == EXC_CPU || cause == EXC_OV) {
+    /* Program trap */
+    /* TODO */
+  } else if (cause == EXC_SYS) {
+    /* Syscall */
+    KUp = ((getSTATUS() & STATUS_KUp) >> STATUS_KUp_BIT);
+    state = (state_t *)BIOSDATAPAGE;
+    /* Se il processo e' in kernel-mode */
+    if (KUp == 0 && ((int)state->reg_a0) < 0) {
+      handle_syscall(state);
+      LDST(state); /* TODO */
+    }
+    /*else progran trap TODO */
+  }
 }
+
 /* TLB-Refill Handler */
-/* One can place debug calls here, but not calls to print */
-void uTLB_RefillHandler()
+void uTLB_RefillHandler(void)
 {
-  print1("TLB refill called");
   kprint("TLB refill called");
   setENTRYHI(0x80000000);
   setENTRYLO(0x00000000);
   TLBWR();
 
-  LDST((state_t *)0x0FFFF000);
+  LDST((state_t *)BIOSDATAPAGE);
 }
 
-void handle_syscall(int number, unsigned int arg1, unsigned int arg2,
-                    unsigned int arg3)
+void handle_syscall(state_t *const saved_state)
 {
 
+  int number;
+  unsigned int arg1, arg2, arg3;
+
+  number = (int)saved_state->reg_a0;
+  arg1 = saved_state->reg_a1;
+  arg2 = saved_state->reg_a2;
+  arg3 = saved_state->reg_a3;
+
   switch (number) {
-  case CREATEPROCESS: {
-    int status;
-    status = create_process((state_t *)arg1, (int)arg2, (support_t *)arg3);
-    /* Errore */
-    if (status < 0) {
-    } else {
-      /* Successo */
+    case CREATEPROCESS: {
+      int status;
+
+      status = create_process((state_t *)arg1, (int)arg2, (support_t *)arg3);
+      saved_state->reg_v0 = status;
+      break;
     }
-    break;
-  }
-  case PASSEREN: {
-    // passeren(arg1); //forse va un puntatore
-    break;
-  }
-  case VERHOGEN: {
-    // verhogen(arg1); //forse va un puntatore
-    break;
-  }
-  case CLOCKWAIT: {
-    // int tmp = wait_for_clock();
-    break;
-  }
-  default:
-    /* TODO Any
-attempt to request a non-existent Nucleus service should trigger a Program
-Trap exception too*/
-    break;
+    case PASSEREN: {
+      // passeren(arg1); //forse va un puntatore
+      break;
+    }
+    case VERHOGEN: {
+      kprint("veroghen");
+      // verhogen(arg1); //forse va un puntatore
+      break;
+    }
+    case CLOCKWAIT: {
+      // int tmp = wait_for_clock();
+      break;
+    }
+    default:
+      /* TODO Any
+  attempt to request a non-existent Nucleus service should trigger a Program
+  Trap exception too*/
+      break;
   }
 }
