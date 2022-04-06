@@ -27,17 +27,24 @@ static void verhogen(int *semaddr);
 
 static void passeren(int *semaddr)
 {
-  /*https://it.wikipedia.org/wiki/Semaforo_(informatica)#:~:text=Esempi%20di%20uso%20di%20semafori%5Bmodifica%20%7C%20modifica%20wikitesto%5D*/
   (*semaddr)--;
   if ((*semaddr) > 0) {
-    // metto un processo in coda dagli attivi
+    pcb_t *tmp; //!!! NON SO CHE PROCESSO INSERIRE QUINDI PER ADESSO LASCIO QUESTO !!!
+    tmp->p_semAdd = semaddr;
+    insert_blocked(semaddr, tmp);   //inserisco il processo sul semaforo indicato come parametro
+    tmp = NULL;
   }
 }
 
 static void verhogen(int *semaddr)
 {
   (*semaddr)++;
-  // rimuovo il primo processo e lo rendo attivo
+  pcb_t *tmp = remove_blocked(semaddr);   //rimuovo un processo bloccato dal semaforo
+  if(tmp != NULL){
+    //il processo rimosso viene aggiunto alla coda dei processi attivi
+    tmp->p_semAdd = NULL;
+    //insert_proc_q(/*LISTA DEGLI ATTIVI*/, p);  !!!!!!!!!!!!!!!!!!!!
+  } 
 }
 
 static int wait_for_clock()
@@ -52,10 +59,10 @@ void handle_syscall(unsigned int number, unsigned int arg1, unsigned int arg2,
 {
   switch (number) {
   case PASSEREN:
-    // passeren(arg1); //forse va un puntatore
+    passeren(arg1);
     break;
   case VERHOGEN:
-    // verhogen(arg1); //forse va un puntatore
+    verhogen(arg1);
     break;
   case CLOCKWAIT:
     // int tmp = wait_for_clock();
