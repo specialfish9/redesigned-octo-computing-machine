@@ -1,8 +1,8 @@
 #ifndef SCHEDULER_H
 #define SCHEDULER_H
 
-#include "pandos_types.h"
 #include "listx.h"
+#include "pandos_types.h"
 
 extern pcb_t *act_proc;
 extern struct list_head l_queue;
@@ -21,7 +21,7 @@ extern void scheduler_next(void);
  * @return il pcb del processo creato o NULL se non e' possibile crearlo */
 extern pcb_t *mk_proc(state_t *statep, int prio, support_t *supportp);
 
-extern void kill_proc(pcb_t*p);
+extern void kill_proc(pcb_t *p);
 extern void memcpy(void *dest, void *src, size_tt n);
 
 #endif

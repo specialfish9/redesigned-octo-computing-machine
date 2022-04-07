@@ -107,7 +107,8 @@ inline pcb_t *mk_proc(state_t *statep, int prio, support_t *supportp)
   return result;
 }
 
-inline void kill_proc(pcb_t*p) {
+inline void kill_proc(pcb_t *p)
+{
   procs_count--;
   if (p->p_prio == PROCESS_PRIO_HIGH) {
     out_proc_q(&h_queue, p);
