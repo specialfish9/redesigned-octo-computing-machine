@@ -2,10 +2,11 @@
 #define SCHEDULER_H
 
 #include "pandos_types.h"
+#include "listx.h"
 
 extern pcb_t *act_proc;
-extern list_head l_queue;
-extern list_head h_queue;
+extern struct list_head l_queue;
+extern struct list_head h_queue;
 extern void init_scheduler(void);
 
 extern void create_init_proc(const memaddr entry_point);

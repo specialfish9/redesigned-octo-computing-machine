@@ -1,6 +1,5 @@
 #include "scheduler.h"
 #include "klog.h"
-#include "listx.h"
 #include "pcb.h"
 #include "term_utils.h"
 #include <umps3/umps/cp0.h>
@@ -15,8 +14,6 @@ static size_tt sb_procs;
 struct list_head l_queue;
 struct list_head h_queue;
 static unsigned int pid_count = 1;
-
-static void memcpy(void *, void *, size_tt);
 
 inline void init_scheduler(void)
 {

@@ -11,6 +11,7 @@
 #include <umps3/umps/cp0.h>
 #include <umps3/umps/libumps.h>
 #include <umps3/umps/types.h>
+#include <umps3/umps/arch.h>
 
 #define DEV_NUM 10 /* TODO */
 
@@ -23,7 +24,7 @@ inline static void init_data_structures(void);
 inline static void init_devices(void);
 
 /* HANDLERS */
-inline static void handle_syscall(state_t *const saved_state);
+inline static void handle_syscall();
 inline static void uTLB_RefillHandler(void);
 inline static void exception_handler(void);
 
@@ -104,7 +105,7 @@ pcb_t *search_by_pid(int pid){
 void kill_parent_and_progeny(pcb_t* p){
   pcb_t* c;
   while((c=remove_child(p))!= NULL)
-    kill_progeny(c);
+    kill_parent_and_progeny(c);
 
   kill_proc(p);
 }
@@ -138,11 +139,12 @@ ammaizzalo
     /* TODO */
   } else if (cause == EXC_SYS) {
     /* Syscall */
+  memcpy(&act_proc->p_s,(state_t *)BIOSDATAPAGE, sizeof(state_t));
     KUp = ((getSTATUS() & STATUS_KUp) >> STATUS_KUp_BIT);
-    state = (state_t *)BIOSDATAPAGE;
     /* Se il processo e' in kernel-mode */
     if (KUp == 0 && ((int)state->reg_a0) < 0) {
-      handle_syscall(state);
+      handle_syscall();
+      act_proc->p_s.pc_epc = act_proc->p_s.reg_t9 = act_proc->p_s.pc_epc + WORD_SIZE;
       LDST(state); /* TODO */
     }
     /*else progran trap TODO */
@@ -160,28 +162,27 @@ void uTLB_RefillHandler(void)
   LDST((state_t *)BIOSDATAPAGE);
 }
 
-void handle_syscall(state_t *const saved_state)
+void handle_syscall()
 {
 
   int number;
   unsigned int arg1, arg2, arg3;
-  memcpy(&act_proc->p_s, saved_state, sizeof(state_t));
 
   /* luca: schedluer should be round robin, therefore act_prov should be removed from the ready queue it's in and should be enqueued at the back */
   /* for higher priority processes this is not expected, though a good rule of thumb is to assert the act_process is outside any queue when an interrupt is
   being handled and having it re-inserted in the right place (either head or tail of the queue) when the scheduler takes over */
 
-  number = (int)saved_state->reg_a0;
-  arg1 = saved_state->reg_a1;
-  arg2 = saved_state->reg_a2;
-  arg3 = saved_state->reg_a3;
+  number = (int)act_proc->p_s.reg_a0;
+  arg1 = act_proc->p_s.reg_a1;
+  arg2 = act_proc->p_s.reg_a2;
+  arg3 = act_proc->p_s.reg_a3;
 
   switch (number) {
     case CREATEPROCESS: {
       int status;
 
       status = create_process((state_t *)arg1, (int)arg2, (support_t *)arg3);
-      saved_state->reg_v0 = status;
+      act_proc->p_s.reg_v0 = status;
       break;
     }
     case TERMPROCESS:{

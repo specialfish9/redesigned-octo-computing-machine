@@ -1,6 +1,6 @@
 {
     "boot": {
-        "core-file": "/home/mattia/redesigned-octo-computing-machine/output/ROCM_kernel.core.umps",
+        "core-file": "../output/ROCM_kernel.core.umps",
         "load-core-file": true
     },
     "bootstrap-rom": "/usr/share/umps3/coreboot.rom.umps",
@@ -8,7 +8,7 @@
     "devices": {
         "disk0": {
             "enabled": true,
-            "file": "/home/mattia/redesigned-octo-computing-machine/output/disk0.umps"
+            "file": "../output/disk0.umps"
         },
         "terminal0": {
             "enabled": true,
@@ -20,7 +20,7 @@
     "num-ram-frames": 64,
     "symbol-table": {
         "asid": 64,
-        "file": "/home/mattia/redesigned-octo-computing-machine/output/ROCM_kernel.stab.umps"
+        "file": "../output/ROCM_kernel.stab.umps"
     },
     "tlb-floor-address": "0x80000000",
     "tlb-size": 16
