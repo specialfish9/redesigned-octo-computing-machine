@@ -1,12 +1,10 @@
 #ifndef SCHEDULER_H
 #define SCHEDULER_H
 
-#include "listx.h"
 #include "pandos_types.h"
 
 extern pcb_t *act_proc;
-extern struct list_head l_queue;
-extern struct list_head h_queue;
+
 extern void init_scheduler(void);
 
 extern void create_init_proc(const memaddr entry_point);
@@ -22,6 +20,30 @@ extern void scheduler_next(void);
 extern pcb_t *mk_proc(state_t *statep, int prio, support_t *supportp);
 
 extern void kill_proc(pcb_t *p);
-extern void memcpy(void *dest, void *src, size_tt n);
+
+/**
+ * Aggiunge un processo alla coda ready specificata.
+ * @param pcb: puntatore al pcb del processo.
+ * @param priority: priorita' del processo.
+ * */
+extern void enqueue_proc(pcb_t *const pcb, const unsigned int priority);
+
+/**
+ * Rimuove un processo dalla coda ready specificata.
+ * @param priority: la priorita' della coda dalla quale si vuole rimuovere il
+ * pcb.
+ * @return: il pcb rimosso o NULL se non ci sono pcb in coda
+ * */
+extern pcb_t* dequeue_proc(const unsigned int priority);
+
+/**
+ * Rimuove un processo specifico dalla coda ready indicata.
+ * @param priority: la priorita' della coda dalla quale si vuole rimuovere il
+ * pcb.
+ * @param pcb: il pcb da rimuovere.
+ * @return: il pcb rimosso o NULL se non ci sono pcb in coda
+ * */
+extern pcb_t* rm_proc(pcb_t* const pcb, const unsigned int priority);
 
 #endif
+

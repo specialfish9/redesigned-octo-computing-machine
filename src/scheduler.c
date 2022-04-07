@@ -1,7 +1,9 @@
 #include "scheduler.h"
 #include "klog.h"
+#include "pandos_const.h"
+#include "pandos_types.h"
 #include "pcb.h"
-#include "term_utils.h"
+#include "utils.h"
 #include <umps3/umps/cp0.h>
 #include <umps3/umps/libumps.h>
 #include <umps3/umps/types.h>
@@ -9,10 +11,11 @@
 #define LOG(s) print1("[Scheduler]" s)
 
 pcb_t *act_proc;
+
 static size_tt procs_count;
 static size_tt sb_procs;
-struct list_head l_queue;
-struct list_head h_queue;
+static struct list_head l_queue;
+static struct list_head h_queue;
 static unsigned int pid_count = 1;
 
 inline void init_scheduler(void)
@@ -43,7 +46,7 @@ inline void create_init_proc(const memaddr entry_point)
   insert_proc_q(&l_queue, proc);
 }
 
-void scheduler_next(void)
+inline void scheduler_next(void)
 {
 
   LOG("Chosing next process...\n");
@@ -118,15 +121,32 @@ inline void kill_proc(pcb_t *p)
   free_pcb(p);
 }
 
-/**
- * Implementazione standard della funzione memcpy della libc.
- * */
-inline void memcpy(void *dest, void *src, size_tt n)
+inline void enqueue_proc(pcb_t *const pcb, const unsigned int priority)
 {
-  size_tt i;
-  char *csrc = (char *)src;
-  char *cdest = (char *)dest;
-
-  for (i = 0; i < n; i++)
-    cdest[i] = csrc[i];
+  if (priority == PROCESS_PRIO_HIGH) {
+    insert_proc_q(&h_queue, pcb);
+  } else if (priority == PROCESS_PRIO_LOW) {
+    insert_proc_q(&l_queue, pcb);
+  }
 }
+
+inline pcb_t* dequeue_proc(const unsigned int priority) {
+  if (priority == PROCESS_PRIO_HIGH) {
+    return remove_proc_q(&h_queue);
+  } else if (priority == PROCESS_PRIO_LOW) {
+    return remove_proc_q(&l_queue);
+  }
+  return NULL;
+}
+
+inline pcb_t* rm_proc(pcb_t* const pcb, const unsigned int priority)
+{
+  if (priority == PROCESS_PRIO_HIGH) {
+    return out_proc_q(&h_queue, pcb);
+  } else if (priority == PROCESS_PRIO_LOW) {
+    return out_proc_q(&l_queue, pcb);
+  }
+  return NULL;
+  
+}
+
