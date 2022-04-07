@@ -214,11 +214,11 @@ void handle_syscall(state_t *const saved_state)
     case YIELD:{
       if (act_proc->p_prio == PROCESS_PRIO_HIGH) {
         out_proc_q(&h_queue, act_proc);//TODO: parent a single high priority process from causing starvation
-            insert_proc_q(&h_queue, result);
+            insert_proc_q(&h_queue, act_proc);
 
       } else if (act_proc->p_prio == PROCESS_PRIO_LOW) {
         out_proc_q(&l_queue, act_proc);
-            insert_proc_q(&l_queue, result);
+            insert_proc_q(&l_queue, act_proc);
 
       }
   }
