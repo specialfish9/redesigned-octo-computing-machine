@@ -96,8 +96,9 @@ inline pcb_t *mk_proc(state_t *statep, int prio, support_t *supportp)
 
   result->p_supportStruct = supportp;
   result->p_prio = prio;
-  memcpy(&result->p_s, statep, sizeof(state_t)); /* Fede in stackoverflow */
-  result->p_pid = ++pid_count;
+  memcpy(&result->p_s, statep, sizeof(state_t)); 
+  result->p_pid = (unsigned int) result;
+  ++pid_count;
 
   if (prio == PROCESS_PRIO_HIGH) {
     insert_proc_q(&h_queue, result);
