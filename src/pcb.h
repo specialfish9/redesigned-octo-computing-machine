@@ -8,7 +8,7 @@
 #define PCB_H
 
 #include "pandos_types.h"
-
+pcb_t *get_free_table();//TODO COMMENTO
 /* CODA DEI PCB */
 
 /* Inizializza la lista pcbFree in modo da contenere tutti gli elementi della

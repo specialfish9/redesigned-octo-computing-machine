@@ -11,7 +11,9 @@
 
 static pcb_t pcb_free_table[MAXPROC];
 static struct list_head pcb_free_h;
-
+pcb_t *get_free_table(){
+  return pcb_free_table;
+}
 /* Inizializza la lista pcb_free in modo da contenere tutti gli elementi della
  * pcb_free_table.*/
 void init_pcbs(void)

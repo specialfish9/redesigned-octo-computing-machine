@@ -12,8 +12,8 @@
 pcb_t *act_proc;
 static size_tt procs_count;
 static size_tt sb_procs;
-static struct list_head l_queue;
-static struct list_head h_queue;
+struct list_head l_queue;
+struct list_head h_queue;
 static unsigned int pid_count = 1;
 
 static void memcpy(void *, void *, size_tt);
@@ -108,6 +108,16 @@ inline pcb_t *mk_proc(state_t *statep, int prio, support_t *supportp)
   procs_count++;
 
   return result;
+}
+
+inline void kill_proc(pcb_t*p) {
+  procs_count--;
+  if (p->p_prio == PROCESS_PRIO_HIGH) {
+    out_proc_q(&h_queue, p);
+  } else if (p->p_prio == PROCESS_PRIO_LOW) {
+    out_proc_q(&l_queue, p);
+  }
+  free_pcb(p);
 }
 
 /**
