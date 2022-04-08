@@ -98,9 +98,9 @@ void handle_syscall(void)
     }
   }
   default:
-    /* TODO Any
+    /* TODOAny
 attempt to request a non-existent Nucleus service should trigger a Program
-Trap exception too*/
+Trap exception too*/ 
     break;
   }
 }
@@ -114,25 +114,61 @@ static int create_process(state_t *statep, int prio, support_t *supportp)
   return new_proc->p_pid;
 }
 
-static void passeren(int *semaddr)
+static void passeren(int *semaddr)      //TODO: valutare se questa è la soluzione giusta oppure se serve implementare slide 110 di "concorrenza2122"
 {
-  (*semaddr)--;
-  if ((*semaddr) > 0) {
-    pcb_t *tmp; //!!! NON SO CHE PROCESSO INSERIRE QUINDI PER ADESSO LASCIO QUESTO !!!
+  /*idea da https://www.geeksforgeeks.org/semaphores-in-process-synchronization/*/
+  /*
+  if((*semaddr)==1){
+    (*semaddr)=0;
+  }else{
+    pcb_t *tmp = dequeue_proc();
     tmp->p_semAdd = semaddr;
-    insert_blocked(semaddr, tmp);   //inserisco il processo sul semaforo indicato come parametro
+    insert_blocked(semaddr, tmp);
     tmp = NULL;
+    scheduler_next();
+  }
+  */
+
+
+  //depending on the value of the semaphore control is either
+  if((*semaddr)==0){    //returned to the current process
+    kprint("\n---SEMAFORO A 0 IN PASSEREN");
+    return;
+  }else{   //or this process is blocked on the ASL and Scheduler is called
+    kprint("\n---SEMAFORO A 1 IN PASSEREN");
+    /*estraggo un processo dalla coda degli attivi*/
+    pcb_t *tmp = dequeue_proc(1);
+
+    /*blocco il processo sul semaforo ricevuto come parametro*/
+    tmp->p_semAdd = semaddr;
+    insert_blocked(semaddr, tmp);
+    tmp = NULL;
+
+    (*semaddr)--;
+    scheduler_next();
   }
 }
 
-static void verhogen(int *semaddr)
+static void verhogen(int *semaddr)      //TODO: valutare se questa è la soluzione giusta oppure se serve implementare slide 110 di "concorrenza2122"
 {
-  (*semaddr)++;
-  pcb_t *tmp = remove_blocked(semaddr);   //rimuovo un processo bloccato dal semaforo
-  if(tmp != NULL){
-    //il processo rimosso viene aggiunto alla coda dei processi attivi
+  /*idea da https://www.geeksforgeeks.org/semaphores-in-process-synchronization/*/
+  /*
+  pcb_t *tmp = remove_blocked(semaddr);  
+  if(tmp == NULL){
+    (*semaddr) = 1;
+  }else{
     tmp->p_semAdd = NULL;
-    //insert_proc_q(/*LISTA DEGLI ATTIVI*/, p);  !!!!!!!!!!!!!!!!!!!!     USARE FUNZIONE FORNITA DA KERNEL PER ASTRARRE L'INTERAZIONE CON LA LISTA
+    enqueue_proc(tmp);
+  }
+  */
+
+  (*semaddr)++;
+  /*rimuovo un processo bloccato dal semaforo*/
+  pcb_t *tmp = remove_blocked(semaddr);   
+  if(tmp != NULL){
+    /*il processo rimosso viene aggiunto alla coda dei processi attivi*/
+    tmp->p_semAdd = NULL;
+    enqueue_proc(tmp, tmp->p_prio);
   } 
 }
 
@@ -140,6 +176,7 @@ static int wait_for_clock(void)
 {
   // passeren su semaforo di interval timer + blocca processo invocante fino a
   // prossimo tick del dispositivo
+  //passeren(/*semaforo di IT fornito da nucleus/kernel*/);
   return 0;
 }
 
