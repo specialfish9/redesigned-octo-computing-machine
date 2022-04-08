@@ -1,7 +1,8 @@
 #ifndef INTERRUPTS_H
 #define INTERRUPTS_H
 
-#include "listx.h"
-#include "pandos_types.h"
+extern void init_dev_sem(void);
+
+extern void handle_interrupts(const int line);
 
 #endif

@@ -1,5 +1,6 @@
 #include "asl.h"
 #include "exceptions.h"
+#include "interrupts.h"
 #include "klog.h"
 #include "listx.h"
 #include "pandos_const.h"
@@ -13,15 +14,9 @@
 #include <umps3/umps/libumps.h>
 #include <umps3/umps/types.h>
 
-#define DEV_NUM 10 /* TODO */
-
-static int dev_sem[DEV_NUM];
-static passupvector_t *passup_vec;
-
 /* FUNZIONI DI INIZIALIZZAZIONE */
 inline static void init_passup_vector(void);
 inline static void init_data_structures(void);
-inline static void init_devices(void);
 
 /* HANDLERS */
 inline static void uTLB_RefillHandler(void);
@@ -46,10 +41,6 @@ int main(void)
   print1("done!\n");
   kprint("IT load done|");
 
-  print1("Init devices...");
-  init_devices();
-  print1("done!\n");
-
   print1("Creating init process...");
   create_init_proc((memaddr)test);
   print1("done!\n");
@@ -63,7 +54,7 @@ int main(void)
 
 void init_passup_vector(void)
 {
-  passup_vec = (passupvector_t *)PASSUPVECTOR;
+  passupvector_t *const passup_vec = (passupvector_t *)PASSUPVECTOR;
   passup_vec->tlb_refill_handler = (memaddr)uTLB_RefillHandler;
   passup_vec->exception_handler = (memaddr)exception_handler;
   passup_vec->tlb_refill_stackPtr = KERNELSTACK;
@@ -72,45 +63,46 @@ void init_passup_vector(void)
 
 void init_data_structures(void)
 {
-  size_tt i;
-
   init_pcbs();
   init_asl();
-
   init_scheduler();
-
-  i = 0;
-  while (i < DEV_NUM)
-    dev_sem[i++] = 0;
-}
-
-void init_devices(void)
-{
-  size_tt i = 0;
-
-  while (i++ < DEV_NUM) {
-    dev_sem[i] = 0;
-  }
+  init_dev_sem();
 }
 
 
 void exception_handler(void)
 {
   unsigned int cause, KUp;
+  state_t *saved_state;
 
   cause = CAUSE_GET_EXCCODE(getCAUSE());
-  print1("EXCEPTION HANDLER FIRED\n");
-  kprint("exc handl called with code: ");
+  print1("EXCEPTION HANDLER FIRED with code ");
+  print1_int(cause);
+
+  kprint("EXH");
   kprint_hex(cause);
   kprint("|");
-  /*
 
+  saved_state = (state_t*) BIOSDATAPAGE;
+  /*
 per TLB trap e PROGRAM trap passa il controllo a support struct del processo o
 ammaizzalo
    */
   if (cause == EXC_INT) {
     /* Interrupts */
-    /* TODO */
+    /* Controlla se ci sono interrupt su tutte le linee */
+    size_tt i = 0;
+
+    while (i < DEVINTNUM + 1) {
+      if(!(getCAUSE() & CAUSE_IP(i))) {
+        handle_interrupts(i);
+        /* Incrementiamo il PC */
+        saved_state->pc_epc = saved_state->reg_t9 = saved_state->pc_epc + WORD_SIZE;
+        memcpy(&act_proc->p_s, saved_state, sizeof(state_t));
+        LDST(&act_proc->p_s); 
+        return; /* Superfluo, ma la sicurezza non è mai troppa */
+      }
+    }
   } else if (cause == EXC_MOD || cause == EXC_TLBL || cause == EXC_TLBS) {
     /* TLB trap */
     /* TODO */
@@ -122,14 +114,15 @@ ammaizzalo
     /* TODO */
   } else if (cause == EXC_SYS) {
     /* Syscall */
-    memcpy(&act_proc->p_s, (state_t *)BIOSDATAPAGE, sizeof(state_t));
     KUp = ((getSTATUS() & STATUS_KUp) >> STATUS_KUp_BIT);
     /* Se il processo e' in kernel-mode */
-    if (KUp == 0 && ((int)act_proc->p_s.reg_a0) < 0) {
+    if (KUp == 0 && ((int)saved_state->reg_a0) < 0) {
       handle_syscall();
-      act_proc->p_s.pc_epc = act_proc->p_s.reg_t9 =
-          act_proc->p_s.pc_epc + WORD_SIZE;
-      LDST(&act_proc->p_s); /* TODO */
+
+      /* Incrementiamo il PC */
+      saved_state->pc_epc = saved_state->reg_t9 = saved_state->pc_epc + WORD_SIZE;
+      memcpy(&act_proc->p_s, saved_state, sizeof(state_t));
+      LDST(&act_proc->p_s); 
     }
     /*else progran trap TODO */
   }

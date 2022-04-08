@@ -2,6 +2,7 @@
 #include "pandos_const.h"
 #include "scheduler.h"
 #include "pcb.h"
+#include "utils.h"
 
 extern pcb_t *act_proc;
 
@@ -52,6 +53,9 @@ void handle_syscall(void)
   arg1 = act_proc->p_s.reg_a1;
   arg2 = act_proc->p_s.reg_a2;
   arg3 = act_proc->p_s.reg_a3;
+
+  print1("Handling syscall ");
+  print1_int(number);
 
   switch (number) {
   case CREATEPROCESS: {
