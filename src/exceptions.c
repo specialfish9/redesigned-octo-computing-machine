@@ -17,7 +17,7 @@ static void verhogen(int *semaddr);
 
 // static int get_cpu_time(void);
 
-// static int wait_for_clock(void);
+static int wait_for_clock(void);
 
 // static support_t* get_support_data(void);
 
@@ -43,7 +43,7 @@ static void verhogen(int *semaddr)
   if(tmp != NULL){
     //il processo rimosso viene aggiunto alla coda dei processi attivi
     tmp->p_semAdd = NULL;
-    //insert_proc_q(/*LISTA DEGLI ATTIVI*/, p);  !!!!!!!!!!!!!!!!!!!!
+    //insert_proc_q(/*LISTA DEGLI ATTIVI*/, p);  !!!!!!!!!!!!!!!!!!!!     USARE FUNZIONE FORNITA DA KERNEL PER ASTRARRE L'INTERAZIONE CON LA LISTA
   } 
 }
 
