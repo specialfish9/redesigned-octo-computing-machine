@@ -1,10 +1,12 @@
-/******************************term_utils.h************************************
+/***********************************utils.h************************************
  *
- * Utility per stampare nel terminale.
+ * Funzioni di Utility .
  *
  ******************************************************************************/
-#ifndef TERM_UTILS_H
-#define TERM_UTILS_H
+#ifndef UTILS_H
+#define UTILS_H
+
+#include "listx.h"
 
 /* Ottieni il nome della variabile come stringa */
 #define NAME_OF(name) #name
@@ -23,5 +25,8 @@ extern void print1_int(const int);
 /* Utility per il debug, stampa il nome di una variabile di tipo int, seguita
  * dal suo valore.*/
 extern void dbg_var(const char *, const int);
+
+/*Implementazione standard della funzione memcpy della libc.*/
+extern void memcpy(void *dest, void *src, size_tt n);
 
 #endif

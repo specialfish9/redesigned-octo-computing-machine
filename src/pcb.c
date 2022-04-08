@@ -7,10 +7,21 @@
 #include "pcb.h"
 #include "listx.h"
 #include "pandos_types.h"
-#include "term_utils.h"
 
 static pcb_t pcb_free_table[MAXPROC];
 static struct list_head pcb_free_h;
+
+
+pcb_t *search_by_pid(const int pid)
+{
+  size_tt i;
+
+  for (i = 0; i < MAXPROC; ++i) {
+    if (pcb_free_table[i].p_pid == pid)
+      return &pcb_free_table[i];
+  }
+  return NULL;
+}
 
 /* Inizializza la lista pcb_free in modo da contenere tutti gli elementi della
  * pcb_free_table.*/

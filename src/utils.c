@@ -1,9 +1,9 @@
-/******************************term_utils.c************************************
+/***********************************utils.c************************************
  *
- * Implementazione di term_utils.h.
+ * Implementazione di utils.h.
  *
  ******************************************************************************/
-#include "term_utils.h"
+#include "utils.h"
 
 #include "pandos_const.h"
 #include "pandos_types.h"
@@ -38,6 +38,16 @@ static void _itoa(const int number, char *buffer);
 static void _strcat(const char *first, const char *second, char *buffer);
 /* Inverte due caratteri */
 inline static void _swap(char *x, char *y);
+
+inline void memcpy(void *dest, void *src, size_tt n)
+{
+  size_tt i;
+  char *csrc = (char *)src;
+  char *cdest = (char *)dest;
+
+  for (i = 0; i < n; i++)
+    cdest[i] = csrc[i];
+}
 
 inline static devreg termstat(const memaddr *stataddr)
 {
