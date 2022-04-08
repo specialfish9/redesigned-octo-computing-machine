@@ -19,6 +19,7 @@ inline void init_dev_sem(void) {
 } 
 
 inline void handle_interrupts(const int line) {
+
   print1("handling interrupts on line: ");
   print1_int(line);
   print1("\n");
@@ -27,6 +28,7 @@ inline void handle_interrupts(const int line) {
     case ITINT: {
       /* Pseudo-clock Tick */
       LDIT(100000);
+      /* TODO VEHROGEN? */
       remove_blocked(&dev_sem[ITINT]);
       dev_sem[ITINT] = 0;
 
