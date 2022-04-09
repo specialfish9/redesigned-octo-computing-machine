@@ -181,8 +181,20 @@ static void verhogen(int *semaddr)      //TODO: valutare se questa è la soluzio
 
 static int wait_for_clock(void)   //non so cosa deve returnare, bellaraga
 {
-  passeren((int*)dev_sem[ITINT]);
-  //passeren su semaforo di interval timer
+  //always block the current process on ASL and call scheduler -> no control on 0 or 1 
+
+  kprint("\n---BLOCKING ACTIVE PROXESS ON ASL");
+  /*estraggo un processo dalla coda degli attivi*/
+  pcb_t *tmp = get_act_proc();
+
+  /*blocco il processo sul semaforo ricevuto come parametro*/
+  tmp->p_semAdd = (int*)dev_sem[ITINT];
+  insert_blocked((int*)dev_sem[ITINT], tmp);
+  tmp = NULL;
+
+  dev_sem[ITINT]=1;
+  scheduler_next();
+
   return dev_sem[ITINT];
 }
 
