@@ -151,3 +151,7 @@ inline pcb_t* rm_proc(pcb_t* const pcb, const unsigned int priority)
   
 }
 
+inline pcb_t* get_act_proc(){
+  return act_proc;
+}
+

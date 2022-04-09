@@ -45,5 +45,8 @@ extern pcb_t* dequeue_proc(const unsigned int priority);
  * */
 extern pcb_t* rm_proc(pcb_t* const pcb, const unsigned int priority);
 
+/*restituisce il pcb processo attualmente attivo*/
+extern pcb_t* get_act_proc(void);
+
 #endif
 

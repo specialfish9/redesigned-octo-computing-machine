@@ -1,4 +1,5 @@
 #include "exceptions.h"
+#include "interrupts.h"
 #include "pandos_const.h"
 #include "scheduler.h"
 #include "pcb.h"
@@ -125,7 +126,7 @@ static void passeren(int *semaddr)      //TODO: valutare se questa è la soluzio
   if((*semaddr)==1){
     (*semaddr)=0;
   }else{
-    pcb_t *tmp = dequeue_proc();
+    pcb_t *tmp = get_act_proc();
     tmp->p_semAdd = semaddr;
     insert_blocked(semaddr, tmp);
     tmp = NULL;
@@ -134,22 +135,22 @@ static void passeren(int *semaddr)      //TODO: valutare se questa è la soluzio
   */
 
 
-  //depending on the value of the semaphore control is either
-  if((*semaddr)==0){    //returned to the current process
+  //depending on the value of the semaphore
+  if((*semaddr)==0){    //il processo viene bloccato sulla ASL e viene chiamato lo scheduler
     kprint("\n---SEMAFORO A 0 IN PASSEREN");
-    return;
-  }else{   //or this process is blocked on the ASL and Scheduler is called
-    kprint("\n---SEMAFORO A 1 IN PASSEREN");
     /*estraggo un processo dalla coda degli attivi*/
-    pcb_t *tmp = dequeue_proc(1);
+    pcb_t *tmp = get_act_proc();
 
     /*blocco il processo sul semaforo ricevuto come parametro*/
     tmp->p_semAdd = semaddr;
     insert_blocked(semaddr, tmp);
     tmp = NULL;
 
-    (*semaddr)--;
+    (*semaddr)=1;
     scheduler_next();
+  }else{   //semaforo = 1 quindi restituisco controllo al processo chiamante
+    kprint("\n---SEMAFORO A 1 IN PASSEREN");
+    return;
   }
 }
 
@@ -166,22 +167,23 @@ static void verhogen(int *semaddr)      //TODO: valutare se questa è la soluzio
   }
   */
 
-  (*semaddr)++;
   /*rimuovo un processo bloccato dal semaforo*/
-  pcb_t *tmp = remove_blocked(semaddr);   
-  if(tmp != NULL){
+  pcb_t *tmp = remove_blocked((int*)semaddr);   
+  if(tmp != NULL){    //se posso rimuovere qualcosa dai bloccati lo faccio
     /*il processo rimosso viene aggiunto alla coda dei processi attivi*/
     tmp->p_semAdd = NULL;
-    enqueue_proc(tmp, tmp->p_prio);
-  } 
+    enqueue_proc(tmp);
+    (*semaddr)=0;   // !!! NON SO SE QUESTO SIA CONCETTUALMENTE SBAGLIATO !!!
+  }else{      //se non posso rimuovere nulla metto il semaforo a 1
+    (*semaddr)=1;
+  }
 }
 
-static int wait_for_clock(void)
+static int wait_for_clock(void)   //non so cosa deve returnare, bellaraga
 {
-  // passeren su semaforo di interval timer + blocca processo invocante fino a
-  // prossimo tick del dispositivo
-  //passeren(/*semaforo di IT fornito da nucleus/kernel*/);
-  return 0;
+  passeren((int*)dev_sem[ITINT]);
+  //passeren su semaforo di interval timer
+  return dev_sem[ITINT];
 }
 
 static void kill_parent_and_progeny(pcb_t *p)
