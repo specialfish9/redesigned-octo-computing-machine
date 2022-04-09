@@ -8,6 +8,7 @@
  ****************************************************************************/
 
 #include <umps3/umps/const.h>
+#include <umps3/umps/arch.h>
 
 /* Hardware & software constants */
 #define PAGESIZE 4096 /* page size in bytes	*/
@@ -28,6 +29,8 @@
 #define RAMSTART 0x20000000
 #define BIOSDATAPAGE 0x0FFFF000
 #define PASSUPVECTOR 0x0FFFF900
+/* Additional memory related costants */
+#define DEVICEREGISTERS 0x10000054
 
 /* Exceptions related constants */
 #define PGFAULTEXCEPT 0

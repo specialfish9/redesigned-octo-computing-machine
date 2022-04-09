@@ -11,7 +11,7 @@
 #include <umps3/umps/cp0.h>
 #include <umps3/umps/libumps.h>
 #include <umps3/umps/types.h>
-#include <umps3/umps/arch.h>
+
 
 #define DEV_NUM 10 /* TODO */
 
@@ -177,22 +177,29 @@ void handle_syscall(state_t *const saved_state)
       // int tmp = wait_for_clock();
       break;
     }
+    // SYSCALL che si occupa di avviare una richiesta di I/O
     case DOIO: {
       // unsigned int sem=
       // passeren(sem)
       break;
     }
+    //SYSCALL che restituisce in v0 il tempo di utilizzo del processore da parte del processo attivo
     case GETTIME: {
+      //p_time nel pcb del processo attivo è costantemente aggiornato durante l'esecuzione, quindi si inserisce quel valore in v0
       act_proc->p_s.reg_v0=act_proc->p_time;
       break;
     }
+    //SYSCALL che inserisce un PID nel registro v0 del processo attivo in base a cosa è scritto in a1
     case GETPROCESSID: {
       int parent= *arg1;
+      //Se l'argomento 1 è 0 (quindi se parent è falso), in v0 viene inserito il PID del processo chiamante
       if(!parent)
         act_proc->p_s.reg_v0=act_proc->p_pid;
+      //Altrimenti, se l'argomento è diverso da 0, e il processo chiamante ha effettivamente un processo padre, si inserisce in v0 il PID del padre
       else if(act_proc->p_parent!=NULL)
         act_proc->p_s.reg_v0=act_proc->p_parent->p_pid;
       else
+      //Come richiesto nella specifica, se viene richiesto il PID del padre di un processo senza genitore, viene restituito 0
         act_proc->p_s.reg_v0=0;
       break;
     }
