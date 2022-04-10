@@ -69,15 +69,14 @@ void init_data_structures(void)
   init_dev_sem();
 }
 
-
 void exception_handler(void)
 {
   unsigned int cause, KUp;
   cpu_t now;
   state_t *saved_state;
-  
+
   /* Aggiorno l'età del processo attivo */
-  STCK(now); 
+  STCK(now);
   act_proc->p_time += (now - act_proc->p_tm_updt);
   act_proc->p_tm_updt = now;
 
@@ -89,7 +88,7 @@ void exception_handler(void)
   kprint_hex(cause);
   kprint("|");
 
-  saved_state = (state_t*) BIOSDATAPAGE;
+  saved_state = (state_t *)BIOSDATAPAGE;
   /*
 per TLB trap e PROGRAM trap passa il controllo a support struct del processo o
 ammaizzalo
@@ -100,12 +99,13 @@ ammaizzalo
     size_tt i = 0;
 
     while (i < DEVINTNUM + 1) {
-      if(!(getCAUSE() & CAUSE_IP(i))) {
+      if (!(getCAUSE() & CAUSE_IP(i))) {
         handle_interrupts(i);
         /* Incrementiamo il PC */
-        saved_state->pc_epc = saved_state->reg_t9 = saved_state->pc_epc + WORD_SIZE;
+        saved_state->pc_epc = saved_state->reg_t9 =
+            saved_state->pc_epc + WORD_SIZE;
         memcpy(&act_proc->p_s, saved_state, sizeof(state_t));
-        LDST(&act_proc->p_s); 
+        LDST(&act_proc->p_s);
         return; /* Superfluo, ma la sicurezza non è mai troppa */
       }
     }
@@ -126,9 +126,10 @@ ammaizzalo
       handle_syscall();
 
       /* Incrementiamo il PC */
-      saved_state->pc_epc = saved_state->reg_t9 = saved_state->pc_epc + WORD_SIZE;
+      saved_state->pc_epc = saved_state->reg_t9 =
+          saved_state->pc_epc + WORD_SIZE;
       memcpy(&act_proc->p_s, saved_state, sizeof(state_t));
-      LDST(&act_proc->p_s); 
+      LDST(&act_proc->p_s);
     }
     /*else progran trap TODO */
   }
@@ -144,4 +145,3 @@ void uTLB_RefillHandler(void)
 
   LDST((state_t *)BIOSDATAPAGE);
 }
-
