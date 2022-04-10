@@ -11,7 +11,6 @@
 static pcb_t pcb_free_table[MAXPROC];
 static struct list_head pcb_free_h;
 
-
 pcb_t *search_by_pid(const int pid)
 {
   size_tt i;
@@ -69,6 +68,7 @@ pcb_t *alloc_pcb(void)
   pcb->p_s.lo = 0;
   pcb->p_supportStruct = NULL;
   pcb->p_time = 0;
+  pcb->p_tm_updt = 0;
   pcb->p_semAdd = NULL;
 
   return pcb;

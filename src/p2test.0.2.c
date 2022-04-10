@@ -17,7 +17,6 @@
 
 #include "pandos_const.h"
 #include "pandos_types.h"
-#include "utils.h"
 #include <umps3/umps/libumps.h>
 
 typedef unsigned int devregtr;
@@ -65,13 +64,14 @@ int sem_term_mut = 1, /* for mutual exclusion on terminal */
     s[MAXSEM + 1],    /* semaphore array */
     sem_testsem = 0,  /* for a simple test */
     sem_startp2 = 0,  /* used to start p2 */
-    sem_endp2 = 0,    /* used to signal p2's demise */
-    sem_endp3 = 0,    /* used to signal p3's demise */
-    sem_blkp4 = 1,    /* used to block second incaration of p4 */
-    sem_synp4 = 0,    /* used to allow p4 incarnations to synhronize */
-    sem_endp4 = 0,    /* to signal demise of p4 */
-    sem_endp5 = 0,    /* to signal demise of p5 */
-    sem_endp8 = 0,    /* to signal demise of p8 */
+    sem_endp2 =
+        1, /* used to signal p2's demise (test binary blocking V on binary sem*/
+    sem_endp3 = 0, /* used to signal p3's demise */
+    sem_blkp4 = 1, /* used to block second incaration of p4 */
+    sem_synp4 = 0, /* used to allow p4 incarnations to synhronize */
+    sem_endp4 = 0, /* to signal demise of p4 */
+    sem_endp5 = 0, /* to signal demise of p5 */
+    sem_endp8 = 0, /* to signal demise of p8 */
     sem_endcreate[NOLEAVES] = {0}, /* for a p8 leaf to signal its creation */
     sem_blkp8 = 0,                 /* to block p8 */
     sem_blkp9 = 0;                 /* to block p9 */
@@ -123,13 +123,24 @@ void print(char *msg)
   SYSCALL(VERHOGEN, (int)&sem_term_mut, 0, 0); /* V(sem_term_mut) */
 }
 
+/* TLB-Refill Handler */
+/* One can place debug calls here, but not calls to print */
+void uTLB_RefillHandler()
+{
+
+  setENTRYHI(0x80000000);
+  setENTRYLO(0x00000000);
+  TLBWR();
+
+  LDST((state_t *)0x0FFFF000);
+}
+
 /*********************************************************************/
 /*                                                                   */
 /*                 p1 -- the root process                            */
 /*                                                                   */
 void test()
 {
-  print1("TEST INIT\n");                      /* TODO */
   SYSCALL(VERHOGEN, (int)&sem_testsem, 0, 0); /* V(sem_testsem)   */
 
   print("p1 v(sem_testsem)\n");
@@ -230,7 +241,7 @@ void test()
 
   SYSCALL(VERHOGEN, (int)&sem_startp2, 0, 0); /* V(sem_startp2)   */
 
-  SYSCALL(PASSEREN, (int)&sem_endp2, 0, 0); /* P(sem_endp2)     */
+  SYSCALL(VERHOGEN, (int)&sem_endp2, 0, 0); /* V(sem_endp2) (blocking V!)     */
 
   /* make sure we really blocked */
   if (p1p2synch == 0) {
@@ -357,7 +368,7 @@ void p2()
 
   p1p2synch = 1; /* p1 will check this */
 
-  SYSCALL(VERHOGEN, (int)&sem_endp2, 0, 0); /* V(sem_endp2)     */
+  SYSCALL(PASSEREN, (int)&sem_endp2, 0, 0); /* P(sem_endp2)    unblocking P ! */
 
   SYSCALL(TERMPROCESS, 0, 0, 0); /* terminate p2 */
 

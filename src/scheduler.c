@@ -4,6 +4,7 @@
 #include "pandos_types.h"
 #include "pcb.h"
 #include "utils.h"
+#include <umps3/umps/const.h>
 #include <umps3/umps/cp0.h>
 #include <umps3/umps/libumps.h>
 #include <umps3/umps/types.h>
@@ -60,13 +61,24 @@ inline void scheduler_next(void)
     }
     LOG("Loading high priority process with PID ");
     print1_int(act_proc->p_pid);
+
+    /* Aggiorno l'age del processo */
+    STCK(act_proc->p_tm_updt);
+
+    /* Lo carico */
     LDST(&(act_proc->p_s));
+
   } else if (empty_proc_q(&l_queue) == FALSE) {
     /* Scegli un processo a priorità bassa */
     act_proc = remove_proc_q(&l_queue);
     LOG("Loading low priority process with PID ");
     print1_int(act_proc->p_pid);
     setTIMER(TIMESLICE);
+
+    /* Aggiorno l'age del processo */
+    STCK(act_proc->p_tm_updt);
+
+    /* Lo carico */
     LDST(&act_proc->p_s);
 
   } else if (!procs_count) {
@@ -96,8 +108,8 @@ inline pcb_t *mk_proc(state_t *statep, int prio, support_t *supportp)
 
   result->p_supportStruct = supportp;
   result->p_prio = prio;
-  memcpy(&result->p_s, statep, sizeof(state_t)); 
-  result->p_pid = (unsigned int) result;
+  memcpy(&result->p_s, statep, sizeof(state_t));
+  result->p_pid = (unsigned int)result;
   ++pid_count;
 
   if (prio == PROCESS_PRIO_HIGH) {
@@ -131,7 +143,8 @@ inline void enqueue_proc(pcb_t *const pcb, const unsigned int priority)
   }
 }
 
-inline pcb_t* dequeue_proc(const unsigned int priority) {
+inline pcb_t *dequeue_proc(const unsigned int priority)
+{
   if (priority == PROCESS_PRIO_HIGH) {
     return remove_proc_q(&h_queue);
   } else if (priority == PROCESS_PRIO_LOW) {
@@ -140,7 +153,7 @@ inline pcb_t* dequeue_proc(const unsigned int priority) {
   return NULL;
 }
 
-inline pcb_t* rm_proc(pcb_t* const pcb, const unsigned int priority)
+inline pcb_t *rm_proc(pcb_t *const pcb, const unsigned int priority)
 {
   if (priority == PROCESS_PRIO_HIGH) {
     return out_proc_q(&h_queue, pcb);
@@ -148,7 +161,6 @@ inline pcb_t* rm_proc(pcb_t* const pcb, const unsigned int priority)
     return out_proc_q(&l_queue, pcb);
   }
   return NULL;
-  
 }
 
 inline pcb_t* get_act_proc(){

@@ -1,8 +1,8 @@
 #include "exceptions.h"
 #include "interrupts.h"
 #include "pandos_const.h"
-#include "scheduler.h"
 #include "pcb.h"
+#include "scheduler.h"
 #include "utils.h"
 
 extern pcb_t *act_proc;
@@ -14,7 +14,8 @@ extern pcb_t *act_proc;
   @param supportp: puntatore alla struttura supporto del processo.
   @return Il PID de processo se la syscall ha successo -1 altrimenti
  */
-inline static int create_process(state_t *statep, int prio, support_t *suppportp);
+inline static int create_process(state_t *statep, int prio,
+                                 support_t *suppportp);
 
 // static void termniate_process(int pid);
 
@@ -35,7 +36,6 @@ inline static void wait_for_clock(void);
 // static int yield(void);
 
 inline static void kill_parent_and_progeny(pcb_t *p);
-
 
 void handle_syscall(void)
 {
@@ -78,11 +78,11 @@ void handle_syscall(void)
     break;
   }
   case PASSEREN: {
-    passeren((int*)arg1); 
+    passeren((int *)arg1);
     break;
   }
   case VERHOGEN: {
-    verhogen((int*)arg1); 
+    verhogen((int *)arg1);
     break;
   }
   case CLOCKWAIT: {
@@ -94,7 +94,9 @@ void handle_syscall(void)
   }
   case YIELD: {
     if (act_proc->p_prio == PROCESS_PRIO_HIGH) {
-      rm_proc(act_proc, PROCESS_PRIO_HIGH); // TODO: parent a single high priority process from causing starvation
+      rm_proc(act_proc,
+              PROCESS_PRIO_HIGH); // TODO: parent a single high priority process
+                                  // from causing starvation
       enqueue_proc(act_proc, PROCESS_PRIO_HIGH);
 
     } else if (act_proc->p_prio == PROCESS_PRIO_LOW) {
