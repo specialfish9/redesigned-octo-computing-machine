@@ -26,7 +26,7 @@ inline static void verhogen(int *semaddr);
 
 // static int get_cpu_time(void);
 
-inline static int wait_for_clock(void);
+inline static void wait_for_clock(void);
 
 // static support_t* get_support_data(void);
 
@@ -179,7 +179,7 @@ static void verhogen(int *semaddr)      //TODO: valutare se questa è la soluzio
   }
 }
 
-static int wait_for_clock(void)   //non so cosa deve returnare, bellaraga
+static void wait_for_clock(void)   
 {
   //always block the current process on ASL and call scheduler -> no control on 0 or 1 
 
@@ -194,8 +194,6 @@ static int wait_for_clock(void)   //non so cosa deve returnare, bellaraga
 
   dev_sem[ITINT]=1;
   scheduler_next();
-
-  return dev_sem[ITINT];
 }
 
 static void kill_parent_and_progeny(pcb_t *p)
