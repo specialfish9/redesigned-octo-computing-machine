@@ -48,7 +48,8 @@ typedef struct pcb_t {
 
   /* process status information */
   state_t p_s;  /* processor state */
-  cpu_t p_time; /* cpu time used by proc */
+  cpu_t p_time; /* amount of cpu time used by proc */
+  cpu_t p_tm_updt; /* last p_time update */
 
   /* Pointer to the semaphore the process is currently blocked on */
   int *p_semAdd;

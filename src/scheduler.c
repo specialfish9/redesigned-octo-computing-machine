@@ -61,18 +61,23 @@ inline void scheduler_next(void)
     }
     LOG("Loading high priority process with PID ");
     print1_int(act_proc->p_pid);
+
     /* Aggiorno l'age del processo */
-    STCK(act_proc->p_time);
+    STCK(act_proc->p_tm_updt);
+
     /* Lo carico */
     LDST(&(act_proc->p_s));
+
   } else if (empty_proc_q(&l_queue) == FALSE) {
     /* Scegli un processo a priorità bassa */
     act_proc = remove_proc_q(&l_queue);
     LOG("Loading low priority process with PID ");
     print1_int(act_proc->p_pid);
     setTIMER(TIMESLICE);
+    
     /* Aggiorno l'age del processo */
-    STCK(act_proc->p_time);
+    STCK(act_proc->p_tm_updt);
+    
     /* Lo carico */
     LDST(&act_proc->p_s);
 

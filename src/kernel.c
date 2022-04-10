@@ -73,7 +73,13 @@ void init_data_structures(void)
 void exception_handler(void)
 {
   unsigned int cause, KUp;
+  cpu_t now;
   state_t *saved_state;
+  
+  /* Aggiorno l'età del processo attivo */
+  STCK(now); 
+  act_proc->p_time += (now - act_proc->p_tm_updt);
+  act_proc->p_tm_updt = now;
 
   cause = CAUSE_GET_EXCCODE(getCAUSE());
   print1("EXCEPTION HANDLER FIRED with code ");

@@ -69,6 +69,7 @@ pcb_t *alloc_pcb(void)
   pcb->p_s.lo = 0;
   pcb->p_supportStruct = NULL;
   pcb->p_time = 0;
+  pcb->p_tm_updt = 0;
   pcb->p_semAdd = NULL;
 
   return pcb;
