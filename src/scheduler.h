@@ -9,6 +9,9 @@ extern void init_scheduler(void);
 
 extern void create_init_proc(const memaddr entry_point);
 
+/**
+ * Passa il controllo al prossimo processo seguendo le politiche dello scheduler.
+ * */
 extern void scheduler_next(void);
 
 /**
@@ -19,6 +22,10 @@ extern void scheduler_next(void);
  * @return il pcb del processo creato o NULL se non e' possibile crearlo */
 extern pcb_t *mk_proc(state_t *statep, int prio, support_t *supportp);
 
+/**
+ * Termina un processo
+ * @param p: riferimento al processo da terminare.
+ * */
 extern void kill_proc(pcb_t *p);
 
 /**

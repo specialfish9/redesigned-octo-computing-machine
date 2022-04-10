@@ -4,6 +4,7 @@
 #include "pandos_types.h"
 #include "pcb.h"
 #include "utils.h"
+#include <umps3/umps/const.h>
 #include <umps3/umps/cp0.h>
 #include <umps3/umps/libumps.h>
 #include <umps3/umps/types.h>
@@ -60,6 +61,9 @@ inline void scheduler_next(void)
     }
     LOG("Loading high priority process with PID ");
     print1_int(act_proc->p_pid);
+    /* Aggiorno l'age del processo */
+    STCK(act_proc->p_time);
+    /* Lo carico */
     LDST(&(act_proc->p_s));
   } else if (empty_proc_q(&l_queue) == FALSE) {
     /* Scegli un processo a priorità bassa */
@@ -67,6 +71,9 @@ inline void scheduler_next(void)
     LOG("Loading low priority process with PID ");
     print1_int(act_proc->p_pid);
     setTIMER(TIMESLICE);
+    /* Aggiorno l'age del processo */
+    STCK(act_proc->p_time);
+    /* Lo carico */
     LDST(&act_proc->p_s);
 
   } else if (!procs_count) {
