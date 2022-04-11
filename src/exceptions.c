@@ -123,9 +123,35 @@ static int create_process(state_t *statep, int prio, support_t *supportp)
 static void passeren(int *semaddr)
 {
   /*https://it.wikipedia.org/wiki/Semaforo_(informatica)#:~:text=Esempi%20di%20uso%20di%20semafori%5Bmodifica%20%7C%20modifica%20wikitesto%5D*/
-  (*semaddr)--;
-  if ((*semaddr) > 0) {
+ // (*semaddr)--;
+  //if ((*semaddr) > 0) {
     // metto un processo in coda dagli attivi
+  //}
+  pcb_t tmp;
+  if(*semaddr==0){
+
+    //Controlli per bloccare il processo
+    if(insert_blocked(semaddr,get_active_pcb()){
+      //Se ritorna true non possiamo assegnare un semaforo, panic?
+    }else{
+      //Se siamo riusciti a mettere il processo in coda, andiamo al prossimo (suppongo che poi lo scheduler sappia quali processi sono bloccati da un semaforo)
+      scheduler_next();
+    }
+
+  }else if(head_blocked(semaddr)){
+    //Se ci accorgiamo che la risorsa è disponibile ma altri processi la stavano aspettando
+    tmp=remove_blocked(semaddr);
+    enqueue_proc(tmp,666);//Come la ricavo la priorità?
+
+    //Controlli per bloccare il processo
+    if(insert_blocked(semaddr,get_active_pcb()){
+    }else{
+      //Se siamo riusciti a mettere il processo in coda, andiamo al prossimo (suppongo che poi lo scheduler sappia quali processi sono bloccati da un semaforo)
+      scheduler_next();
+    }
+
+  }else{
+    *semaddr--;
   }
 }
 
