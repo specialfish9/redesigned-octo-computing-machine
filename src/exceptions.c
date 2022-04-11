@@ -1,8 +1,10 @@
 #include "exceptions.h"
 #include "pandos_const.h"
 #include "pcb.h"
+#include "asl.h"
 #include "scheduler.h"
 #include "utils.h"
+#include <umps3/umps/libumps.h>
 
 extern pcb_t *act_proc;
 
@@ -127,24 +129,23 @@ static void passeren(int *semaddr)
   //if ((*semaddr) > 0) {
     // metto un processo in coda dagli attivi
   //}
-  pcb_t tmp;
+  pcb_t* tmp;
   if(*semaddr==0){
 
     //Controlli per bloccare il processo
-    if(insert_blocked(semaddr,get_active_pcb()){
-      //Se ritorna true non possiamo assegnare un semaforo, panic?
-    }else{
-      //Se siamo riusciti a mettere il processo in coda, andiamo al prossimo (suppongo che poi lo scheduler sappia quali processi sono bloccati da un semaforo)
-      scheduler_next();
+    if(insert_blocked(semaddr, ())){
+      /* Se ritorna true non possiamo assegnare un semaforo */
+      /* Non dovrebbe mai capitare, ma in caso */
+      PANIC();
     }
 
-  }else if(head_blocked(semaddr)){
+  } else if((tmp = remove_blocked(semaddr)) != NULL){
     //Se ci accorgiamo che la risorsa è disponibile ma altri processi la stavano aspettando
-    tmp=remove_blocked(semaddr);
-    enqueue_proc(tmp,666);//Come la ricavo la priorità?
+    enqueue_proc(tmp, tmp->p_prio);
 
     //Controlli per bloccare il processo
-    if(insert_blocked(semaddr,get_active_pcb()){
+    if(insert_blocked(semaddr, 
+                      get_active_pcb())){
     }else{
       //Se siamo riusciti a mettere il processo in coda, andiamo al prossimo (suppongo che poi lo scheduler sappia quali processi sono bloccati da un semaforo)
       scheduler_next();
