@@ -5,11 +5,6 @@
 #include <umps3/umps/libumps.h>
 #include <umps3/umps/types.h>
 
-#define ITINT 2
-#define DEV_SEM_LEN 7
-/* linea int -> semaforo */
-static int dev_sem[DEV_SEM_LEN]; /* TODO probabilmente serve più grande*/
-
 inline void init_dev_sem(void)
 {
   size_tt i;

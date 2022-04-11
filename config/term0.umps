@@ -5,7 +5,6 @@ Creating init process...done!
 Starting init process...
 [Scheduler]Chosing next process...
 [Scheduler]Loading low priority process with PID 1
-TEST INIT
 EXCEPTION HANDLER FIRED with code 8
 Handling syscall 0
 EXCEPTION HANDLER FIRED with code 8

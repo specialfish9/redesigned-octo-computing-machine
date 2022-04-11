@@ -1,5 +1,9 @@
 #include "exceptions.h"
+#include "asl.h"
+#include "interrupts.h"
+#include "klog.h"
 #include "pandos_const.h"
+#include "pandos_types.h"
 #include "pcb.h"
 #include "asl.h"
 #include "scheduler.h"
@@ -7,6 +11,7 @@
 #include <umps3/umps/libumps.h>
 
 extern pcb_t *act_proc;
+int dev_sem[DEV_SEM_LEN]; /* TODO probabilmente serve più grande*/
 
 /**
   Crea un nuovo processo come figlio del chiamante.
@@ -28,7 +33,7 @@ inline static void verhogen(int *semaddr);
 
 // static int get_cpu_time(void);
 
-inline static int wait_for_clock(void);
+inline static void wait_for_clock(void);
 
 // static support_t* get_support_data(void);
 
@@ -106,7 +111,7 @@ void handle_syscall(void)
     }
   }
   default:
-    /* TODO Any
+    /* TODOAny
 attempt to request a non-existent Nucleus service should trigger a Program
 Trap exception too*/
     break;
@@ -122,7 +127,9 @@ static int create_process(state_t *statep, int prio, support_t *supportp)
   return new_proc->p_pid;
 }
 
-static void passeren(int *semaddr)
+static void
+passeren(int *semaddr) // TODO: valutare se questa è la soluzione giusta oppure
+                       // se serve implementare slide 110 di "concorrenza2122"
 {
   /*https://it.wikipedia.org/wiki/Semaforo_(informatica)#:~:text=Esempi%20di%20uso%20di%20semafori%5Bmodifica%20%7C%20modifica%20wikitesto%5D*/
  // (*semaddr)--;
@@ -156,17 +163,89 @@ static void passeren(int *semaddr)
   }
 }
 
-static void verhogen(int *semaddr)
+static void
+verhogen(int *semaddr) // TODO: valutare se questa è la soluzione giusta oppure
+                       // se serve implementare slide 110 di "concorrenza2122"
 {
-  (*semaddr)++;
-  // rimuovo il primo processo e lo rendo attivo
+  /*idea da
+   * https://www.geeksforgeeks.org/semaphores-in-process-synchronization/*/
+  /*
+  pcb_t *tmp = remove_blocked(semaddr);
+  if(tmp == NULL){
+    (*semaddr) = 1;
+  }else{
+    tmp->p_semAdd = NULL;
+    enq:Wq
+    ueue_proc(tmp);
+  }
+  */
+  /* 3 implementazione */
+  pcb_t* pcb;
+
+  if (*semaddr == 1) {
+    insert_blocked(semaddr, get_act_proc());
+    scheduler_next();
+  } else if ((pcb = remove_blocked(semaddr)) != NULL) {
+    enqueue_proc(pcb, pcb->p_prio);
+  }
+
+  [1] -> p2  
+
+  S -> p1, p3, p4
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  /*rimuovo un processo bloccato dal semaforo*/
+  pcb_t *tmp = remove_blocked((int *)semaddr);
+  if (tmp != NULL) { // se posso rimuovere qualcosa dai bloccati lo faccio
+    /*il processo rimosso viene aggiunto alla coda dei processi attivi*/
+    tmp->p_semAdd = NULL;
+    enqueue_proc(tmp, tmp->p_prio);
+    (*semaddr) = 0; // !!! NON SO SE QUESTO SIA CONCETTUALMENTE SBAGLIATO !!!
+  } else {          // se non posso rimuovere nulla metto il semaforo a 1
+    (*semaddr) = 1;
+  }
 }
 
-static int wait_for_clock(void)
+static void wait_for_clock(void)
 {
-  // passeren su semaforo di interval timer + blocca processo invocante fino a
-  // prossimo tick del dispositivo
-  return 0;
+  // always block the current process on ASL and call scheduler -> no control on
+  // 0 or 1
+
+  kprint("\n---BLOCKING ACTIVE PROXESS ON ASL");
+  /*estraggo un processo dalla coda degli attivi*/
+  pcb_t *tmp = get_act_proc();
+
+  /*blocco il processo sul semaforo ricevuto come parametro*/
+  tmp->p_semAdd = (int *)dev_sem[ITINT];
+  insert_blocked((int *)dev_sem[ITINT], tmp);
+  tmp = NULL;
+
+  dev_sem[ITINT] = 1;
+  scheduler_next();
 }
 
 static void kill_parent_and_progeny(pcb_t *p)
