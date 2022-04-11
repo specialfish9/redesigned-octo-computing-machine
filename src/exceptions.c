@@ -7,9 +7,9 @@
 #include "pcb.h"
 #include "scheduler.h"
 #include "utils.h"
+#include <umps3/umps/libumps.h>
 
 extern pcb_t *act_proc;
-int dev_sem[DEV_SEM_LEN]; /* TODO probabilmente serve più grande*/
 
 /**
   Crea un nuovo processo come figlio del chiamante.
@@ -82,11 +82,21 @@ void handle_syscall(void)
     break;
   }
   case PASSEREN: {
-    passeren((int *)arg1);
+    int *sem_addr = (int *)arg1;
+    if (*sem_addr != 0 && *sem_addr != 1) {
+      // problema
+      PANIC();
+    }
+    passeren(sem_addr);
     break;
   }
   case VERHOGEN: {
-    verhogen((int *)arg1);
+    int *sem_addr = (int *)arg1;
+    if (*sem_addr != 0 && *sem_addr != 1) {
+      // problema
+      PANIC();
+    }
+    verhogen(sem_addr);
     break;
   }
   case CLOCKWAIT: {
@@ -125,109 +135,31 @@ static int create_process(state_t *statep, int prio, support_t *supportp)
   return new_proc->p_pid;
 }
 
-static void
-passeren(int *semaddr) // TODO: valutare se questa è la soluzione giusta oppure
-                       // se serve implementare slide 110 di "concorrenza2122"
+static void passeren(int *semaddr)
 {
-  /*idea da
-   * https://www.geeksforgeeks.org/semaphores-in-process-synchronization/*/
-  /*
-  if((*semaddr)==1){
-    (*semaddr)=0;
-  }else{
-    pcb_t *tmp = get_act_proc();
-    tmp->p_semAdd = semaddr;
-    insert_blocked(semaddr, tmp);
-    tmp = NULL;
-    scheduler_next();
-  }
-  */
+  pcb_t *tmp;
+  if (*semaddr == 0) {
 
-  // depending on the value of the semaphore
-  if ((*semaddr) ==0) {
-    // il processo viene bloccato sulla ASL e viene chiamato lo scheduler
-    kprint("\n---SEMAFORO A 0 IN PASSEREN");
-    /*estraggo un processo dalla coda degli attivi*/
-    pcb_t *tmp = get_act_proc();
+    // Controlli per bloccare il processo
+    if (insert_blocked(semaddr, get_act_proc())) {
+      /* Se ritorna true non possiamo assegnare un semaforo */
+      /* Non dovrebbe mai capitare, ma in caso */
+      PANIC();
+    }
 
-    /*blocco il processo sul semaforo ricevuto come parametro*/
-    tmp->p_semAdd = semaddr;
-    insert_blocked(semaddr, tmp);
-    tmp = NULL;
-
-    (*semaddr) = 1;
-    scheduler_next();
-  } else { // semaforo = 1 quindi restituisco controllo al processo chiamante
-    kprint("\n---SEMAFORO A 1 IN PASSEREN");
-    return;
+  } else if ((tmp = remove_blocked(semaddr)) != NULL) {
+    // Se ci accorgiamo che la risorsa è disponibile ma altri processi la
+    // stavano aspettando
+    enqueue_proc(tmp, tmp->p_prio);
+  } else {
+    *semaddr = 0;
   }
 }
 
 static void
-verhogen(int *semaddr) // TODO: valutare se questa è la soluzione giusta oppure
-                       // se serve implementare slide 110 di "concorrenza2122"
+verhogen(int *semaddr)
 {
-  /*idea da
-   * https://www.geeksforgeeks.org/semaphores-in-process-synchronization/*/
-  /*
-  pcb_t *tmp = remove_blocked(semaddr);
-  if(tmp == NULL){
-    (*semaddr) = 1;
-  }else{
-    tmp->p_semAdd = NULL;
-    enq:Wq
-    ueue_proc(tmp);
-  }
-  */
-  /* 3 implementazione */
-  pcb_t* pcb;
-
-  if (*semaddr == 1) {
-    insert_blocked(semaddr, get_act_proc());
-    scheduler_next();
-  } else if ((pcb = remove_blocked(semaddr)) != NULL) {
-    enqueue_proc(pcb, pcb->p_prio);
-  }
-
-  [1] -> p2  
-
-  S -> p1, p3, p4
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  /*rimuovo un processo bloccato dal semaforo*/
-  pcb_t *tmp = remove_blocked((int *)semaddr);
-  if (tmp != NULL) { // se posso rimuovere qualcosa dai bloccati lo faccio
-    /*il processo rimosso viene aggiunto alla coda dei processi attivi*/
-    tmp->p_semAdd = NULL;
-    enqueue_proc(tmp, tmp->p_prio);
-    (*semaddr) = 0; // !!! NON SO SE QUESTO SIA CONCETTUALMENTE SBAGLIATO !!!
-  } else {          // se non posso rimuovere nulla metto il semaforo a 1
-    (*semaddr) = 1;
-  }
+  // TODO
 }
 
 static void wait_for_clock(void)
@@ -240,7 +172,7 @@ static void wait_for_clock(void)
   pcb_t *tmp = get_act_proc();
 
   /*blocco il processo sul semaforo ricevuto come parametro*/
-  tmp->p_semAdd = (int *)dev_sem[ITINT];
+  tmp->p_semAdd = (int *)dev_sem[ITINT]; /* TODO 4 yonas */
   insert_blocked((int *)dev_sem[ITINT], tmp);
   tmp = NULL;
 

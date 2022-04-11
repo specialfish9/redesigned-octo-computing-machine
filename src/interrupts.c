@@ -1,17 +1,26 @@
 #include "interrupts.h"
 #include "asl.h"
+#include "listx.h"
 #include "utils.h"
 #include <umps3/umps/const.h>
 #include <umps3/umps/libumps.h>
 #include <umps3/umps/types.h>
 
+static int sem_it;
+static int sem_disk[DEVPERINT];
+static int sem_flash[DEVPERINT];
+static int sem_net[DEVPERINT];
+static int sem_printer[DEVPERINT];
+static int sem_term_in[DEVPERINT];
+static int sem_term_out[DEVPERINT];
+
 inline void init_dev_sem(void)
 {
   size_tt i;
 
-  i = 0;
-  while (i < DEV_SEM_LEN)
-    dev_sem[i++] = 0;
+  sem_it = 0;
+  for (i = 0; i < DEVPERINT; ++i) 
+    sem_disk[i] = sem_flash[i] = sem_net[i] = sem_printer[i] = sem_term_in[i] = sem_term_out[i] = 0;
 }
 
 inline void handle_interrupts(const int line)
@@ -27,8 +36,8 @@ inline void handle_interrupts(const int line)
   case ITINT: {
     /* Pseudo-clock Tick */
     LDIT(100000);
-    /* TODO VEHROGEN? */
-    remove_blocked(&dev_sem[ITINT]);
+    while(remove_blocked(&sem_it))
+        ;
     dev_sem[ITINT] = 0;
 
     break;
