@@ -8,6 +8,7 @@
 #include "scheduler.h"
 #include "utils.h"
 #include <umps3/umps/libumps.h>
+#include <umps3/umps/arch.h>
 
 extern pcb_t *act_proc;
 
@@ -118,8 +119,33 @@ void handle_syscall(void)
       enqueue_proc(act_proc, PROCESS_PRIO_LOW);
     }
   }
+   case DOIO: {
+      // unsigned int sem=
+      // passeren(sem)
+      break;
+    }
+    //SYSCALL che restituisce in v0 il tempo di utilizzo del processore da parte del processo attivo
+    case GETTIME: {
+      //p_time nel pcb del processo attivo è costantemente aggiornato durante l'esecuzione, quindi si inserisce quel valore in v0
+      act_proc->p_s.reg_v0=act_proc->p_time;
+      break;
+    }
+    //SYSCALL che inserisce un PID nel registro v0 del processo attivo in base a cosa è scritto in a1
+    case GETPROCESSID: {
+      int parent = arg1;
+      //Se l'argomento 1 è 0 (quindi se parent è falso), in v0 viene inserito il PID del processo chiamante
+      if(!parent)
+        act_proc->p_s.reg_v0=act_proc->p_pid;
+      //Altrimenti, se l'argomento è diverso da 0, e il processo chiamante ha effettivamente un processo padre, si inserisce in v0 il PID del padre
+      else if(act_proc->p_parent!=NULL)
+        act_proc->p_s.reg_v0=act_proc->p_parent->p_pid;
+      else
+      //Come richiesto nella specifica, se viene richiesto il PID del padre di un processo senza genitore, viene restituito 0
+        act_proc->p_s.reg_v0=0;
+      break;
+    }
   default:
-    /* TODOAny
+    /* TODO Any
 attempt to request a non-existent Nucleus service should trigger a Program
 Trap exception too*/
     break;
