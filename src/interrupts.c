@@ -5,7 +5,6 @@
 #include <umps3/umps/libumps.h>
 #include <umps3/umps/types.h>
 
-
 inline void init_dev_sem(void)
 {
   size_tt i;
