@@ -3,9 +3,9 @@
 
 #include "pandos_types.h"
 
-extern size_tt procs_count;
-extern size_tt sb_procs;
+
 extern pcb_t *act_proc;
+extern size_tt sb_procs;
 
 extern void init_scheduler(void);
 
@@ -55,7 +55,6 @@ extern pcb_t *dequeue_proc(const unsigned int priority);
  * */
 extern pcb_t *rm_proc(pcb_t *const pcb, const unsigned int priority);
 
-/*restituisce il pcb processo attualmente attivo*/
-extern pcb_t *get_act_proc(void);
+extern void block_act_proc(int *const sem_addr);
 
 #endif

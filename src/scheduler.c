@@ -9,12 +9,11 @@
 #include <umps3/umps/libumps.h>
 #include <umps3/umps/types.h>
 
-#define LOG(s) //print1("[Scheduler]" s)
+#define LOG(s) kprint("S>" s)
 
 pcb_t *act_proc;
-
- size_tt procs_count;
- size_tt sb_procs;
+size_tt sb_procs;
+static size_tt procs_count;
 static struct list_head l_queue;
 static struct list_head h_queue;
 static unsigned int pid_count = 1;
@@ -166,5 +165,3 @@ inline pcb_t *rm_proc(pcb_t *const pcb, const unsigned int priority)
   }
   return NULL;
 }
-
-inline pcb_t *get_act_proc() { return act_proc; }

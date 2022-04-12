@@ -1,14 +1,1 @@
-Init passup vector...done!
-Init data structures...done!
-Loading interval timer...done!
-Creating init process...done!
-Starting init process...
-[Scheduler]Chosing next process...
-[Scheduler]Loading low priority process with PID 1
-EXCEPTION HANDLER FIRED with code 8
-Handling syscall 0
-EXCEPTION HANDLER FIRED with code 8
-Handling syscall -4
-EXCEPTION HANDLER FIRED with code 8
-Handling syscall -3
-kernel panic()
+p

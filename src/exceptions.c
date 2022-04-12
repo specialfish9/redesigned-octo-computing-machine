@@ -13,6 +13,7 @@
 #include <umps3/umps/types.h>
 
 extern pcb_t *act_proc;
+extern size_tt sb_procs;
 
 /**
   Crea un nuovo processo come figlio del chiamante.
@@ -56,12 +57,9 @@ int handle_syscall(void)
   arg2 = act_proc->p_s.reg_a2;
   arg3 = act_proc->p_s.reg_a3;
 
-  //print1("Handling syscall ");
-  //print1_int(number);
-
-    kprint("NSYS");
-    kprint_int(number);
-    kprint("|");
+  kprint("NSYS");
+  kprint_int(number);
+  kprint("|");
   
 
   switch (number) {
@@ -225,7 +223,7 @@ static void wait_for_clock(void)
 
   kprint("\n---BLOCKING ACTIVE PROXESS ON ASL");
   /*estraggo un processo dalla coda degli attivi*/
-  pcb_t *tmp = get_act_proc();
+  pcb_t *tmp = act_proc;
 
   /*blocco il processo sul semaforo ricevuto come parametro*/
   //tmp->p_semAdd = (int *)sem_it; /* TODO 4 yonas */
