@@ -3,5 +3,6 @@
 
 void kprint(char *);
 void kprint_hex(unsigned int);
+void kprint_int(int);
 
 #endif

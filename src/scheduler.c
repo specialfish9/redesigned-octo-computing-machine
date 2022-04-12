@@ -9,12 +9,12 @@
 #include <umps3/umps/libumps.h>
 #include <umps3/umps/types.h>
 
-#define LOG(s) print1("[Scheduler]" s)
+#define LOG(s) //print1("[Scheduler]" s)
 
 pcb_t *act_proc;
 
-static size_tt procs_count;
-static size_tt sb_procs;
+ size_tt procs_count;
+ size_tt sb_procs;
 static struct list_head l_queue;
 static struct list_head h_queue;
 static unsigned int pid_count = 1;
@@ -60,7 +60,7 @@ inline void scheduler_next(void)
       PANIC();
     }
     LOG("Loading high priority process with PID ");
-    print1_int(act_proc->p_pid);
+    //print1_int(act_proc->p_pid);
 
     /* Aggiorno l'age del processo */
     STCK(act_proc->p_tm_updt);
@@ -72,8 +72,8 @@ inline void scheduler_next(void)
     /* Scegli un processo a priorità bassa */
     act_proc = remove_proc_q(&l_queue);
     LOG("Loading low priority process with PID ");
-    print1_int(act_proc->p_pid);
-    setTIMER(TIMESLICE);
+    //print1_int(act_proc->p_pid);
+    setTIMER(TIMESLICE * (*(int *)(TIMESCALEADDR)));
 
     /* Aggiorno l'age del processo */
     STCK(act_proc->p_tm_updt);
@@ -82,16 +82,20 @@ inline void scheduler_next(void)
     LDST(&act_proc->p_s);
 
   } else if (!procs_count) {
-    print1_err("No process alive: halting...");
+    //print1_err("No process alive: halting...");
     HALT();
   } else if (procs_count && sb_procs) {
     /* TODO set status register to ebable interrupts and
      * disable the plt */
-    print1_err("No process available: waiting...");
+    //print1_err("No process available: waiting...");
+    setTIMER(TIMESLICE * (*(int *)(TIMESCALEADDR)));
+    setSTATUS((getSTATUS() | STATUS_IEc | STATUS_TE) ^ STATUS_TE);
+    kprint("wait|");
     WAIT();
   } else if (procs_count && !sb_procs) {
     /* DEADLOCK !*/
-    print1_err("DEADLOCK: panicing...");
+    //print1_err("DEADLOCK: panicing...");
+    kprint("panic in scheduler|");
     PANIC();
   }
 }

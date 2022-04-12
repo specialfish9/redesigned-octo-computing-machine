@@ -3,6 +3,8 @@
 
 #include "pandos_types.h"
 
+extern size_tt procs_count;
+extern size_tt sb_procs;
 extern pcb_t *act_proc;
 
 extern void init_scheduler(void);
