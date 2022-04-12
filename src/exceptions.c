@@ -8,8 +8,8 @@
 #include "pcb.h"
 #include "scheduler.h"
 #include "utils.h"
-#include <umps3/umps/libumps.h>
 #include <umps3/umps/arch.h>
+#include <umps3/umps/libumps.h>
 #include <umps3/umps/types.h>
 
 extern pcb_t *act_proc;
@@ -75,7 +75,6 @@ int handle_syscall(void)
   kprint("NSYS");
   kprint_int(number);
   kprint("|");
-  
 
   switch (number) {
   case CREATEPROCESS: {
@@ -125,69 +124,75 @@ int handle_syscall(void)
   case YIELD: {
     return 1;
   }
-   case DOIO: {
-      int line = -1, index = -1;
-      int *sem;
-      int *dev = (int*) DEVICE_FROM_COMDADDR(arg1);
-      for(int i = 0; i < N_EXT_IL; ++i) {
-        for(int j = 0; j < N_DEV_PER_IL; ++j) {
-          if(((int*)DEV_REG_ADDR(IL_DISK+i,j)) != dev)
-            continue;
+  case DOIO: {
+    int line = -1, index = -1;
+    int *sem;
+    int *dev = (int *)DEVICE_FROM_COMDADDR(arg1);
+    for (int i = 0; i < N_EXT_IL; ++i) {
+      for (int j = 0; j < N_DEV_PER_IL; ++j) {
+        if (((int *)DEV_REG_ADDR(IL_DISK + i, j)) != dev)
+          continue;
 
-          line = i;
-          index = j;
-          i=3+N_EXT_IL;
-          break;
-        }
+        line = i;
+        index = j;
+        i = 3 + N_EXT_IL;
+        break;
       }
+    }
 
-      if(line == IL_DISK-IL_DISK)
-        sem = sem_disk;
-      else if(line == IL_FLASH-IL_DISK)
-        sem = sem_disk;
-      else if(line == IL_ETHERNET-IL_DISK)
-        sem = sem_disk;
-      else if(line == IL_PRINTER-IL_DISK)
-        sem = sem_printer;
-      else if(line == IL_TERMINAL-IL_DISK){
-        if(IS_TERM_WRITING(arg1))
-          sem = sem_term_out;
-        else
-          sem = sem_term_in;
-      } else {
-        kprint("no sem|");
-      }
-      kprint("here|");
-      passeren(sem+index);
-      kprint("there|");
-      *((unsigned int *)arg1) = arg2;
-      return 0;
-    }
-    //SYSCALL che restituisce in v0 il tempo di utilizzo del processore da parte del processo attivo
-    case GETTIME: {
-      //p_time nel pcb del processo attivo è costantemente aggiornato durante l'esecuzione, quindi si inserisce quel valore in v0
-      act_proc->p_s.reg_v0=act_proc->p_time;
-      break;
-    }
-    //SYSCALL che inserisce un PID nel registro v0 del processo attivo in base a cosa è scritto in a1
-    case GETPROCESSID: {
-      int parent = arg1;
-      //Se l'argomento 1 è 0 (quindi se parent è falso), in v0 viene inserito il PID del processo chiamante
-      if(!parent)
-        act_proc->p_s.reg_v0=act_proc->p_pid;
-      //Altrimenti, se l'argomento è diverso da 0, e il processo chiamante ha effettivamente un processo padre, si inserisce in v0 il PID del padre
-      else if(act_proc->p_parent!=NULL)
-        act_proc->p_s.reg_v0=act_proc->p_parent->p_pid;
+    if (line == IL_DISK - IL_DISK)
+      sem = sem_disk;
+    else if (line == IL_FLASH - IL_DISK)
+      sem = sem_disk;
+    else if (line == IL_ETHERNET - IL_DISK)
+      sem = sem_disk;
+    else if (line == IL_PRINTER - IL_DISK)
+      sem = sem_printer;
+    else if (line == IL_TERMINAL - IL_DISK) {
+      if (IS_TERM_WRITING(arg1))
+        sem = sem_term_out;
       else
-      //Come richiesto nella specifica, se viene richiesto il PID del padre di un processo senza genitore, viene restituito 0
-        act_proc->p_s.reg_v0=0;
-      break;
+        sem = sem_term_in;
+    } else {
+      kprint("no sem|");
     }
+    kprint("here|");
+    passeren(sem + index);
+    kprint("there|");
+    *((unsigned int *)arg1) = arg2;
+    return 0;
+  }
+  // SYSCALL che restituisce in v0 il tempo di utilizzo del processore da parte
+  // del processo attivo
+  case GETTIME: {
+    // p_time nel pcb del processo attivo è costantemente aggiornato durante
+    // l'esecuzione, quindi si inserisce quel valore in v0
+    act_proc->p_s.reg_v0 = act_proc->p_time;
+    break;
+  }
+  // SYSCALL che inserisce un PID nel registro v0 del processo attivo in base a
+  // cosa è scritto in a1
+  case GETPROCESSID: {
+    int parent = arg1;
+    // Se l'argomento 1 è 0 (quindi se parent è falso), in v0 viene inserito il
+    // PID del processo chiamante
+    if (!parent)
+      act_proc->p_s.reg_v0 = act_proc->p_pid;
+    // Altrimenti, se l'argomento è diverso da 0, e il processo chiamante ha
+    // effettivamente un processo padre, si inserisce in v0 il PID del padre
+    else if (act_proc->p_parent != NULL)
+      act_proc->p_s.reg_v0 = act_proc->p_parent->p_pid;
+    else
+      // Come richiesto nella specifica, se viene richiesto il PID del padre di
+      // un processo senza genitore, viene restituito 0
+      act_proc->p_s.reg_v0 = 0;
+    break;
+  }
   default:
     /* TODO Any
 attempt to request a non-existent Nucleus service should trigger a Program
 Trap exception too*/
-return passup_or_die(GENERALEXCEPT);
+    return passup_or_die(GENERALEXCEPT);
     break;
   }
   return 1;
@@ -202,13 +207,14 @@ static int create_process(state_t *statep, int prio, support_t *supportp)
   return new_proc->p_pid;
 }
 
- void passeren(int *semaddr)
+void passeren(int *semaddr)
 {
-  /* TODO: forse va modificato il campo p_s->state del pcb per fare lo switch tra running e blocked*/
+  /* TODO: forse va modificato il campo p_s->state del pcb per fare lo switch
+   * tra running e blocked*/
 
   /* Se il valore del semaforo è 1 sblocco il processo, se è 0 lo blocco */
   pcb_t *tmp;
-  if (*semaddr == 0) {  
+  if (*semaddr == 0) {
 
     // Controlli per bloccare il processo
     if (insert_blocked(semaddr, act_proc)) {
@@ -248,17 +254,17 @@ static void verhogen(int *semaddr)
   } else {
     *semaddr = 1;
   }
-
 }
 
 static void wait_for_clock(void)
 {
   /* blocco il processo attivo sul semaforo */
-  insert_blocked((int *)dev_sem[ITINT], get_act_proc());   /* TODO: usare sem_it da interrupts */
+  insert_blocked((int *)dev_sem[ITINT],
+                 get_act_proc()); /* TODO: usare sem_it da interrupts */
 
-  dev_sem[ITINT] = 1;     /* TODO: anche qua va usato sem_it (anzi forse sta parte di mettere a 1 va tolta ma non sono sicuro) */
+  dev_sem[ITINT] = 1; /* TODO: anche qua va usato sem_it (anzi forse sta parte
+                         di mettere a 1 va tolta ma non sono sicuro) */
   /* TODO: Chiamata a scheduler */
-
 }
 
 static void kill_parent_and_progeny(pcb_t *p)
@@ -270,17 +276,21 @@ static void kill_parent_and_progeny(pcb_t *p)
   kill_proc(p);
 }
 
-int passup_or_die(size_tt kind) {
-  if(act_proc == NULL)
+int passup_or_die(size_tt kind)
+{
+  if (act_proc == NULL)
     return 0;
-  if(act_proc->p_supportStruct == NULL) {
+  if (act_proc->p_supportStruct == NULL) {
     kill_parent_and_progeny(act_proc);
     return 0;
   }
-  
-  memcpy(act_proc->p_supportStruct->sup_exceptState+kind, (state_t *)BIOSDATAPAGE, sizeof(state_t));
-  LDCXT(act_proc->p_supportStruct->sup_exceptContext[kind].pc, act_proc->p_supportStruct->sup_exceptContext[kind].status, act_proc->p_supportStruct->sup_exceptContext[kind].pc);
-  
+
+  memcpy(act_proc->p_supportStruct->sup_exceptState + kind,
+         (state_t *)BIOSDATAPAGE, sizeof(state_t));
+  LDCXT(act_proc->p_supportStruct->sup_exceptContext[kind].pc,
+        act_proc->p_supportStruct->sup_exceptContext[kind].status,
+        act_proc->p_supportStruct->sup_exceptContext[kind].pc);
+
   /* never reached */
   return 1;
 }

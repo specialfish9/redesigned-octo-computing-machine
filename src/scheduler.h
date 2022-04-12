@@ -3,7 +3,6 @@
 
 #include "pandos_types.h"
 
-
 extern pcb_t *act_proc;
 extern size_tt sb_procs;
 

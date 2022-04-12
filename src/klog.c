@@ -39,12 +39,11 @@ void kprint(char *str)
 // Princ a number in decimal numbers !!backwards!!
 void kprint_int(int num)
 {
-  if(num < 0){
+  if (num < 0) {
     num = -num;
     klog_buffer[klog_line_index][klog_char_index] = '-';
     next_char();
   }
-
 
   do {
     klog_buffer[klog_line_index][klog_char_index] = '0' + (num % 10);
