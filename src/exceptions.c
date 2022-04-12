@@ -24,14 +24,25 @@ inline static int create_process(state_t *statep, int prio,
 
 // static void termniate_process(int pid);
 
+/**
+  Esegue un'operazione P sul semaforo binario.
+  @param semaddr: puntatore al semaforo.
+ */
 inline static void passeren(int *semaddr);
 
+/**
+  Esegue un'operazione V sul semaforo binario.
+  @param semaddr: puntatore al semaforo.
+ */
 inline static void verhogen(int *semaddr);
 
 // static int do_io(int *cmd_addr, int cmd_val);
 
 // static int get_cpu_time(void);
 
+/**
+  Esegue un'operazione P sul semaforo di pseudo-clock.
+ */
 inline static void wait_for_clock(void);
 
 // static support_t* get_support_data(void);
@@ -163,8 +174,11 @@ static int create_process(state_t *statep, int prio, support_t *supportp)
 
 static void passeren(int *semaddr)
 {
+  /* TODO: forse va modificato il campo p_s->state del pcb per fare lo switch tra running e blocked*/
+
+  /* Se il valore del semaforo è 1 sblocco il processo, se è 0 lo blocco */
   pcb_t *tmp;
-  if (*semaddr == 0) {
+  if (*semaddr == 0) {  
 
     // Controlli per bloccare il processo
     if (insert_blocked(semaddr, get_act_proc())) {
@@ -172,6 +186,7 @@ static void passeren(int *semaddr)
       /* Non dovrebbe mai capitare, ma in caso */
       PANIC();
     }
+    /* TODO: Chiamata a scheduler */
 
   } else if ((tmp = remove_blocked(semaddr)) != NULL) {
     // Se ci accorgiamo che la risorsa è disponibile ma altri processi la
@@ -182,28 +197,38 @@ static void passeren(int *semaddr)
   }
 }
 
-static void
-verhogen(int *semaddr)
+static void verhogen(int *semaddr)
 {
-  // TODO
+  /* Se il valore del semaforo è 0 sblocco il processo, se è 1 lo blocco */
+  pcb_t *tmp;
+  if (*semaddr == 1) {
+    tmp = get_act_proc();
+    // Controlli per bloccare il processo
+    if (insert_blocked(semaddr, tmp)) {
+      /* Se ritorna true non possiamo assegnare un semaforo */
+      /* Non dovrebbe mai capitare, ma in caso */
+      PANIC();
+    }
+    /* TODO: Chiamata a scheduler */
+
+  } else if ((tmp = remove_blocked(semaddr)) != NULL) {
+    // Se ci accorgiamo che la risorsa è disponibile ma altri processi la
+    // stavano aspettando
+    enqueue_proc(tmp, tmp->p_prio);
+  } else {
+    *semaddr = 1;
+  }
 }
 
 static void wait_for_clock(void)
 {
-  // always block the current process on ASL and call scheduler -> no control on
-  // 0 or 1
+  kprint("\n---BLOCKING ACTIVE PROCESS ON ASL");
 
-  kprint("\n---BLOCKING ACTIVE PROXESS ON ASL");
-  /*estraggo un processo dalla coda degli attivi*/
-  pcb_t *tmp = get_act_proc();
+  /* blocco il processo attivo sul semaforo */
+  insert_blocked((int *)dev_sem[ITINT], get_act_proc());   /* TODO: usare sem_it da interrupts */
 
-  /*blocco il processo sul semaforo ricevuto come parametro*/
-  tmp->p_semAdd = (int *)dev_sem[ITINT]; /* TODO 4 yonas */
-  insert_blocked((int *)dev_sem[ITINT], tmp);
-  tmp = NULL;
-
-  dev_sem[ITINT] = 1;
-  scheduler_next();
+  dev_sem[ITINT] = 1;     /* TODO: anche qua va usato sem_it (anzi forse sta parte di mettere a 1 va tolta ma non sono sicuro) */
+  /* TODO: Chiamata a scheduler */
 }
 
 static void kill_parent_and_progeny(pcb_t *p)
