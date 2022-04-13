@@ -158,6 +158,9 @@
 #define POOLSIZE (UPROCMAX * 2)
 /* End of Mikeyg constants */
 
+/* Extra Utility Constants*/
+#define TIMER_SEM_INDEX 48
+
 #define DEVICE_FROM_COMDADDR(cmd)                                              \
   (int *)(DEV_REG_SIZE * (((int)cmd - DEV_REG_START) / DEV_REG_SIZE) +         \
           DEV_REG_START)
