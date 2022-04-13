@@ -23,6 +23,31 @@ int sem_printer[DEVPERINT];
 int sem_term_in[DEVPERINT];
 int sem_term_out[DEVPERINT];
 
+inline int *get_dev_sem(int index){
+  switch(index/DEVPERINT){
+    case 0:
+      return &sem_disk[index%DEVPERINT];
+      break;
+    case 1:
+      return &sem_flash[index%DEVPERINT];
+      break;
+    case 2:
+      return &sem_net[index%DEVPERINT];
+      break;
+    case 3:
+      return &sem_printer[index%DEVPERINT];
+      break;
+    case 4:
+      return &sem_term_in[index%DEVPERINT];
+      break;
+    case 5:
+      return &sem_term_out[index%DEVPERINT];
+      break;
+    default:
+      return &sem_it;
+  }
+}
+
 inline void init_dev_sem(void)
 {
   size_tt i;
@@ -75,7 +100,6 @@ inline void handle_interrupts(const int line)
     while ((p = remove_blocked(&sem_it)) != NULL)
       enqueue_proc(p, p->p_prio);
     sem_it = 0;
-
     break;
   }
   case DISKINT: {
