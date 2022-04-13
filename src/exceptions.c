@@ -2,15 +2,18 @@
 #include "asl.h"
 #include "interrupts.h"
 #include "klog.h"
+#include "listx.h"
 #include "pandos_const.h"
 #include "pandos_types.h"
 #include "pcb.h"
 #include "scheduler.h"
 #include "utils.h"
-#include <umps3/umps/libumps.h>
 #include <umps3/umps/arch.h>
+#include <umps3/umps/libumps.h>
+#include <umps3/umps/types.h>
 
 extern pcb_t *act_proc;
+extern size_tt sb_procs;
 
 /**
   Crea un nuovo processo come figlio del chiamante.
@@ -24,14 +27,25 @@ inline static int create_process(state_t *statep, int prio,
 
 // static void termniate_process(int pid);
 
+/**
+  Esegue un'operazione P sul semaforo binario.
+  @param semaddr: puntatore al semaforo.
+ */
 inline static void passeren(int *semaddr);
 
+/**
+  Esegue un'operazione V sul semaforo binario.
+  @param semaddr: puntatore al semaforo.
+ */
 inline static void verhogen(int *semaddr);
 
 // static int do_io(int *cmd_addr, int cmd_val);
 
 // static int get_cpu_time(void);
 
+/**
+  Esegue un'operazione P sul semaforo di pseudo-clock.
+ */
 inline static void wait_for_clock(void);
 
 // static support_t* get_support_data(void);
@@ -42,14 +56,12 @@ inline static void wait_for_clock(void);
 
 inline static void kill_parent_and_progeny(pcb_t *p);
 
-void handle_syscall(void)
+int handle_syscall(void)
 {
 
   int number;
   unsigned int arg1, arg2, arg3;
 
-  /* luca: schedluer should be round robin, therefore act_prov should be removed
-   * from the ready queue it's in and should be enqueued at the back */
   /* for higher priority processes this is not expected, though a good rule of
   thumb is to assert the act_process is outside any queue when an interrupt is
   being handled and having it re-inserted in the right place (either head or
@@ -60,8 +72,9 @@ void handle_syscall(void)
   arg2 = act_proc->p_s.reg_a2;
   arg3 = act_proc->p_s.reg_a3;
 
-  print1("Handling syscall ");
-  print1_int(number);
+  kprint("NSYS");
+  kprint_int(number);
+  kprint("|");
 
   switch (number) {
   case CREATEPROCESS: {
@@ -80,7 +93,7 @@ void handle_syscall(void)
       res = search_by_pid(pid);
 
     kill_parent_and_progeny(res);
-    break;
+    return 0;
   }
   case PASSEREN: {
     int *sem_addr = (int *)arg1;
@@ -89,7 +102,8 @@ void handle_syscall(void)
       PANIC();
     }
     passeren(sem_addr);
-    break;
+    /* return 0 if act_proc has been blocked */
+    return 1;
   }
   case VERHOGEN: {
     int *sem_addr = (int *)arg1;
@@ -102,62 +116,86 @@ void handle_syscall(void)
   }
   case CLOCKWAIT: {
     wait_for_clock();
-    break;
+    return 0;
   }
   case GETSUPPORTPTR: {
     act_proc->p_s.reg_a0 = (memaddr)act_proc->p_supportStruct;
   }
   case YIELD: {
-    if (act_proc->p_prio == PROCESS_PRIO_HIGH) {
-      rm_proc(act_proc,
-              PROCESS_PRIO_HIGH); // TODO: parent a single high priority process
-                                  // from causing starvation
-      enqueue_proc(act_proc, PROCESS_PRIO_HIGH);
-
-    } else if (act_proc->p_prio == PROCESS_PRIO_LOW) {
-      rm_proc(act_proc, PROCESS_PRIO_LOW);
-      enqueue_proc(act_proc, PROCESS_PRIO_LOW);
-    }
+    return 1;
   }
-   case DOIO: {
-     if(arg1>DEV_REG_START && arg1<DEV_REG_END){
-      int *sem_addr=get_dev_sem(get_ind_from_cmd(arg1));
-      int *cmd_addr=(int*) arg1;
-      
-      passeren(sem_addr);
-      *cmd_addr=arg2;
-     }
-      
+  case DOIO: {
+    int line = -1, index = -1;
+    int *sem;
+    int *dev = (int *)DEVICE_FROM_COMDADDR(arg1);
+    for (int i = 0; i < N_EXT_IL; ++i) {
+      for (int j = 0; j < N_DEV_PER_IL; ++j) {
+        if (((int *)DEV_REG_ADDR(IL_DISK + i, j)) != dev)
+          continue;
 
-      // passeren(sem)
-      break;
+        line = i;
+        index = j;
+        i = 3 + N_EXT_IL;
+        break;
+      }
     }
-    //SYSCALL che restituisce in v0 il tempo di utilizzo del processore da parte del processo attivo
-    case GETTIME: {
-      //p_time nel pcb del processo attivo è costantemente aggiornato durante l'esecuzione, quindi si inserisce quel valore in v0
-      act_proc->p_s.reg_v0=act_proc->p_time;
-      break;
-    }
-    //SYSCALL che inserisce un PID nel registro v0 del processo attivo in base a cosa è scritto in a1
-    case GETPROCESSID: {
-      int parent = arg1;
-      //Se l'argomento 1 è 0 (quindi se parent è falso), in v0 viene inserito il PID del processo chiamante
-      if(!parent)
-        act_proc->p_s.reg_v0=act_proc->p_pid;
-      //Altrimenti, se l'argomento è diverso da 0, e il processo chiamante ha effettivamente un processo padre, si inserisce in v0 il PID del padre
-      else if(act_proc->p_parent!=NULL)
-        act_proc->p_s.reg_v0=act_proc->p_parent->p_pid;
+
+    if (line == IL_DISK - IL_DISK)
+      sem = sem_disk;
+    else if (line == IL_FLASH - IL_DISK)
+      sem = sem_disk;
+    else if (line == IL_ETHERNET - IL_DISK)
+      sem = sem_disk;
+    else if (line == IL_PRINTER - IL_DISK)
+      sem = sem_printer;
+    else if (line == IL_TERMINAL - IL_DISK) {
+      if (IS_TERM_WRITING(arg1))
+        sem = sem_term_out;
       else
-      //Come richiesto nella specifica, se viene richiesto il PID del padre di un processo senza genitore, viene restituito 0
-        act_proc->p_s.reg_v0=0;
-      break;
+        sem = sem_term_in;
+    } else {
+      kprint("no sem|");
     }
+    kprint("here|");
+    passeren(sem + index);
+    kprint("there|");
+    *((unsigned int *)arg1) = arg2;
+    return 0;
+  }
+  // SYSCALL che restituisce in v0 il tempo di utilizzo del processore da parte
+  // del processo attivo
+  case GETTIME: {
+    // p_time nel pcb del processo attivo è costantemente aggiornato durante
+    // l'esecuzione, quindi si inserisce quel valore in v0
+    act_proc->p_s.reg_v0 = act_proc->p_time;
+    break;
+  }
+  // SYSCALL che inserisce un PID nel registro v0 del processo attivo in base a
+  // cosa è scritto in a1
+  case GETPROCESSID: {
+    int parent = arg1;
+    // Se l'argomento 1 è 0 (quindi se parent è falso), in v0 viene inserito il
+    // PID del processo chiamante
+    if (!parent)
+      act_proc->p_s.reg_v0 = act_proc->p_pid;
+    // Altrimenti, se l'argomento è diverso da 0, e il processo chiamante ha
+    // effettivamente un processo padre, si inserisce in v0 il PID del padre
+    else if (act_proc->p_parent != NULL)
+      act_proc->p_s.reg_v0 = act_proc->p_parent->p_pid;
+    else
+      // Come richiesto nella specifica, se viene richiesto il PID del padre di
+      // un processo senza genitore, viene restituito 0
+      act_proc->p_s.reg_v0 = 0;
+    break;
+  }
   default:
     /* TODO Any
 attempt to request a non-existent Nucleus service should trigger a Program
 Trap exception too*/
+    return passup_or_die(GENERALEXCEPT);
     break;
   }
+  return 1;
 }
 
 static int create_process(state_t *statep, int prio, support_t *supportp)
@@ -169,50 +207,69 @@ static int create_process(state_t *statep, int prio, support_t *supportp)
   return new_proc->p_pid;
 }
 
-static void passeren(int *semaddr)
+void passeren(int *semaddr)
 {
+  /* TODO: forse va modificato il campo p_s->state del pcb per fare lo switch
+   * tra running e blocked*/
+
+  /* Se il valore del semaforo è 1 sblocco il processo, se è 0 lo blocco */
   pcb_t *tmp;
   if (*semaddr == 0) {
 
     // Controlli per bloccare il processo
-    if (insert_blocked(semaddr, get_act_proc())) {
+    if (insert_blocked(semaddr, act_proc)) {
       /* Se ritorna true non possiamo assegnare un semaforo */
       /* Non dovrebbe mai capitare, ma in caso */
       PANIC();
     }
-
+    sb_procs++;
   } else if ((tmp = remove_blocked(semaddr)) != NULL) {
     // Se ci accorgiamo che la risorsa è disponibile ma altri processi la
     // stavano aspettando
+    --sb_procs;
     enqueue_proc(tmp, tmp->p_prio);
   } else {
     *semaddr = 0;
   }
 }
 
-static void
-verhogen(int *semaddr)
+static void verhogen(int *semaddr)
 {
-  // TODO
+  /* Se il valore del semaforo è 0 sblocco il processo, se è 1 lo blocco */
+  pcb_t *tmp;
+  if (*semaddr == 1) {
+    tmp = get_act_proc();
+    // Controlli per bloccare il processo
+    if (insert_blocked(semaddr, tmp)) {
+      /* Se ritorna true non possiamo assegnare un semaforo */
+      /* Non dovrebbe mai capitare, ma in caso */
+      PANIC();
+    }
+    /* TODO: Chiamata a scheduler */
+
+  } else if ((tmp = remove_blocked(semaddr)) != NULL) {
+    // Se ci accorgiamo che la risorsa è disponibile ma altri processi la
+    // stavano aspettando
+    enqueue_proc(tmp, tmp->p_prio);
+  } else {
+    *semaddr = 1;
+  }
 }
 
 static void wait_for_clock(void)
 {
-  // always block the current process on ASL and call scheduler -> no control on
-  // 0 or 1
-
-  kprint("\n---BLOCKING ACTIVE PROXESS ON ASL");
-  /*estraggo un processo dalla coda degli attivi*/
-  pcb_t *tmp = get_act_proc();
+  /* blocco il processo attivo sul semaforo */
+  insert_blocked((int *)dev_sem[ITINT],
+                 get_act_proc()); /* TODO: usare sem_it da interrupts */
 
   /*blocco il processo sul semaforo ricevuto come parametro*/
   int *dev_sem= get_dev_sem(TIMER_SEM_INDEX);
   insert_blocked(dev_sem, tmp);
   tmp = NULL;
 
-  //???
+
   *dev_sem = 1;
-  scheduler_next();
+  // TODO scheduler_next()
 }
 
 static void kill_parent_and_progeny(pcb_t *p)
@@ -223,6 +280,7 @@ static void kill_parent_and_progeny(pcb_t *p)
 
   kill_proc(p);
 }
+
 
 //Trova l'indice che identifica il device a partire dall'indirizzo del suo command register
 //Se non si usa esternamente posso non metterla nel .h giusto?
@@ -237,4 +295,23 @@ int get_ind_from_cmd(unsigned int cmd_addr){
   else
     PANIC();
   return -1;
+}
+
+int passup_or_die(size_tt kind)
+{
+  if (act_proc == NULL)
+    return 0;
+  if (act_proc->p_supportStruct == NULL) {
+    kill_parent_and_progeny(act_proc);
+    return 0;
+  }
+
+  memcpy(act_proc->p_supportStruct->sup_exceptState + kind,
+         (state_t *)BIOSDATAPAGE, sizeof(state_t));
+  LDCXT(act_proc->p_supportStruct->sup_exceptContext[kind].pc,
+        act_proc->p_supportStruct->sup_exceptContext[kind].status,
+        act_proc->p_supportStruct->sup_exceptContext[kind].pc);
+
+  /* never reached */
+  return 1;
 }

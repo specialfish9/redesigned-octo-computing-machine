@@ -36,6 +36,22 @@ void kprint(char *str)
   }
 }
 
+// Princ a number in decimal numbers !!backwards!!
+void kprint_int(int num)
+{
+  if (num < 0) {
+    num = -num;
+    klog_buffer[klog_line_index][klog_char_index] = '-';
+    next_char();
+  }
+
+  do {
+    klog_buffer[klog_line_index][klog_char_index] = '0' + (num % 10);
+    num /= 10;
+    next_char();
+  } while (num > 0);
+}
+
 // Princ a number in hexadecimal format (best for addresses)
 void kprint_hex(unsigned int num)
 {
