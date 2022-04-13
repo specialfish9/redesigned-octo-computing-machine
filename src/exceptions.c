@@ -238,7 +238,7 @@ static void verhogen(int *semaddr)
   /* Se il valore del semaforo è 0 sblocco il processo, se è 1 lo blocco */
   pcb_t *tmp;
   if (*semaddr == 1) {
-    tmp = get_act_proc();
+    tmp =act_proc; 
     // Controlli per bloccare il processo
     if (insert_blocked(semaddr, tmp)) {
       /* Se ritorna true non possiamo assegnare un semaforo */
@@ -259,8 +259,7 @@ static void verhogen(int *semaddr)
 static void wait_for_clock(void)
 {
   /* blocco il processo attivo sul semaforo */
-  insert_blocked((int *)dev_sem[ITINT],
-                 get_act_proc()); /* TODO: usare sem_it da interrupts */
+  insert_blocked((int *)dev_sem[ITINT], act_proc); /* TODO: usare sem_it da interrupts */
 
   dev_sem[ITINT] = 1; /* TODO: anche qua va usato sem_it (anzi forse sta parte
                          di mettere a 1 va tolta ma non sono sicuro) */
