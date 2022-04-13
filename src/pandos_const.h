@@ -158,4 +158,6 @@
 #define POOLSIZE (UPROCMAX * 2)
 /* End of Mikeyg constants */
 
+/* Extra Utility Constants*/
+#define TIMER_SEM_INDEX 48
 #endif

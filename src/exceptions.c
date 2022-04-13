@@ -120,7 +120,15 @@ void handle_syscall(void)
     }
   }
    case DOIO: {
-      // unsigned int sem=
+     if(arg1>DEV_REG_START && arg1<DEV_REG_END){
+      int *sem_addr=get_dev_sem(get_ind_from_cmd(arg1));
+      int *cmd_addr=(int*) arg1;
+      
+      passeren(sem_addr);
+      *cmd_addr=arg2;
+     }
+      
+
       // passeren(sem)
       break;
     }
@@ -198,11 +206,12 @@ static void wait_for_clock(void)
   pcb_t *tmp = get_act_proc();
 
   /*blocco il processo sul semaforo ricevuto come parametro*/
-  tmp->p_semAdd = (int *)dev_sem[ITINT]; /* TODO 4 yonas */
-  insert_blocked((int *)dev_sem[ITINT], tmp);
+  int *dev_sem= get_dev_sem(TIMER_SEM_INDEX);
+  insert_blocked(dev_sem, tmp);
   tmp = NULL;
 
-  dev_sem[ITINT] = 1;
+  //???
+  *dev_sem = 1;
   scheduler_next();
 }
 
@@ -213,4 +222,19 @@ static void kill_parent_and_progeny(pcb_t *p)
     kill_parent_and_progeny(c);
 
   kill_proc(p);
+}
+
+//Trova l'indice che identifica il device a partire dall'indirizzo del suo command register
+//Se non si usa esternamente posso non metterla nel .h giusto?
+int get_ind_from_cmd(unsigned int cmd_addr){
+  int index = ((cmd_addr-DEV_REG_START)/DEV_REG_SIZE);
+  //Se l'offset del registro cmd è 4 possiamo restituire direttamente l'indice calcolato
+  if( (cmd_addr-DEV_REG_START)%DEV_REG_SIZE==0x4)
+    return index;
+    //Altrimenti se è 0xc stiamo esaminando un sub device di trasmissione di un terminale, e quindi andiamo alla categoria successiva di device (+8)
+  else if( index>32 && (cmd_addr-DEV_REG_START)%DEV_REG_SIZE==0xc)
+    return index+DEVPERINT;
+  else
+    PANIC();
+  return -1;
 }
