@@ -41,8 +41,8 @@ all: figlet structure kernel.core.umps disk0.umps docs
 structure:
 	@echo -e "*** STRUCTURE ***"
 	@echo -e "Generating project structure...":
-	@mkdir doc
-	@mkdir out 
+	@mkdir -p doc
+	@mkdir -p out 
 
 # use umps3-mkdev to create the disk0 device
 disk0.umps:
