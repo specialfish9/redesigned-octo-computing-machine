@@ -1,5 +1,6 @@
 output/*
-obj/*
+obj/*.o
+doc/*
 *.tar.gz
 
 # Prerequisites

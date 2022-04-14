@@ -35,8 +35,14 @@ KERNEL_NAME = ROCM_kernel
 DISK_NAME = disk0
 
 #main target
-all: figlet kernel.core.umps disk0.umps docs
+all: figlet structure kernel.core.umps disk0.umps docs
 	@echo -e "Done :D"
+
+structure:
+	@echo -e "*** STRUCTURE ***"
+	@echo -e "Generating project structure...":
+	@mkdir doc
+	@mkdir out 
 
 # use umps3-mkdev to create the disk0 device
 disk0.umps:
