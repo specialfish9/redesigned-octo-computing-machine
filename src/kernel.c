@@ -15,42 +15,43 @@
 #include <umps3/umps/libumps.h>
 #include <umps3/umps/types.h>
 
-/* FUNZIONI DI INIZIALIZZAZIONE */
+#define LOG(s) kprint("I>" s "|")
+
+/** @brief Inizializza il passup vector. */
 inline static void init_passup_vector(void);
+
+/** Inizializza le strutture dati necessarie per il kernel */
 inline static void init_data_structures(void);
 
-/* HANDLERS */
-inline static void uTLB_RefillHandler(void);
+/** @brief Gestore delle eccezioni.*/
 inline static void exception_handler(void);
 
-extern void test();
+/** @brief Gestore del refil del TLB. */
+inline static void uTLB_RefillHandler(void);
 
 int main(void)
-{
-  // print1("Init passup vector...");
+{  
   init_passup_vector();
-  // print1("done!\n");
-  kprint("Init pv done|");
+  LOG("pv done");
 
-  // print1("Init data structures...");
   init_data_structures();
-  // print1("done!\n");
-  kprint("Init data str done|");
+  LOG("ds done");
 
-  // print1("Loading interval timer...");
-  LDIT(100000); /* 100 millisecs */
-  // print1("done!\n");
-  kprint("IT load done|");
+  /* Carichiamo l'interval timer*/
+  LDIT(PSECOND);
+  LOG("IT loaded");
 
+  /** Impostiamo il registro status */
   setSTATUS((getSTATUS() | STATUS_IEc | STATUS_TE | STATUS_IM_MASK) ^
             STATUS_TE);
 
-  // print1("Creating init process...");
+  /** Kernel entry point */
+  extern void test();
   create_init_proc((memaddr)test);
-  // print1("done!\n");
-  kprint("Init proc done|");
 
-  // print1("Starting init process...\n");
+  LOG("ip created");
+
+  LOG("loading ip");
   scheduler_next();
 
   return 0;

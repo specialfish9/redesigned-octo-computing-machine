@@ -25,26 +25,15 @@ extern size_tt sb_procs;
 inline static int create_process(state_t *statep, int prio,
                                  support_t *suppportp);
 
-// static void termniate_process(int pid);
-
-// static int do_io(int *cmd_addr, int cmd_val);
-
-// static int get_cpu_time(void);
-
 /**
   Esegue un'operazione P sul semaforo di pseudo-clock.
  */
 inline static void wait_for_clock(void);
 
-// static support_t* get_support_data(void);
-
-// static int get_proc_id(int parent);
-
-// static int yield(void);
-
 inline static void kill_parent_and_progeny(pcb_t *p);
 
-int handle_syscall(void)
+
+inline int handle_syscall(void)
 {
 
   int number;

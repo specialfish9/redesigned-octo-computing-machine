@@ -14,6 +14,8 @@
 
 #define TERMSTATMASK 0xFF
 #define RECVD 5
+#define PLTINT 1
+#define ITINT 2
 
 int sem_it;
 int sem_disk[DEVPERINT];
@@ -22,6 +24,9 @@ int sem_net[DEVPERINT];
 int sem_printer[DEVPERINT];
 int sem_term_in[DEVPERINT];
 int sem_term_out[DEVPERINT];
+
+/** TODO add doc*/
+static inline void generic_interrupt_handler(int line, int *semaphores);
 
 inline int *get_dev_sem(int index)
 {
@@ -59,22 +64,6 @@ inline void init_dev_sem(void)
   for (i = 0; i < DEVPERINT; ++i)
     sem_disk[i] = sem_flash[i] = sem_net[i] = sem_printer[i] = sem_term_in[i] =
         sem_term_out[i] = 0;
-}
-
-void generic_interrupt_handler(int line, int *semaphores)
-{
-  size_tt bitmap = CDEV_BITMAP_ADDR(line), index = 0;
-  while (bitmap > 1) {
-    ++index;
-    bitmap >>= 1;
-  }
-  dtpreg_t *reg =
-      (dtpreg_t *)&((devregarea_t *)RAMBASEADDR)->devreg[line][index].dtp;
-  pcb_t *p = verhogen(semaphores + index);
-  if (p != NULL)
-    p->p_s.reg_v0 = reg->status;
-  /* send ack */
-  reg->command = 1;
 }
 
 inline void handle_interrupts(const int line)
@@ -144,4 +133,20 @@ inline void handle_interrupts(const int line)
   default:
     break;
   }
+}
+
+static inline void generic_interrupt_handler(int line, int *semaphores)
+{
+  size_tt bitmap = CDEV_BITMAP_ADDR(line), index = 0;
+  while (bitmap > 1) {
+    ++index;
+    bitmap >>= 1;
+  }
+  dtpreg_t *reg =
+      (dtpreg_t *)&((devregarea_t *)RAMBASEADDR)->devreg[line][index].dtp;
+  pcb_t *p = verhogen(semaphores + index);
+  if (p != NULL)
+    p->p_s.reg_v0 = reg->status;
+  /* send ack */
+  reg->command = 1;
 }

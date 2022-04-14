@@ -11,13 +11,15 @@
 
 #define LOG(s) kprint("S>" s "|")
 
+/** Processo attivo */
 pcb_t *act_proc;
+/** Contatore processi soft blocked */
 size_tt sb_procs;
-/* Numero di processi */
+/** Numero di processi */
 static size_tt procs_count;
-/* Coda a bassa priorità */
+/** Coda a bassa priorità */
 static struct list_head l_queue;
-/* Coda ad alta priorità */
+/** Coda ad alta priorità */
 static struct list_head h_queue;
 
 inline void init_scheduler(void)
