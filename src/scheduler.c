@@ -9,14 +9,16 @@
 #include <umps3/umps/libumps.h>
 #include <umps3/umps/types.h>
 
-#define LOG(s) kprint("S>" s)
+#define LOG(s) kprint("S>" s "|")
 
 pcb_t *act_proc;
 size_tt sb_procs;
+/* Numero di processi */
 static size_tt procs_count;
+/* Coda a bassa priorità */
 static struct list_head l_queue;
+/* Coda ad alta priorità */
 static struct list_head h_queue;
-static unsigned int pid_count = 1;
 
 inline void init_scheduler(void)
 {
@@ -32,7 +34,7 @@ inline void create_init_proc(const memaddr entry_point)
   pcb_t *proc;
 
   if ((proc = alloc_pcb()) == NULL) {
-    kprint("Impossible to allocate init process PCB");
+    kprint("Imp all init");
     PANIC();
   }
 
@@ -49,7 +51,7 @@ inline void create_init_proc(const memaddr entry_point)
 inline void scheduler_next(void)
 {
 
-  LOG("Chosing next process...\n");
+  LOG("CH PROC");
 
   if (empty_proc_q(&h_queue) == FALSE) {
     /* Scegli un processo a priorità alta */
@@ -58,8 +60,8 @@ inline void scheduler_next(void)
       LOG("Something wrong with high prior queue. Panicing...\n");
       PANIC();
     }
-    LOG("Loading high priority process with PID ");
-    // print1_int(act_proc->p_pid);
+    LOG("Load hp pro ");
+    kprint_int(act_proc->p_pid);
 
     /* Aggiorno l'age del processo */
     STCK(act_proc->p_tm_updt);
@@ -70,8 +72,9 @@ inline void scheduler_next(void)
   } else if (empty_proc_q(&l_queue) == FALSE) {
     /* Scegli un processo a priorità bassa */
     act_proc = remove_proc_q(&l_queue);
-    LOG("Loading low priority process with PID ");
-    // print1_int(act_proc->p_pid);
+    LOG("Load lp pro");
+    kprint_int(act_proc->p_pid);
+
     setTIMER(TIMESLICE * (*(int *)(TIMESCALEADDR)));
 
     /* Aggiorno l'age del processo */
@@ -93,8 +96,7 @@ inline void scheduler_next(void)
     WAIT();
   } else if (procs_count && !sb_procs) {
     /* DEADLOCK !*/
-    // print1_err("DEADLOCK: panicing...");
-    kprint("panic in scheduler|");
+    kprint("DEADLOCK: panicing");
     PANIC();
   }
 }
@@ -113,7 +115,6 @@ inline pcb_t *mk_proc(state_t *statep, int prio, support_t *supportp)
   result->p_prio = prio;
   memcpy(&result->p_s, statep, sizeof(state_t));
   result->p_pid = (unsigned int)result;
-  ++pid_count;
 
   if (prio == PROCESS_PRIO_HIGH) {
     insert_proc_q(&h_queue, result);

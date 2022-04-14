@@ -10,6 +10,7 @@ UMPS3_INCLUDE_DIR = $(UMPS3_DIR_PREFIX)/include
 SRC_PATH := src
 OBJ_PATH := obj
 OUT_PATH := output
+DOC_PATH := doc
 
 HEADERS := $(foreach x, $(SRC_PATH), $(wildcard $(addprefix $(x)/*,.h))) 
 SOURCES := $(foreach x, $(SRC_PATH), $(wildcard $(addprefix $(x)/*,.c)))
@@ -17,6 +18,7 @@ OBJS :=  $(addsuffix .o, $(notdir $(basename $(SOURCES))))
 
 CLEAN_LIST := $(OUT_PATH)/* \
 				$(OBJ_PATH)/* \
+				$(DOC_PATH)/* \
 
 CFLAGS = -ffreestanding -ansi -Wall -c -mips1 -mabi=32 -mfp32 \
 				 -mno-gpopt -G 0 -fno-pic -mno-abicalls -EL  -std=gnu99
@@ -33,7 +35,7 @@ KERNEL_NAME = ROCM_kernel
 DISK_NAME = disk0
 
 #main target
-all: figlet kernel.core.umps disk0.umps
+all: figlet kernel.core.umps disk0.umps docs
 	@echo -e "Done :D"
 
 # use umps3-mkdev to create the disk0 device
@@ -73,6 +75,17 @@ clean:
 	@echo -e "*** CLEAN ***"
 	@echo -e "Cleaning project structure..."
 	@rm -rf $(CLEAN_LIST)
+
+docs:
+	@echo -e "*** DOCUMENTATION ***"
+	@echo -e "Creating documentation..."
+	@doxygen 
+	@echo -e "Done"
+	@echo -e "Building pdf"
+	@make -C doc/latex
+	@echo -e "Done"
+	@cp doc/latex/refman.pdf doc/
+	@echo -e "Outputs in doc folder"
 
 figlet:
 	@echo -e "\e[0;32moooooooooo    ooooooo     oooooooo8 oooo     oooo "

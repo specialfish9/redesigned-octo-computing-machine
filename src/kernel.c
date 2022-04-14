@@ -86,11 +86,9 @@ void exception_handler(void)
   act_proc->p_tm_updt = now;
 
   cause = CAUSE_GET_EXCCODE(getCAUSE());
-  // print1("EXCEPTION HANDLER FIRED with code ");
-  // print1_int(cause);
 
   if (cause != 8) {
-    kprint("EXH");
+    kprint("EXC");
     kprint_hex(cause);
     kprint("|");
   }
@@ -115,10 +113,8 @@ ammaizzalo
     }
   } else if (cause == EXC_MOD || cause == EXC_TLBL || cause == EXC_TLBS) {
     reenqueue = passup_or_die(PGFAULTEXCEPT);
-
     /* TLB trap */
     /* TODO */
-    //} else if (cause >= 4 && cause <= 7) || (cause >= 9 && cause <= 12)) {
   } else if (cause == EXC_ADEL || cause == EXC_ADES || cause == EXC_IBE ||
              cause == EXC_DBE || cause == EXC_BP || cause == EXC_RI ||
              cause == EXC_CPU || cause == EXC_OV) {

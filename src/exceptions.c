@@ -27,18 +27,6 @@ inline static int create_process(state_t *statep, int prio,
 
 // static void termniate_process(int pid);
 
-/**
-  Esegue un'operazione P sul semaforo binario.
-  @param semaddr: puntatore al semaforo.
- */
-inline static void passeren(int *semaddr);
-
-/**
-  Esegue un'operazione V sul semaforo binario.
-  @param semaddr: puntatore al semaforo.
- */
-inline static void verhogen(int *semaddr);
-
 // static int do_io(int *cmd_addr, int cmd_val);
 
 // static int get_cpu_time(void);
@@ -207,7 +195,7 @@ static int create_process(state_t *statep, int prio, support_t *supportp)
   return new_proc->p_pid;
 }
 
-void passeren(int *semaddr)
+inline void passeren(int *semaddr)
 {
   /* TODO: forse va modificato il campo p_s->state del pcb per fare lo switch
    * tra running e blocked*/
@@ -233,12 +221,13 @@ void passeren(int *semaddr)
   }
 }
 
-static void verhogen(int *semaddr)
+inline pcb_t *verhogen(int *semaddr)
 {
   /* Se il valore del semaforo è 0 sblocco il processo, se è 1 lo blocco */
   pcb_t *tmp;
+
   if (*semaddr == 1) {
-    tmp =act_proc; 
+    tmp = act_proc;
     // Controlli per bloccare il processo
     if (insert_blocked(semaddr, tmp)) {
       /* Se ritorna true non possiamo assegnare un semaforo */
@@ -254,18 +243,20 @@ static void verhogen(int *semaddr)
   } else {
     *semaddr = 1;
   }
+
+  return tmp;
 }
 
 static void wait_for_clock(void)
 {
   /* blocco il processo attivo sul semaforo */
-  insert_blocked((int *)dev_sem[ITINT], act_proc); /* TODO: usare sem_it da interrupts */
+  insert_blocked(&sem_it, act_proc);
+  pcb_t *tmp = act_proc;
 
   /*blocco il processo sul semaforo ricevuto come parametro*/
-  int *dev_sem= get_dev_sem(TIMER_SEM_INDEX);
+  int *dev_sem = get_dev_sem(TIMER_SEM_INDEX);
   insert_blocked(dev_sem, tmp);
   tmp = NULL;
-
 
   *dev_sem = 1;
   // TODO scheduler_next()
@@ -280,17 +271,19 @@ static void kill_parent_and_progeny(pcb_t *p)
   kill_proc(p);
 }
 
-
-//Trova l'indice che identifica il device a partire dall'indirizzo del suo command register
-//Se non si usa esternamente posso non metterla nel .h giusto?
-int get_ind_from_cmd(unsigned int cmd_addr){
-  int index = ((cmd_addr-DEV_REG_START)/DEV_REG_SIZE);
-  //Se l'offset del registro cmd è 4 possiamo restituire direttamente l'indice calcolato
-  if( (cmd_addr-DEV_REG_START)%DEV_REG_SIZE==0x4)
+// Trova l'indice che identifica il device a partire dall'indirizzo del suo
+// command register Se non si usa esternamente posso non metterla nel .h giusto?
+int get_ind_from_cmd(unsigned int cmd_addr)
+{
+  int index = ((cmd_addr - DEV_REG_START) / DEV_REG_SIZE);
+  // Se l'offset del registro cmd è 4 possiamo restituire direttamente l'indice
+  // calcolato
+  if ((cmd_addr - DEV_REG_START) % DEV_REG_SIZE == 0x4)
     return index;
-    //Altrimenti se è 0xc stiamo esaminando un sub device di trasmissione di un terminale, e quindi andiamo alla categoria successiva di device (+8)
-  else if( index>32 && (cmd_addr-DEV_REG_START)%DEV_REG_SIZE==0xc)
-    return index+DEVPERINT;
+  // Altrimenti se è 0xc stiamo esaminando un sub device di trasmissione di un
+  // terminale, e quindi andiamo alla categoria successiva di device (+8)
+  else if (index > 32 && (cmd_addr - DEV_REG_START) % DEV_REG_SIZE == 0xc)
+    return index + DEVPERINT;
   else
     PANIC();
   return -1;

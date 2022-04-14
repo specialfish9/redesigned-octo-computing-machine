@@ -23,28 +23,31 @@ int sem_printer[DEVPERINT];
 int sem_term_in[DEVPERINT];
 int sem_term_out[DEVPERINT];
 
-inline int *get_dev_sem(int index){
-  switch(index/DEVPERINT){
-    case 0:
-      return &sem_disk[index%DEVPERINT];
-      break;
-    case 1:
-      return &sem_flash[index%DEVPERINT];
-      break;
-    case 2:
-      return &sem_net[index%DEVPERINT];
-      break;
-    case 3:
-      return &sem_printer[index%DEVPERINT];
-      break;
-    case 4:
-      return &sem_term_in[index%DEVPERINT];
-      break;
-    case 5:
-      return &sem_term_out[index%DEVPERINT];
-      break;
-    default:
-      return &sem_it;
+inline int *get_dev_sem(int index)
+{
+  switch (index / DEVPERINT) {
+  case 0:
+    return &sem_disk[index % DEVPERINT];
+    break;
+  case 1:
+    return &sem_flash[index % DEVPERINT];
+    break;
+  case 2:
+    return &sem_net[index % DEVPERINT];
+    break;
+  case 3:
+    return &sem_printer[index % DEVPERINT];
+    break;
+  case 4:
+    return &sem_term_in[index % DEVPERINT];
+    break;
+  case 5:
+    return &sem_term_out[index % DEVPERINT];
+    break;
+  case TIMER_SEM_INDEX:
+    return &sem_it;
+  default:
+    return 0;
   }
 }
 
@@ -76,15 +79,10 @@ void generic_interrupt_handler(int line, int *semaphores)
 
 inline void handle_interrupts(const int line)
 {
-  // print1("handling interrupts on line: ");
-  // print1_int(line);
-  // print1("\n");
-  // if(line != 0) {
   kprint("INT");
   kprint_int(line);
   kprint("|");
 
-  //}
   switch (line) {
   case 0: {
     break; /* safely ignore */
