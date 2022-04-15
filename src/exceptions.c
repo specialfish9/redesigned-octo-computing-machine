@@ -33,14 +33,14 @@ inline static int create_process(state_t *statep, int prio,
  * @brief do io
  * TODO
  * */
-static int do_io(int* cmdaddr, int cmdval);
+static int do_io(int *cmdaddr, int cmdval);
 
 /**
   @brief Esegue un'operazione P sul semaforo di pseudo-clock.
  */
 inline static void wait_for_clock(void);
 
-/** 
+/**
  @brief Uccide il processo padre e i processi figli del processo passato
  come puntatore.
  @param p Il processo di riferimento.
@@ -103,7 +103,7 @@ inline int handle_syscall(void)
     return TRUE;
   }
   case DOIO: {
-    return do_io((int*) arg1, arg2);
+    return do_io((int *)arg1, arg2);
   }
   // SYSCALL che restituisce in v0 il tempo di utilizzo del processore da parte
   // del processo attivo
@@ -265,42 +265,43 @@ inline int passup_or_die(size_tt kind)
   return TRUE;
 }
 
-inline static int do_io(int* cmdaddr, int cmdval) {
-    size_tt i, j;
-    int line = -1, index = -1;
-    int *sem;
-    int *dev = (int *)DEVICE_FROM_COMDADDR(cmdaddr);
+inline static int do_io(int *cmdaddr, int cmdval)
+{
+  size_tt i, j;
+  int line = -1, index = -1;
+  int *sem;
+  int *dev = (int *)DEVICE_FROM_COMDADDR(cmdaddr);
 
-    /* Cerco la linea di interrupt e l'indice del device */
-    for (i = 0; i < N_EXT_IL; ++i) {
-      for (j = 0; j < N_DEV_PER_IL; ++j) {
-        if (((int *)DEV_REG_ADDR(IL_DISK + i, j)) != dev)
-          continue;
+  /* Cerco la linea di interrupt e l'indice del device */
+  for (i = 0; i < N_EXT_IL; ++i) {
+    for (j = 0; j < N_DEV_PER_IL; ++j) {
+      if (((int *)DEV_REG_ADDR(IL_DISK + i, j)) != dev)
+        continue;
 
-        line = i;
-        index = j;
-        i = 3 + N_EXT_IL;
-        break;
-      }
+      line = i;
+      index = j;
+      i = 3 + N_EXT_IL;
+      break;
     }
+  }
 
-    if (line == IL_DISK - IL_DISK)
-      sem = sem_disk;
-    else if (line == IL_FLASH - IL_DISK)
-      sem = sem_disk;
-    else if (line == IL_ETHERNET - IL_DISK)
-      sem = sem_disk;
-    else if (line == IL_PRINTER - IL_DISK)
-      sem = sem_printer;
-    else if (line == IL_TERMINAL - IL_DISK) {
-      if (IS_TERM_WRITING(cmdaddr))
-        sem = sem_term_out;
-      else
-        sem = sem_term_in;
-    } else {
-      LOG("no sem");
-    }
-    passeren(sem + index);
-    *((unsigned int *)cmdaddr) = cmdval;
-    return FALSE;
+  if (line == IL_DISK - IL_DISK)
+    sem = sem_disk;
+  else if (line == IL_FLASH - IL_DISK)
+    sem = sem_disk;
+  else if (line == IL_ETHERNET - IL_DISK)
+    sem = sem_disk;
+  else if (line == IL_PRINTER - IL_DISK)
+    sem = sem_printer;
+  else if (line == IL_TERMINAL - IL_DISK) {
+    if (IS_TERM_WRITING(cmdaddr))
+      sem = sem_term_out;
+    else
+      sem = sem_term_in;
+  } else {
+    LOG("no sem");
+  }
+  passeren(sem + index);
+  *((unsigned int *)cmdaddr) = cmdval;
+  return FALSE;
 }

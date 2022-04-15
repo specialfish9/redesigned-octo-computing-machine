@@ -15,6 +15,10 @@
 #include <umps3/umps/types.h>
 
 #define LOG(s) kprint("K>" s "|")
+#define LOGi(s, i)                                                             \
+  kprint("K>" s);                                                              \
+  kprint_int(i);                                                               \
+  kprint("|")
 
 /** @brief Inizializza il passup vector. */
 inline static void init_passup_vector(void);
@@ -87,20 +91,12 @@ void exception_handler(void)
 
   cause = CAUSE_GET_EXCCODE(getCAUSE());
 
-  if (cause != 8) {
-    kprint("K>EXC");
-    kprint_hex(cause);
-    kprint("|");
-  }
+  LOGi("EXC", cause);
 
   saved_state = (state_t *)BIOSDATAPAGE;
-  /*
-per TLB trap e PROGRAM trap passa il controllo a support struct del processo o
-ammaizzalo
-   */
-  /* vi serve un modo per decidere se un processo deve essere inserito in coda
+  /* serve un modo per decidere se un processo deve essere inserito in coda
   ai processi ready o il controllo deve essere preservato dallo scheduler.
-  dovreste aggiungere un'altra variabile un po' come `reenqueue` e passarla allo
+  bisogna aggiungere un'altra variabile un po' come `reenqueue` e passarla allo
   scheduler che intal caso dovrebbe subito far partire l'act_process */
   memcpy(&act_proc->p_s, saved_state, sizeof(state_t));
   if (cause == EXC_INT) {
@@ -112,9 +108,8 @@ ammaizzalo
         handle_interrupts(i);
     }
   } else if (cause == EXC_MOD || cause == EXC_TLBL || cause == EXC_TLBS) {
-    reenqueue = passup_or_die(PGFAULTEXCEPT);
     /* TLB trap */
-    /* TODO */
+    reenqueue = passup_or_die(PGFAULTEXCEPT);
   } else if (cause == EXC_ADEL || cause == EXC_ADES || cause == EXC_IBE ||
              cause == EXC_DBE || cause == EXC_BP || cause == EXC_RI ||
              cause == EXC_CPU || cause == EXC_OV) {
@@ -130,7 +125,8 @@ ammaizzalo
       act_proc->p_s.pc_epc = act_proc->p_s.reg_t9 =
           saved_state->pc_epc + WORD_SIZE;
     } else {
-      /*  todo: set trap code */
+      saved_state->cause =
+          (saved_state->cause & CLEAREXECCODE) | (PRIVINSTR << CAUSESHIFT);
       reenqueue = passup_or_die(GENERALEXCEPT);
     }
   }

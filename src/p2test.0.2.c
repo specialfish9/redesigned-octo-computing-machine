@@ -15,10 +15,10 @@
  *		Modified by Michael Goldweber on June 19, 2020
  */
 
+#include "klog.h"
 #include "pandos_const.h"
 #include "pandos_types.h"
 #include <umps3/umps/libumps.h>
-#include "klog.h"
 
 #define LOG(s) kprint("TEST>" s "|")
 

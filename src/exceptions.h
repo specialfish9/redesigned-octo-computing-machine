@@ -20,8 +20,9 @@ extern int handle_syscall(void);
 extern int passup_or_die(size_tt kind);
 
 /**
-  @brief Trova l'indice che identifica il device a partire dall'indirizzo del suo 
-  command register Se non si usa esternamente posso non metterla nel .h giusto?
+  @brief Trova l'indice che identifica il device a partire dall'indirizzo del
+  suo command register Se non si usa esternamente posso non metterla nel .h
+  giusto?
   @param cmd_addr Indirizzo del command register.
   @return L'indice identificativo del device. -1 se non lo trova.
 */

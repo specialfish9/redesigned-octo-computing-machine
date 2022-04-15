@@ -10,9 +10,10 @@
 #include <umps3/umps/types.h>
 
 #define LOG(s) kprint("S>" s "|")
-#define LOGi(s, i)  kprint("S>" s ); \
-                    kprint_int(i);\
-                    kprint("|")
+#define LOGi(s, i)                                                             \
+  kprint("S>" s);                                                              \
+  kprint_int(i);                                                               \
+  kprint("|")
 
 /** Processo attivo */
 pcb_t *act_proc;

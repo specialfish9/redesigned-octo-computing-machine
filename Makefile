@@ -35,7 +35,7 @@ KERNEL_NAME = ROCM_kernel
 DISK_NAME = disk0
 
 #main target
-all: figlet structure kernel.core.umps disk0.umps docs
+all: figlet structure kernel.core.umps disk0.umps #docs
 	@echo -e "Done :D"
 
 structure:
