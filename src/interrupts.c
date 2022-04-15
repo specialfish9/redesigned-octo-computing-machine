@@ -28,33 +28,7 @@ int sem_term_out[DEVPERINT];
 /** TODO add doc*/
 static inline void generic_interrupt_handler(int line, int *semaphores);
 
-inline int *get_dev_sem(int index)
-{
-  switch (index / DEVPERINT) {
-  case 0:
-    return &sem_disk[index % DEVPERINT];
-    break;
-  case 1:
-    return &sem_flash[index % DEVPERINT];
-    break;
-  case 2:
-    return &sem_net[index % DEVPERINT];
-    break;
-  case 3:
-    return &sem_printer[index % DEVPERINT];
-    break;
-  case 4:
-    return &sem_term_in[index % DEVPERINT];
-    break;
-  case 5:
-    return &sem_term_out[index % DEVPERINT];
-    break;
-  case TIMER_SEM_INDEX:
-    return &sem_it;
-  default:
-    return 0;
-  }
-}
+
 
 inline void init_dev_sem(void)
 {
