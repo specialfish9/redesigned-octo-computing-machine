@@ -1,4 +1,3 @@
-
 #include "asl.h"
 #include "exceptions.h"
 #include "interrupts.h"
@@ -15,7 +14,7 @@
 #include <umps3/umps/libumps.h>
 #include <umps3/umps/types.h>
 
-#define LOG(s) kprint("I>" s "|")
+#define LOG(s) kprint("K>" s "|")
 
 /** @brief Inizializza il passup vector. */
 inline static void init_passup_vector(void);
@@ -30,7 +29,7 @@ inline static void exception_handler(void);
 inline static void uTLB_RefillHandler(void);
 
 int main(void)
-{  
+{
   init_passup_vector();
   LOG("pv done");
 
@@ -89,7 +88,7 @@ void exception_handler(void)
   cause = CAUSE_GET_EXCCODE(getCAUSE());
 
   if (cause != 8) {
-    kprint("EXC");
+    kprint("K>EXC");
     kprint_hex(cause);
     kprint("|");
   }
@@ -135,16 +134,18 @@ ammaizzalo
       reenqueue = passup_or_die(GENERALEXCEPT);
     }
   }
-  if (reenqueue)
+
+  if (reenqueue) {
     enqueue_proc(act_proc, act_proc->p_prio);
-  kprint("rescheduling|");
+  }
+  LOG("rescheduling|");
   scheduler_next();
 }
 
 /* TLB-Refill Handler */
 void uTLB_RefillHandler(void)
 {
-  kprint("TLB refill called");
+  LOG("TLB refill called");
   setENTRYHI(0x80000000);
   setENTRYLO(0x00000000);
   TLBWR();

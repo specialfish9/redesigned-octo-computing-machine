@@ -18,6 +18,9 @@
 #include "pandos_const.h"
 #include "pandos_types.h"
 #include <umps3/umps/libumps.h>
+#include "klog.h"
+
+#define LOG(s) kprint("TEST>" s "|")
 
 typedef unsigned int devregtr;
 
@@ -116,6 +119,7 @@ void print(char *msg)
     devregtr value = PRINTCHR | (((devregtr)*s) << 8);
     status = SYSCALL(DOIO, (int)command, (int)value, 0);
     if ((status & TERMSTATMASK) != RECVD) {
+      LOG("Panic in print");
       PANIC();
     }
     s++;

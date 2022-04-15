@@ -12,7 +12,11 @@
 #include <umps3/umps/libumps.h>
 #include <umps3/umps/types.h>
 
+#define LOG(s) kprint("E>" s "|")
+
+/* Processo in esecuzione */
 extern pcb_t *act_proc;
+/* Numero di processi sb */
 extern size_tt sb_procs;
 
 /**
@@ -26,16 +30,25 @@ inline static int create_process(state_t *statep, int prio,
                                  support_t *suppportp);
 
 /**
-  Esegue un'operazione P sul semaforo di pseudo-clock.
+ * @brief do io
+ * TODO
+ * */
+static int do_io(int* cmdaddr, int cmdval);
+
+/**
+  @brief Esegue un'operazione P sul semaforo di pseudo-clock.
  */
 inline static void wait_for_clock(void);
 
+/** 
+ @brief Uccide il processo padre e i processi figli del processo passato
+ come puntatore.
+ @param p Il processo di riferimento.
+*/
 inline static void kill_parent_and_progeny(pcb_t *p);
-
 
 inline int handle_syscall(void)
 {
-
   int number;
   unsigned int arg1, arg2, arg3;
 
@@ -49,20 +62,19 @@ inline int handle_syscall(void)
   arg2 = act_proc->p_s.reg_a2;
   arg3 = act_proc->p_s.reg_a3;
 
-  kprint("NSYS");
+  kprint("E>NSYS");
   kprint_int(number);
   kprint("|");
 
   switch (number) {
   case CREATEPROCESS: {
-    int status;
-
-    status = create_process((state_t *)arg1, (int)arg2, (support_t *)arg3);
-    act_proc->p_s.reg_v0 = status;
-    break;
+    act_proc->p_s.reg_v0 =
+        create_process((state_t *)arg1, (int)arg2, (support_t *)arg3);
+    return TRUE;
   }
   case TERMPROCESS: {
     pcb_t *res;
+
     int pid = (int)arg1;
     if (pid == 0)
       res = act_proc;
@@ -70,7 +82,7 @@ inline int handle_syscall(void)
       res = search_by_pid(pid);
 
     kill_parent_and_progeny(res);
-    return 0;
+    return FALSE;
   }
   case PASSEREN: {
     int *sem_addr = (int *)arg1;
@@ -79,8 +91,7 @@ inline int handle_syscall(void)
       PANIC();
     }
     passeren(sem_addr);
-    /* return 0 if act_proc has been blocked */
-    return 1;
+    return TRUE;
   }
   case VERHOGEN: {
     int *sem_addr = (int *)arg1;
@@ -89,55 +100,10 @@ inline int handle_syscall(void)
       PANIC();
     }
     verhogen(sem_addr);
-    break;
-  }
-  case CLOCKWAIT: {
-    wait_for_clock();
-    return 0;
-  }
-  case GETSUPPORTPTR: {
-    act_proc->p_s.reg_a0 = (memaddr)act_proc->p_supportStruct;
-  }
-  case YIELD: {
-    return 1;
+    return TRUE;
   }
   case DOIO: {
-    int line = -1, index = -1;
-    int *sem;
-    int *dev = (int *)DEVICE_FROM_COMDADDR(arg1);
-    for (int i = 0; i < N_EXT_IL; ++i) {
-      for (int j = 0; j < N_DEV_PER_IL; ++j) {
-        if (((int *)DEV_REG_ADDR(IL_DISK + i, j)) != dev)
-          continue;
-
-        line = i;
-        index = j;
-        i = 3 + N_EXT_IL;
-        break;
-      }
-    }
-
-    if (line == IL_DISK - IL_DISK)
-      sem = sem_disk;
-    else if (line == IL_FLASH - IL_DISK)
-      sem = sem_disk;
-    else if (line == IL_ETHERNET - IL_DISK)
-      sem = sem_disk;
-    else if (line == IL_PRINTER - IL_DISK)
-      sem = sem_printer;
-    else if (line == IL_TERMINAL - IL_DISK) {
-      if (IS_TERM_WRITING(arg1))
-        sem = sem_term_out;
-      else
-        sem = sem_term_in;
-    } else {
-      kprint("no sem|");
-    }
-    kprint("here|");
-    passeren(sem + index);
-    kprint("there|");
-    *((unsigned int *)arg1) = arg2;
-    return 0;
+    return do_io((int*) arg1, arg2);
   }
   // SYSCALL che restituisce in v0 il tempo di utilizzo del processore da parte
   // del processo attivo
@@ -145,7 +111,14 @@ inline int handle_syscall(void)
     // p_time nel pcb del processo attivo è costantemente aggiornato durante
     // l'esecuzione, quindi si inserisce quel valore in v0
     act_proc->p_s.reg_v0 = act_proc->p_time;
-    break;
+    return TRUE;
+  }
+  case CLOCKWAIT: {
+    wait_for_clock();
+    return FALSE;
+  }
+  case GETSUPPORTPTR: {
+    act_proc->p_s.reg_a0 = (memaddr)act_proc->p_supportStruct;
   }
   // SYSCALL che inserisce un PID nel registro v0 del processo attivo in base a
   // cosa è scritto in a1
@@ -163,16 +136,14 @@ inline int handle_syscall(void)
       // Come richiesto nella specifica, se viene richiesto il PID del padre di
       // un processo senza genitore, viene restituito 0
       act_proc->p_s.reg_v0 = 0;
-    break;
+    return TRUE;
+  }
+  case YIELD: {
+    return TRUE;
   }
   default:
-    /* TODO Any
-attempt to request a non-existent Nucleus service should trigger a Program
-Trap exception too*/
     return passup_or_die(GENERALEXCEPT);
-    break;
   }
-  return 1;
 }
 
 static int create_process(state_t *statep, int prio, support_t *supportp)
@@ -186,9 +157,6 @@ static int create_process(state_t *statep, int prio, support_t *supportp)
 
 inline void passeren(int *semaddr)
 {
-  /* TODO: forse va modificato il campo p_s->state del pcb per fare lo switch
-   * tra running e blocked*/
-
   /* Se il valore del semaforo è 1 sblocco il processo, se è 0 lo blocco */
   pcb_t *tmp;
   if (*semaddr == 0) {
@@ -260,8 +228,6 @@ static void kill_parent_and_progeny(pcb_t *p)
   kill_proc(p);
 }
 
-// Trova l'indice che identifica il device a partire dall'indirizzo del suo
-// command register Se non si usa esternamente posso non metterla nel .h giusto?
 int get_ind_from_cmd(unsigned int cmd_addr)
 {
   int index = ((cmd_addr - DEV_REG_START) / DEV_REG_SIZE);
@@ -278,15 +244,17 @@ int get_ind_from_cmd(unsigned int cmd_addr)
   return -1;
 }
 
-int passup_or_die(size_tt kind)
+inline int passup_or_die(size_tt kind)
 {
+  /* Die */
   if (act_proc == NULL)
-    return 0;
+    return FALSE;
   if (act_proc->p_supportStruct == NULL) {
     kill_parent_and_progeny(act_proc);
-    return 0;
+    return FALSE;
   }
 
+  /* Pass up */
   memcpy(act_proc->p_supportStruct->sup_exceptState + kind,
          (state_t *)BIOSDATAPAGE, sizeof(state_t));
   LDCXT(act_proc->p_supportStruct->sup_exceptContext[kind].pc,
@@ -294,5 +262,45 @@ int passup_or_die(size_tt kind)
         act_proc->p_supportStruct->sup_exceptContext[kind].pc);
 
   /* never reached */
-  return 1;
+  return TRUE;
+}
+
+inline static int do_io(int* cmdaddr, int cmdval) {
+    size_tt i, j;
+    int line = -1, index = -1;
+    int *sem;
+    int *dev = (int *)DEVICE_FROM_COMDADDR(cmdaddr);
+
+    /* Cerco la linea di interrupt e l'indice del device */
+    for (i = 0; i < N_EXT_IL; ++i) {
+      for (j = 0; j < N_DEV_PER_IL; ++j) {
+        if (((int *)DEV_REG_ADDR(IL_DISK + i, j)) != dev)
+          continue;
+
+        line = i;
+        index = j;
+        i = 3 + N_EXT_IL;
+        break;
+      }
+    }
+
+    if (line == IL_DISK - IL_DISK)
+      sem = sem_disk;
+    else if (line == IL_FLASH - IL_DISK)
+      sem = sem_disk;
+    else if (line == IL_ETHERNET - IL_DISK)
+      sem = sem_disk;
+    else if (line == IL_PRINTER - IL_DISK)
+      sem = sem_printer;
+    else if (line == IL_TERMINAL - IL_DISK) {
+      if (IS_TERM_WRITING(cmdaddr))
+        sem = sem_term_out;
+      else
+        sem = sem_term_in;
+    } else {
+      LOG("no sem");
+    }
+    passeren(sem + index);
+    *((unsigned int *)cmdaddr) = cmdval;
+    return FALSE;
 }

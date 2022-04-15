@@ -10,6 +10,9 @@
 #include <umps3/umps/types.h>
 
 #define LOG(s) kprint("S>" s "|")
+#define LOGi(s, i)  kprint("S>" s ); \
+                    kprint_int(i);\
+                    kprint("|")
 
 /** Processo attivo */
 pcb_t *act_proc;
@@ -36,7 +39,7 @@ inline void create_init_proc(const memaddr entry_point)
   pcb_t *proc;
 
   if ((proc = alloc_pcb()) == NULL) {
-    kprint("Imp all init");
+    LOG("Imp all init");
     PANIC();
   }
 
@@ -62,8 +65,7 @@ inline void scheduler_next(void)
       LOG("Something wrong with high prior queue. Panicing...\n");
       PANIC();
     }
-    LOG("Load hp pro ");
-    kprint_int(act_proc->p_pid);
+    LOGi("Load hp pro ", act_proc->p_pid);
 
     /* Aggiorno l'age del processo */
     STCK(act_proc->p_tm_updt);
@@ -74,8 +76,7 @@ inline void scheduler_next(void)
   } else if (empty_proc_q(&l_queue) == FALSE) {
     /* Scegli un processo a priorità bassa */
     act_proc = remove_proc_q(&l_queue);
-    LOG("Load lp pro");
-    kprint_int(act_proc->p_pid);
+    LOGi("Load lp pro", act_proc->p_pid);
 
     setTIMER(TIMESLICE * (*(int *)(TIMESCALEADDR)));
 
@@ -94,11 +95,11 @@ inline void scheduler_next(void)
     // print1_err("No process available: waiting...");
     setTIMER(TIMESLICE * (*(int *)(TIMESCALEADDR)));
     setSTATUS((getSTATUS() | STATUS_IEc | STATUS_TE) ^ STATUS_TE);
-    kprint("wait|");
+    LOG("wait");
     WAIT();
   } else if (procs_count && !sb_procs) {
     /* DEADLOCK !*/
-    kprint("DEADLOCK: panicing");
+    LOG("DEADLOCK: panicing");
     PANIC();
   }
 }
