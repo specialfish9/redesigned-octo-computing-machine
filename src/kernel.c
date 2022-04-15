@@ -107,6 +107,7 @@ void exception_handler(void)
       if (!(getCAUSE() & CAUSE_IP(i)))
         handle_interrupts(i);
     }
+
   } else if (cause == EXC_MOD || cause == EXC_TLBL || cause == EXC_TLBS) {
     /* TLB trap */
     reenqueue = passup_or_die(PGFAULTEXCEPT);

@@ -6,12 +6,13 @@
 
 #include "pcb.h"
 #include "listx.h"
+#include "pandos_const.h"
 #include "pandos_types.h"
 
 static pcb_t pcb_free_table[MAXPROC];
 static struct list_head pcb_free_h;
 
-pcb_t *search_by_pid(const int pid)
+pcb_t *search_by_pid(const unsigned int pid)
 {
   size_tt i;
 

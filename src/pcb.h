@@ -9,8 +9,12 @@
 
 #include "pandos_types.h"
 
-/* TODO commento */
-extern pcb_t *search_by_pid(const int);
+/**
+ * @brief Ritorna un pcb dato il suo PID.
+ * @param Il pid
+ * @return Il pcb associato
+ * */
+extern pcb_t *search_by_pid(const unsigned int);
 
 /* CODA DEI PCB */
 

@@ -48,7 +48,7 @@ inline void create_init_proc(const memaddr entry_point)
   proc->p_s.status |= STATUS_TE | STATUS_IM_MASK | STATUS_KUc | STATUS_IEc;
   RAMTOP(proc->p_s.reg_sp);
   proc->p_prio = PROCESS_PRIO_LOW;
-  proc->p_pid = 1; // TODO
+  proc->p_pid = (memaddr) proc; 
 
   procs_count++;
   insert_proc_q(&l_queue, proc);
@@ -56,50 +56,47 @@ inline void create_init_proc(const memaddr entry_point)
 
 inline void scheduler_next(void)
 {
+  pcb_t *next_proc;
 
-  LOG("CH PROC");
+  LOGi("procs_count", procs_count);
+  LOGi("sb_count", sb_procs);
+  LOGi("HPLEN", list_size(&h_queue));
+  LOGi("LPLEN", list_size(&l_queue));
+
+  LOG("ch proc");
 
   if (empty_proc_q(&h_queue) == FALSE) {
     /* Scegli un processo a priorità alta */
-    act_proc = remove_proc_q(&h_queue);
-    if (&(act_proc->p_s) == NULL) {
+    next_proc = remove_proc_q(&h_queue);
+    if (&(next_proc->p_s) == NULL) {
       LOG("Something wrong with high prior queue. Panicing...\n");
       PANIC();
     }
-    LOGi("Load hp pro ", act_proc->p_pid);
 
-    /* Aggiorno l'age del processo */
-    STCK(act_proc->p_tm_updt);
-
-    /* Lo carico */
-    LDST(&(act_proc->p_s));
-
+    load_proc(next_proc);
   } else if (empty_proc_q(&l_queue) == FALSE) {
     /* Scegli un processo a priorità bassa */
-    act_proc = remove_proc_q(&l_queue);
-    LOGi("Load lp pro", act_proc->p_pid);
+    next_proc = remove_proc_q(&l_queue);
+    if (&(next_proc->p_s) == NULL) {
+      LOG("Something wrong with low prior queue. Panicing...\n");
+      PANIC();
+    }
 
-    setTIMER(TIMESLICE * (*(int *)(TIMESCALEADDR)));
-
-    /* Aggiorno l'age del processo */
-    STCK(act_proc->p_tm_updt);
-
-    /* Lo carico */
-    LDST(&act_proc->p_s);
-
+    load_proc(next_proc);
   } else if (!procs_count) {
     LOG("No process alive: halting");
     HALT();
-  } else if (procs_count && sb_procs) {
-    setTIMER(TIMESLICE * (*(int *)(TIMESCALEADDR)));
+  } else if (procs_count > 0 && sb_procs > 0) {
     setSTATUS((getSTATUS() | STATUS_IEc | STATUS_TE) ^ STATUS_TE);
     LOG("No process available: waiting");
     WAIT();
-  } else if (procs_count && !sb_procs) {
+  } else if (procs_count > 0&& !sb_procs) {
     /* DEADLOCK !*/
     LOG("DEADLOCK: panicing");
     PANIC();
   }
+  
+  LOG("panic at the disco");
 }
 
 inline pcb_t *mk_proc(state_t *statep, int prio, support_t *supportp)
@@ -166,4 +163,27 @@ inline pcb_t *rm_proc(pcb_t *const pcb, const unsigned int priority)
     return out_proc_q(&l_queue, pcb);
   }
   return NULL;
+}
+
+inline void load_proc(pcb_t *pcb){
+  if (pcb == NULL) {
+    LOG("Attempt to load NULL pcb");
+    return;
+  }
+  
+  act_proc = pcb;
+
+  if (act_proc->p_prio == PROCESS_PRIO_LOW) {
+    LOGi("Load lp pro", act_proc->p_pid);
+
+    setTIMER(TIMESLICE * (*(int *)(TIMESCALEADDR)));
+
+  } else if(act_proc->p_prio == PROCESS_PRIO_HIGH) {
+    LOGi("Load hp pro", act_proc->p_pid);
+  } 
+    /* Aggiorno l'age del processo */
+    STCK(act_proc->p_tm_updt);
+
+    /* Lo carico */
+    LDST(&act_proc->p_s);
 }

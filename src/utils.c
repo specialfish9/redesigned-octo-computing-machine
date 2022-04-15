@@ -5,6 +5,7 @@
  ******************************************************************************/
 #include "utils.h"
 
+#include "listx.h"
 #include "pandos_const.h"
 #include "pandos_types.h"
 #include <umps3/umps/libumps.h>
@@ -196,4 +197,15 @@ static void _strcat(const char *first, const char *second, char *buffer)
     *buff_ptr = *ptr;
 
   *buff_ptr = '\0';
+}
+
+inline size_tt list_size(struct list_head *head){
+  struct list_head* ptr;
+  size_tt l = 0;
+
+  list_for_each(ptr, head) {
+    l++;
+  }
+
+  return l;
 }

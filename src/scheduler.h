@@ -62,4 +62,11 @@ extern pcb_t *dequeue_proc(const unsigned int priority);
  * */
 extern pcb_t *rm_proc(pcb_t *const pcb, const unsigned int priority);
 
+/**
+ * @brief Carica il processo passato come parametro. Utilizzare con estrema 
+ * cautela.
+ * @param pcb Riferimento del processo
+ * */
+extern void load_proc(pcb_t *pcb);
+
 #endif

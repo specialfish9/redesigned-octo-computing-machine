@@ -3,7 +3,6 @@
 #include "exceptions.h"
 #include "klog.h"
 #include "listx.h"
-#include "pandos_const.h"
 #include "scheduler.h"
 #include "utils.h"
 #include <umps3/umps/arch.h>
@@ -12,10 +11,14 @@
 #include <umps3/umps/libumps.h>
 #include <umps3/umps/types.h>
 
+#define LOGi(s, i) kprint("I>" s);\
+  kprint_int(i); \
+  kprint("|")
+
+#define LOG(s) kprint("I>" s)
+
 #define TERMSTATMASK 0xFF
 #define RECVD 5
-#define PLTINT 1
-#define ITINT 2
 
 int sem_it;
 int sem_disk[DEVPERINT];
@@ -42,19 +45,17 @@ inline void init_dev_sem(void)
 
 inline void handle_interrupts(const int line)
 {
-  kprint("INT");
-  kprint_int(line);
-  kprint("|");
+  LOGi("INT", line);
 
   switch (line) {
-  case 0: {
+  case IL_IPI: {
     break; /* safely ignore */
   }
-  case PLTINT: {
+  case IL_CPUTIMER: { /* PLT */
     setTIMER(TIMESLICE * (*(int *)(TIMESCALEADDR)));
     break;
   }
-  case ITINT: {
+  case IL_TIMER: {
     /* Pseudo-clock Tick */
     LDIT(PSECOND);
     pcb_t *p;
@@ -63,23 +64,23 @@ inline void handle_interrupts(const int line)
     sem_it = 0;
     break;
   }
-  case DISKINT: {
+  case IL_DISK: {
     generic_interrupt_handler(IL_DISK - IL_DISK, sem_disk);
     break;
   }
-  case FLASHINT: {
+  case IL_FLASH: {
     generic_interrupt_handler(IL_FLASH - IL_DISK, sem_disk);
     break;
   }
-  case NETWINT: {
+  case IL_ETHERNET: {
     generic_interrupt_handler(IL_ETHERNET - IL_DISK, sem_disk);
     break;
   }
-  case PRNTINT: { /* TODO */
+  case IL_PRINTER: { /* TODO */
     generic_interrupt_handler(IL_PRINTER - IL_DISK, sem_disk);
     break;
   }
-  case TERMINT: {
+  case IL_TERMINAL: {
     /* todo check order, maybe transm and recv should be swapped */
     int *sem[] = {sem_term_in, sem_term_out};
     size_tt bitmap = CDEV_BITMAP_ADDR(line), index = 0;
