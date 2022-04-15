@@ -111,14 +111,17 @@ inline void handle_interrupts(const int line)
 
 static inline void generic_interrupt_handler(int line, int *semaphores)
 {
-  size_tt bitmap = CDEV_BITMAP_ADDR(line), index = 0;
+  size_tt bitmap , index ;
+  dtpreg_t *reg;
+  pcb_t *p;
+
+  bitmap = CDEV_BITMAP_ADDR(line), index = 0;
   while (bitmap > 1) {
     ++index;
     bitmap >>= 1;
   }
-  dtpreg_t *reg =
-      (dtpreg_t *)&((devregarea_t *)RAMBASEADDR)->devreg[line][index].dtp;
-  pcb_t *p = verhogen(semaphores + index);
+  reg = (dtpreg_t *)&((devregarea_t *)RAMBASEADDR)->devreg[line][index].dtp;
+  p = verhogen(semaphores + index);
   if (p != NULL)
     p->p_s.reg_v0 = reg->status;
   /* send ack */
