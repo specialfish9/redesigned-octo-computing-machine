@@ -44,14 +44,13 @@ int main(void)
   LDIT(PSECOND);
   LOG("IT loaded");
 
-  /** Impostiamo il registro status */
+  /* Impostiamo il registro status */
   setSTATUS((getSTATUS() | STATUS_IEc | STATUS_TE | STATUS_IM_MASK) ^
             STATUS_TE);
 
-  /** Kernel entry point */
+  /* Kernel entry point */
   extern void test();
   create_init_proc((memaddr)test);
-
   LOG("ip created");
 
   LOG("loading ip");
@@ -83,6 +82,7 @@ void exception_handler(void)
   cpu_t now;
   state_t *saved_state;
   int reenqueue = 1;
+  size_tt i;
 
   /* Aggiorno l'età del processo attivo */
   STCK(now);
@@ -102,7 +102,7 @@ void exception_handler(void)
   if (cause == EXC_INT) {
     /* Interrupts */
     /* Controlla se ci sono interrupt su tutte le linee */
-    size_tt i = 0;
+    i = 0;
     while (i < DEVINTNUM + 1) {
       if (!(getCAUSE() & CAUSE_IP(i)))
         handle_interrupts(i);

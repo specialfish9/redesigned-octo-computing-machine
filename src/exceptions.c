@@ -211,7 +211,7 @@ static void wait_for_clock(void)
   pcb_t *tmp = act_proc;
 
   /*blocco il processo sul semaforo ricevuto come parametro*/
-  int *dev_sem = get_dev_sem(TIMER_SEM_INDEX);
+  int *dev_sem = &sem_it;
   insert_blocked(dev_sem, tmp);
   tmp = NULL;
 
@@ -226,22 +226,6 @@ static void kill_parent_and_progeny(pcb_t *p)
     kill_parent_and_progeny(c);
 
   kill_proc(p);
-}
-
-int get_ind_from_cmd(unsigned int cmd_addr)
-{
-  int index = ((cmd_addr - DEV_REG_START) / DEV_REG_SIZE);
-  // Se l'offset del registro cmd è 4 possiamo restituire direttamente l'indice
-  // calcolato
-  if ((cmd_addr - DEV_REG_START) % DEV_REG_SIZE == 0x4)
-    return index;
-  // Altrimenti se è 0xc stiamo esaminando un sub device di trasmissione di un
-  // terminale, e quindi andiamo alla categoria successiva di device (+8)
-  else if (index > 32 && (cmd_addr - DEV_REG_START) % DEV_REG_SIZE == 0xc)
-    return index + DEVPERINT;
-  else
-    PANIC();
-  return -1;
 }
 
 inline int passup_or_die(size_tt kind)
@@ -285,23 +269,23 @@ inline static int do_io(int *cmdaddr, int cmdval)
     }
   }
 
-  if (line == IL_DISK - IL_DISK)
-    sem = sem_disk;
-  else if (line == IL_FLASH - IL_DISK)
-    sem = sem_disk;
-  else if (line == IL_ETHERNET - IL_DISK)
-    sem = sem_disk;
-  else if (line == IL_PRINTER - IL_DISK)
-    sem = sem_printer;
-  else if (line == IL_TERMINAL - IL_DISK) {
-    if (IS_TERM_WRITING(cmdaddr))
-      sem = sem_term_out;
-    else
-      sem = sem_term_in;
-  } else {
-    LOG("no sem");
-  }
-  passeren(sem + index);
-  *((unsigned int *)cmdaddr) = cmdval;
-  return FALSE;
+    if (line == IL_DISK - IL_DISK)
+      sem = sem_disk;
+    else if (line == IL_FLASH - IL_DISK)
+      sem = sem_flash;
+    else if (line == IL_ETHERNET - IL_DISK)
+      sem = sem_net;
+    else if (line == IL_PRINTER - IL_DISK)
+      sem = sem_printer;
+    else if (line == IL_TERMINAL - IL_DISK) {
+      if (IS_TERM_WRITING(cmdaddr))
+        sem = sem_term_out;
+      else
+        sem = sem_term_in;
+    } else {
+      LOG("no sem");
+    }
+    passeren(sem + index);
+    *((unsigned int *)cmdaddr) = cmdval;
+    return FALSE;
 }

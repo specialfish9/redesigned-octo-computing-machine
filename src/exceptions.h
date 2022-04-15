@@ -20,15 +20,6 @@ extern int handle_syscall(void);
 extern int passup_or_die(size_tt kind);
 
 /**
-  @brief Trova l'indice che identifica il device a partire dall'indirizzo del
-  suo command register Se non si usa esternamente posso non metterla nel .h
-  giusto?
-  @param cmd_addr Indirizzo del command register.
-  @return L'indice identificativo del device. -1 se non lo trova.
-*/
-extern int get_ind_from_cmd(unsigned int cmd_addr);
-
-/**
   Esegue un'operazione P sul semaforo binario.
   @param semaddr puntatore al semaforo.
 */

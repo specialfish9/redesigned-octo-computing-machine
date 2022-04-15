@@ -88,15 +88,12 @@ inline void scheduler_next(void)
     LDST(&act_proc->p_s);
 
   } else if (!procs_count) {
-    // print1_err("No process alive: halting...");
+    LOG("No process alive: halting");
     HALT();
   } else if (procs_count && sb_procs) {
-    /* TODO set status register to ebable interrupts and
-     * disable the plt */
-    // print1_err("No process available: waiting...");
     setTIMER(TIMESLICE * (*(int *)(TIMESCALEADDR)));
     setSTATUS((getSTATUS() | STATUS_IEc | STATUS_TE) ^ STATUS_TE);
-    LOG("wait");
+    LOG("No process available: waiting");
     WAIT();
   } else if (procs_count && !sb_procs) {
     /* DEADLOCK !*/
