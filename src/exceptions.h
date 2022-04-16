@@ -20,13 +20,13 @@ extern int handle_syscall(void);
 extern int passup_or_die(size_tt kind);
 
 /**
-  Esegue un'operazione P sul semaforo binario.
+  @brief Esegue un'operazione P sul semaforo binario.
   @param semaddr puntatore al semaforo.
 */
 extern void passeren(int *semaddr);
 
 /**
-  Esegue un'operazione V sul semaforo binario.
+  @brief Esegue un'operazione V sul semaforo binario.
   @param semaddr puntatore al semaforo.
   @return todo
 */

@@ -8,40 +8,42 @@
 
 #include "pandos_types.h"
 
-/* Inizializza la lista dei semdFree in modo da contenere tutti gli elementi
- * della semdTable. Questo metodo viene invocato una volta sola durante
- * l’inizializzazione della struttura dati.*/
+
+ /**
+  @brief Inizializza la ASL.
+*/
 extern void init_asl(void);
 
-/* Viene inserito il PCB puntato da p nella coda dei processi bloccati
- * associata al SEMD con chiave semAdd. Se il semaforo corrispondente non è
- * presente nella ASL, alloca un nuovo SEMD dalla lista di quelli liberi
- * (semdFree) e lo inserisce nella ASL, settando I campi in maniera opportuna
- * (i.e.MAX key e s_procQ). Se non è possibile allocare un nuovo SEMD perché la
- * lista di quelli liberi è vuota, restituisce TRUE. In tutti gli altri casi,
- * restituisce FALSE. */
+ /**
+  @brief Inserisce il PCB puntato da p nella coda dei processi bloccati associata al parametro semAdd. Se il semaforo
+  corrispondente non è presente nella ASL ne alloca uno nuovo dalla lista di quelli liberi.
+  @param semAdd chiave del semaforo
+  @param p puntatore al PCB del processo da bloccare
+  @return TRUE se non è possibile allocare un nuovo SEMD (la lista dei liberi è vuota), FALSE altrimenti
+*/
 extern int insert_blocked(int *semAdd, pcb_t *p);
 
-/* Ritorna il primo PCB dalla coda dei processi bloccati (s_procq) associata al
- * SEMD della ASL con chiave semAdd. Se tale descrittore non esiste nella ASL,
- * restituisce NULL. Altrimenti, restituisce l’elemento rimosso. Se la coda dei
- * processi bloccati per il semaforo diventa vuota, rimuove il descrittore
- * corrispondente dalla ASL e lo inserisce nella coda dei descrittori liberi
- * (semdFree_h). */
+ /**
+  @brief Sblocca e rimuove il primo PCB dalla coda dei processi bloccati sul semaforo associato a semAdd.
+  @param semAdd chiave del semaforo
+  @return puntatore al PCB rimosso dalla coda dei bloccati, NULL se il descrittore semAdd non esiste nella ASL  
+*/
 extern pcb_t *remove_blocked(int *semAdd);
 
-/* Rimuove il PCB puntato da p dalla coda del semaforo su cui è bloccato
- * (indicato da p->p_semAdd). Se il PCB non compare in tale coda, allora
- * restituisce NULL (condizione di errore). Altrimenti, restituisce p. Se la
- * coda dei processi bloccati per il semaforo diventa vuota, rimuove il
- * descrittore corrispondente dalla ASL e lo inserisce nella coda dei
- * descrittori liberi*/
+ /**
+  @brief Sblocca e rimuove il PCB puntato da p dalla coda del semaforo su cui è bloccato.
+  @param p puntatore al PCB
+  @return puntatore al PCB rimosso dalla coda dei bloccati, NULL se non compare in tale coda
+*/
 extern pcb_t *out_blocked(pcb_t *p);
 
-/* Restituisce (senza rimuovere) il puntatore al PCB che si trova in testa alla
- * coda dei processi associata al SEMD con chiave semAdd. Ritorna NULL se il
- * SEMD non compare nella ASL oppure se compare ma la sua coda dei processi è
- * vuota.*/
+ /**
+  @brief Restituisce senza rimuovere il puntatore al PCB in testa alla coda del SEMD associato
+  alla chiave semAdd.
+  @param semAdd chiave del semaforo
+  @return puntatore al PCB in testa al SEMD, NULL se il SEMD non compare nella ASL o se
+  la sua coda è vuota
+*/
 extern pcb_t *head_blocked(int *semAdd);
 
 #endif
