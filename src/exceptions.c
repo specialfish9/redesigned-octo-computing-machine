@@ -20,7 +20,7 @@ extern pcb_t *act_proc;
 extern size_tt sb_procs;
 
 /**
-  Crea un nuovo processo come figlio del chiamante.
+  @brief Crea un nuovo processo come figlio del chiamante.
   @param statep: stato che deve avere il processo.
   @param prio: priorità da assegnare al processo.
   @param supportp: puntatore alla struttura supporto del processo.
@@ -87,7 +87,7 @@ inline int handle_syscall(void)
   case PASSEREN: {
     int *sem_addr = (int *)arg1;
     if (*sem_addr != 0 && *sem_addr != 1) {
-      // problema
+      /* problema */
       PANIC();
     }
     passeren(sem_addr);
@@ -96,7 +96,7 @@ inline int handle_syscall(void)
   case VERHOGEN: {
     int *sem_addr = (int *)arg1;
     if (*sem_addr != 0 && *sem_addr != 1) {
-      // problema
+      /* problema */
       PANIC();
     }
     verhogen(sem_addr);
@@ -105,11 +105,11 @@ inline int handle_syscall(void)
   case DOIO: {
     return do_io((int *)arg1, arg2);
   }
-  // SYSCALL che restituisce in v0 il tempo di utilizzo del processore da parte
-  // del processo attivo
+  /* SYSCALL che restituisce in v0 il tempo di utilizzo del processore da parte */
+  /* del processo attivo */
   case GETTIME: {
-    // p_time nel pcb del processo attivo è costantemente aggiornato durante
-    // l'esecuzione, quindi si inserisce quel valore in v0
+    /* p_time nel pcb del processo attivo è costantemente aggiornato durante */
+    /* l'esecuzione, quindi si inserisce quel valore in v0 */
     act_proc->p_s.reg_v0 = act_proc->p_time;
     return TRUE;
   }
@@ -120,21 +120,21 @@ inline int handle_syscall(void)
   case GETSUPPORTPTR: {
     act_proc->p_s.reg_a0 = (memaddr)act_proc->p_supportStruct;
   }
-  // SYSCALL che inserisce un PID nel registro v0 del processo attivo in base a
-  // cosa è scritto in a1
+  /* SYSCALL che inserisce un PID nel registro v0 del processo attivo in base a */
+  /* cosa è scritto in a1 */
   case GETPROCESSID: {
     int parent = arg1;
-    // Se l'argomento 1 è 0 (quindi se parent è falso), in v0 viene inserito il
-    // PID del processo chiamante
+    /* Se l'argomento 1 è 0 (quindi se parent è falso), in v0 viene inserito il */
+    /* PID del processo chiamante */
     if (!parent)
       act_proc->p_s.reg_v0 = act_proc->p_pid;
-    // Altrimenti, se l'argomento è diverso da 0, e il processo chiamante ha
-    // effettivamente un processo padre, si inserisce in v0 il PID del padre
+    /* Altrimenti, se l'argomento è diverso da 0, e il processo chiamante ha */
+    /* effettivamente un processo padre, si inserisce in v0 il PID del padre */
     else if (act_proc->p_parent != NULL)
       act_proc->p_s.reg_v0 = act_proc->p_parent->p_pid;
     else
-      // Come richiesto nella specifica, se viene richiesto il PID del padre di
-      // un processo senza genitore, viene restituito 0
+      /* Come richiesto nella specifica, se viene richiesto il PID del padre di */
+      /* un processo senza genitore, viene restituito 0 */
       act_proc->p_s.reg_v0 = 0;
     return TRUE;
   }
@@ -161,7 +161,7 @@ inline void passeren(int *semaddr)
   pcb_t *tmp;
   if (*semaddr == 0) {
 
-    // Controlli per bloccare il processo
+    /* Controlli per bloccare il processo */
     if (insert_blocked(semaddr, act_proc)) {
       /* Se ritorna true non possiamo assegnare un semaforo */
       /* Non dovrebbe mai capitare, ma in caso */
@@ -169,8 +169,7 @@ inline void passeren(int *semaddr)
     }
     sb_procs++;
   } else if ((tmp = remove_blocked(semaddr)) != NULL) {
-    // Se ci accorgiamo che la risorsa è disponibile ma altri processi la
-    // stavano aspettando
+    /* Se ci accorgiamo che la risorsa è disponibile ma altri processi la stavano aspettando */
     --sb_procs;
     enqueue_proc(tmp, tmp->p_prio);
   } else {
@@ -185,17 +184,15 @@ inline pcb_t *verhogen(int *semaddr)
 
   if (*semaddr == 1) {
     tmp = act_proc;
-    // Controlli per bloccare il processo
+    /* Controlli per bloccare il processo */
     if (insert_blocked(semaddr, tmp)) {
       /* Se ritorna true non possiamo assegnare un semaforo */
       /* Non dovrebbe mai capitare, ma in caso */
       PANIC();
     }
-    /* TODO: Chiamata a scheduler */
 
   } else if ((tmp = remove_blocked(semaddr)) != NULL) {
-    // Se ci accorgiamo che la risorsa è disponibile ma altri processi la
-    // stavano aspettando
+    /* Se ci accorgiamo che la risorsa è disponibile ma altri processi la stavano aspettando */
     enqueue_proc(tmp, tmp->p_prio);
   } else {
     *semaddr = 1;
@@ -216,7 +213,6 @@ static void wait_for_clock(void)
   tmp = NULL;
 
   *dev_sem = 1;
-  // TODO scheduler_next()
 }
 
 static void kill_parent_and_progeny(pcb_t *p)
