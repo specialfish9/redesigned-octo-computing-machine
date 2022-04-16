@@ -119,6 +119,7 @@ void print(char *msg)
     devregtr value = PRINTCHR | (((devregtr)*s) << 8);
     status = SYSCALL(DOIO, (int)command, (int)value, 0);
     if ((status & TERMSTATMASK) != RECVD) {
+      kprint_int(status);
       LOG("Panic in print");
       PANIC();
     }
@@ -147,7 +148,7 @@ void test()
 {
   SYSCALL(VERHOGEN, (int)&sem_testsem, 0, 0); /* V(sem_testsem)   */
 
-  print("p1 v(sem_testsem)\n");
+  print("mp1 v(sem_testsem)\n");
 
   /* set up states of the other processes */
 

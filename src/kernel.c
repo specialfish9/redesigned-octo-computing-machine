@@ -85,29 +85,34 @@ void exception_handler(void)
   size_tt i;
 
   /* Aggiorno l'età del processo attivo */
-  STCK(now);
-  act_proc->p_time += (now - act_proc->p_tm_updt);
-  act_proc->p_tm_updt = now;
+  if(act_proc != NULL) {
+    STCK(now);
+    act_proc->p_time += (now - act_proc->p_tm_updt);
+    act_proc->p_tm_updt = now;
+  }
 
   cause = CAUSE_GET_EXCCODE(getCAUSE());
 
   LOGi("EXC", cause);
 
-  saved_state = (state_t *)BIOSDATAPAGE;
-  /* serve un modo per decidere se un processo deve essere inserito in coda
-  ai processi ready o il controllo deve essere preservato dallo scheduler.
-  bisogna aggiungere un'altra variabile un po' come `reenqueue` e passarla allo
-  scheduler che intal caso dovrebbe subito far partire l'act_process */
-  memcpy(&act_proc->p_s, saved_state, sizeof(state_t));
+  if(act_proc != NULL) {
+    saved_state = (state_t *)BIOSDATAPAGE;
+    /* TODO serve un modo per decidere se un processo deve essere inserito in coda
+    ai processi ready o il controllo deve essere preservato dallo scheduler.
+    bisogna aggiungere un'altra variabile un po' come `reenqueue` e passarla allo
+    scheduler che intal caso dovrebbe subito far partire l'act_process */
+    memcpy(&act_proc->p_s, saved_state, sizeof(state_t));
+  }
   if (cause == EXC_INT) {
     /* Interrupts */
     /* Controlla se ci sono interrupt su tutte le linee */
     i = 0;
-    while (i < DEVINTNUM + 1) {
-      if (!(getCAUSE() & CAUSE_IP(i)))
+    while (i < N_INTERRUPT_LINES) {
+      if (getCAUSE() & CAUSE_IP(i)) {
         handle_interrupts(i);
+      }
+      i++;
     }
-
   } else if (cause == EXC_MOD || cause == EXC_TLBL || cause == EXC_TLBS) {
     /* TLB trap */
     reenqueue = passup_or_die(PGFAULTEXCEPT);
@@ -116,6 +121,9 @@ void exception_handler(void)
              cause == EXC_CPU || cause == EXC_OV) {
     reenqueue = passup_or_die(GENERALEXCEPT);
   } else if (cause == EXC_SYS) {
+    if(act_proc==NULL)
+      /* syscall called in a while state when no process was executing */
+      PANIC();
     /* Syscall */
     KUp = ((getSTATUS() & STATUS_KUp) >> STATUS_KUp_BIT);
     /* Se il processo e' in kernel-mode */
@@ -135,7 +143,7 @@ void exception_handler(void)
   if (reenqueue) {
     enqueue_proc(act_proc, act_proc->p_prio);
   }
-  LOG("rescheduling|");
+  LOG("rescheduling");
   scheduler_next();
 }
 

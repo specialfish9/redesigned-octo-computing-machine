@@ -269,23 +269,23 @@ inline static int do_io(int *cmdaddr, int cmdval)
     }
   }
 
-    if (line == IL_DISK - IL_DISK)
-      sem = sem_disk;
-    else if (line == IL_FLASH - IL_DISK)
-      sem = sem_flash;
-    else if (line == IL_ETHERNET - IL_DISK)
-      sem = sem_net;
-    else if (line == IL_PRINTER - IL_DISK)
-      sem = sem_printer;
-    else if (line == IL_TERMINAL - IL_DISK) {
-      if (IS_TERM_WRITING(cmdaddr))
-        sem = sem_term_out;
-      else
-        sem = sem_term_in;
-    } else {
-      LOG("no sem");
-    }
-    passeren(sem + index);
-    *((unsigned int *)cmdaddr) = cmdval;
-    return FALSE;
+  if (line == IL_DISK - IL_DISK)
+    sem = sem_disk;
+  else if (line == IL_FLASH - IL_DISK)
+    sem = sem_flash;
+  else if (line == IL_ETHERNET - IL_DISK)
+    sem = sem_net;
+  else if (line == IL_PRINTER - IL_DISK)
+    sem = sem_printer;
+  else if (line == IL_TERMINAL - IL_DISK) {
+    if (IS_TERM_WRITING(cmdaddr))
+      sem = sem_term_out;
+    else
+      sem = sem_term_in;
+  } else {
+    LOG("no sem");
+  }
+  passeren(sem + index);
+  *((unsigned int *)cmdaddr) = cmdval;
+  return FALSE;
 }

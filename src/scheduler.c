@@ -1,4 +1,5 @@
 #include "scheduler.h"
+#include "exceptions.h"
 #include "klog.h"
 #include "pandos_const.h"
 #include "pandos_types.h"
@@ -45,10 +46,12 @@ inline void create_init_proc(const memaddr entry_point)
   }
 
   proc->p_s.pc_epc = proc->p_s.reg_t9 = entry_point;
-  proc->p_s.status |= STATUS_TE | STATUS_IM_MASK | STATUS_KUc | STATUS_IEc;
+  proc->p_s.status |=
+      0 | IEPON | IMON | TEBITON; // | STATUS_TE | STATUS_IM_MASK | STATUS_KUc |
+                                  // STATUS_IEc | STATUS_IEp;
   RAMTOP(proc->p_s.reg_sp);
   proc->p_prio = PROCESS_PRIO_LOW;
-  proc->p_pid = (memaddr) proc; 
+  proc->p_pid = (memaddr)proc;
 
   procs_count++;
   insert_proc_q(&l_queue, proc);
@@ -57,11 +60,6 @@ inline void create_init_proc(const memaddr entry_point)
 inline void scheduler_next(void)
 {
   pcb_t *next_proc;
-
-  LOGi("procs_count", procs_count);
-  LOGi("sb_count", sb_procs);
-  LOGi("HPLEN", list_size(&h_queue));
-  LOGi("LPLEN", list_size(&l_queue));
 
   LOG("ch proc");
 
@@ -87,16 +85,20 @@ inline void scheduler_next(void)
     LOG("No process alive: halting");
     HALT();
   } else if (procs_count > 0 && sb_procs > 0) {
-    setSTATUS((getSTATUS() | STATUS_IEc | STATUS_TE) ^ STATUS_TE);
+    /* buona cosa da avere, evita che vengano fatte cazzate nella gestione degli interrupt dopo una wait */
     LOG("No process available: waiting");
+    act_proc = NULL;
+    setTIMER(TIMESLICE * (*(int *)(TIMESCALEADDR)));
+    /* Abilita gli interrupt e disabilita il timer */
+    setSTATUS((getSTATUS() | STATUS_IEc | STATUS_TE) ^ STATUS_TE);
     WAIT();
-  } else if (procs_count > 0&& !sb_procs) {
+    LOG("wait recieved a masked interrupt");
+    scheduler_next();
+  } else if (procs_count > 0 && !sb_procs) {
     /* DEADLOCK !*/
     LOG("DEADLOCK: panicing");
     PANIC();
   }
-  
-  LOG("panic at the disco");
 }
 
 inline pcb_t *mk_proc(state_t *statep, int prio, support_t *supportp)
@@ -165,12 +167,13 @@ inline pcb_t *rm_proc(pcb_t *const pcb, const unsigned int priority)
   return NULL;
 }
 
-inline void load_proc(pcb_t *pcb){
+inline void load_proc(pcb_t *pcb)
+{
   if (pcb == NULL) {
     LOG("Attempt to load NULL pcb");
     return;
   }
-  
+
   act_proc = pcb;
 
   if (act_proc->p_prio == PROCESS_PRIO_LOW) {
@@ -178,12 +181,12 @@ inline void load_proc(pcb_t *pcb){
 
     setTIMER(TIMESLICE * (*(int *)(TIMESCALEADDR)));
 
-  } else if(act_proc->p_prio == PROCESS_PRIO_HIGH) {
+  } else if (act_proc->p_prio == PROCESS_PRIO_HIGH) {
     LOGi("Load hp pro", act_proc->p_pid);
-  } 
-    /* Aggiorno l'age del processo */
-    STCK(act_proc->p_tm_updt);
+  }
+  /* Aggiorno l'age del processo */
+  STCK(act_proc->p_tm_updt);
 
-    /* Lo carico */
-    LDST(&act_proc->p_s);
+  /* Lo carico */
+  LDST(&act_proc->p_s);
 }

@@ -11,8 +11,9 @@
 #include <umps3/umps/libumps.h>
 #include <umps3/umps/types.h>
 
-#define LOGi(s, i) kprint("I>" s);\
-  kprint_int(i); \
+#define LOGi(s, i)                                                             \
+  kprint("I>" s);                                                              \
+  kprint_int(i);                                                               \
   kprint("|")
 
 #define LOG(s) kprint("I>" s)
@@ -30,8 +31,6 @@ int sem_term_out[DEVPERINT];
 
 /** TODO add doc*/
 static inline void generic_interrupt_handler(int line, int *semaphores);
-
-
 
 inline void init_dev_sem(void)
 {
@@ -81,24 +80,25 @@ inline void handle_interrupts(const int line)
     break;
   }
   case IL_TERMINAL: {
-    /* todo check order, maybe transm and recv should be swapped */
-    int *sem[] = {sem_term_in, sem_term_out};
-    size_tt bitmap = CDEV_BITMAP_ADDR(line), index = 0;
-    while (bitmap > 1) {
+    int *sem[] = {sem_term_out, sem_term_in};
+    size_tt *bitmap = (size_tt*)CDEV_BITMAP_ADDR(line), index = 0;
+    while (*bitmap > 1) {
       ++index;
-      bitmap >>= 1;
+      *bitmap >>= 1;
     }
 
     termreg_t *reg = (termreg_t *)&((devregarea_t *)RAMBASEADDR)
                          ->devreg[IL_TERMINAL - IL_DISK][index]
                          .term;
+
     /* todo check order, maybe transm and recv should be swapped */
     size_tt status[2] = {reg->transm_status, reg->recv_status};
     size_tt *command[2] = {&reg->transm_command, &reg->recv_command};
     for (int i = 0; i < 2; ++i) {
       pcb_t *p = verhogen(&sem[i][index]);
-      if (p != NULL)
+      if (p != NULL){
         p->p_s.reg_v0 = status[i];
+        }
 
       /* send ack */
       *command[i] = 1;
@@ -112,7 +112,7 @@ inline void handle_interrupts(const int line)
 
 static inline void generic_interrupt_handler(int line, int *semaphores)
 {
-  size_tt bitmap , index ;
+  size_tt bitmap, index;
   dtpreg_t *reg;
   pcb_t *p;
 
