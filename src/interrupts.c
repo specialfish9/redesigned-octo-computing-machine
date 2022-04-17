@@ -14,9 +14,9 @@
 #define LOGi(s, i)                                                             \
   kprint("I>" s);                                                              \
   kprint_int(i);                                                               \
-  kprint("|")
+  kprint("\n")
 
-#define LOG(s) kprint("I>" s)
+#define LOG(s) kprint("I>" s "\n")
 
 #define TERMSTATMASK 0xFF
 #define RECVD 5
@@ -42,6 +42,24 @@ inline void init_dev_sem(void)
         sem_term_out[i] = 0;
 }
 
+inline static void print_queue(const char *prefix, struct list_head *h, int max) 
+{
+  kprint("S>[");
+  struct list_head* ptr;
+  list_for_each(ptr, h){
+    pcb_t* pcb = container_of(ptr, pcb_t, p_list);
+    kprint_int((unsigned int)pcb);
+    kprint((char*)prefix);
+    kprint(",");
+    if(max==0){
+      kprint("!!!!!!!!!!!!!!!!!!!!!!!1");
+      PANIC();
+    }
+    max--;
+  }
+  kprint("]");
+}
+
 inline void handle_interrupts(const int line)
 {
   LOGi("INT", line);
@@ -58,6 +76,10 @@ inline void handle_interrupts(const int line)
     /* Pseudo-clock Tick */
     LDIT(PSECOND);
     pcb_t *p;
+      semd_t *sem;
+    if((sem = get_semd(&sem_it)) != NULL)
+      print_queue("sem", &sem->s_procq, 10);
+
     while ((p = remove_blocked(&sem_it)) != NULL)
       enqueue_proc(p, p->p_prio);
     sem_it = 0;
@@ -87,9 +109,7 @@ inline void handle_interrupts(const int line)
       *bitmap >>= 1;
     }
 
-    termreg_t *reg = (termreg_t *)&((devregarea_t *)RAMBASEADDR)
-                         ->devreg[IL_TERMINAL - IL_DISK][index]
-                         .term;
+    termreg_t *reg = (termreg_t *) & ((devregarea_t *)RAMBASEADDR)->devreg[IL_TERMINAL - IL_DISK][index].term;
 
     /* todo check order, maybe transm and recv should be swapped */
     size_tt status[2] = {reg->transm_status, reg->recv_status};

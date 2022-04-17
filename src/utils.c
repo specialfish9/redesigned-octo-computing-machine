@@ -6,6 +6,7 @@
 #include "utils.h"
 
 #include "listx.h"
+#include "klog.h"
 #include "pandos_const.h"
 #include "pandos_types.h"
 #include <umps3/umps/libumps.h>
@@ -133,8 +134,8 @@ void dbg_var(const char *name, const int var)
   _itoa(var, var_str);
   _strcat(name, c, res);
   _strcat(res, var_str, res);
-  print1(res);
-  print1("\n");
+  kprint(res);
+  kprint("\n");
 }
 
 void print1_int(const int n)

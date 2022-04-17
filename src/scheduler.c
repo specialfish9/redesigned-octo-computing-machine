@@ -5,17 +5,18 @@
 #include "pandos_const.h"
 #include "pandos_types.h"
 #include "pcb.h"
+#include "asl.h"
 #include "utils.h"
 #include <umps3/umps/const.h>
 #include <umps3/umps/cp0.h>
 #include <umps3/umps/libumps.h>
 #include <umps3/umps/types.h>
 
-#define LOG(s) kprint("S>" s "|")
+#define LOG(s) kprint("S>" s "\n")
 #define LOGi(s, i)                                                             \
   kprint("S>" s);                                                              \
   kprint_int(i);                                                               \
-  kprint("|")
+  kprint("\n")
 
 static int pidc = 1; // TODO leva
 
@@ -25,12 +26,12 @@ pcb_t *act_proc;
 size_tt sb_procs;
 /** Numero di processi */
 static size_tt procs_count;
-/** Coda a bassa priorità */
-static struct list_head l_queue;
-/** Coda ad alta priorità */
-static struct list_head h_queue;
 static size_tt l_sz;
 static size_tt h_sz;
+/** Coda a bassa priorità */
+struct list_head l_queue;
+/** Coda ad alta priorità */
+struct list_head h_queue;
 
 inline void init_scheduler(void)
 {
@@ -48,7 +49,7 @@ inline void create_init_proc(const memaddr entry_point)
   pcb_t *proc;
 
   if ((proc = alloc_pcb()) == NULL) {
-    LOG("Imp all init");
+    LOG("!!! Imp all init");
     PANIC();
   }
 
@@ -67,18 +68,20 @@ inline void create_init_proc(const memaddr entry_point)
 
 static void log_status(void)
 {
-  kprint("(p");
+  kprint("process_count ");
   kprint_int(procs_count);
-  kprint("sb");
+  kprint("\n");
+  kprint("sb_count ");
   kprint_int(sb_procs);
-  kprint("hs");
-  kprint_int(h_sz);
-  kprint("ls");
-  kprint_int(l_sz);
-  kprint(")");
+  kprint("\n");
+  // kprint("hs");
+  // kprint_int(h_sz);
+  // kprint("ls");
+  // kprint_int(l_sz);
+  // kprint(")");
 }
 
-inline static void print_queue(struct list_head *h, int size) 
+inline static void print_queue(const char *prefix, struct list_head *h) 
 {
   kprint("S>[");
   struct list_head* ptr;
@@ -86,9 +89,9 @@ inline static void print_queue(struct list_head *h, int size)
   list_for_each(ptr, h){
     pcb_t* pcb = container_of(ptr, pcb_t, p_list);
     kprint_int((unsigned int)pcb);
+    kprint((char*)prefix);
     kprint(",");
     i++;
-   if(i == size) break; 
   }
   kprint("]");
 }
@@ -97,18 +100,14 @@ inline void scheduler_next(void)
 {
   pcb_t *next_proc;
 
-  LOG("ch proc");
-  if(l_sz > 2){
     log_status();
-    //print_queue(&l_queue, l_sz);
-  }
 
 
   if (empty_proc_q(&h_queue) == FALSE) {
     /* Scegli un processo a priorità alta */
     next_proc = dequeue_proc(PROCESS_PRIO_HIGH);
     if (&(next_proc->p_s) == NULL) {
-      LOG("Something wrong with high prior queue. Panicing...\n");
+      kprint("!!! Something wrong with high prior queue. Panicing...\n");
       PANIC();
     }
 
@@ -117,7 +116,7 @@ inline void scheduler_next(void)
     /* Scegli un processo a priorità bassa */
     next_proc = dequeue_proc(PROCESS_PRIO_LOW);
     if (&(next_proc->p_s) == NULL) {
-      LOG("Something wrong with low prior queue. Panicing...\n");
+      kprint("!!! Something wrong with low prior queue. Panicing...\n");
       PANIC();
     }
 
@@ -139,6 +138,9 @@ inline void scheduler_next(void)
   } else if (procs_count > 0 && !sb_procs) {
     /* DEADLOCK !*/
     LOG("DEADLOCK: panicing");
+    PANIC();
+  } else {
+    LOG("WRONG");
     PANIC();
   }
 }
@@ -169,14 +171,17 @@ inline pcb_t *mk_proc(state_t *statep, int prio, support_t *supportp)
 
 inline void kill_proc(pcb_t *p)
 {
-  procs_count--;
-  if (p->p_prio == PROCESS_PRIO_HIGH) {
+  --procs_count;
+  if(p->p_semAdd != NULL && out_blocked(p) == p)
+    --sb_procs;
+  else if (p->p_prio == PROCESS_PRIO_HIGH) {
     h_sz--;
     out_proc_q(&h_queue, p);
   } else if (p->p_prio == PROCESS_PRIO_LOW) {
     l_sz--;
     out_proc_q(&l_queue, p);
   }
+
   free_pcb(p);
 }
 

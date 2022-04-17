@@ -25,8 +25,9 @@ extern int passup_or_die(size_tt kind);
 /**
   @brief Esegue un'operazione P sul semaforo binario.
   @param semaddr puntatore al semaforo.
+   TODO
 */
-extern void passeren(int *semaddr);
+extern int passeren(int *semaddr);
 
 /**
   @brief Esegue un'operazione V sul semaforo binario.

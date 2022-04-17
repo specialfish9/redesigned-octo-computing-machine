@@ -14,11 +14,11 @@
 #include <umps3/umps/libumps.h>
 #include <umps3/umps/types.h>
 
-#define LOG(s) kprint("K>" s "|")
+#define LOG(s) kprint("K>" s "\n")
 #define LOGi(s, i)                                                             \
   kprint("K>" s);                                                              \
   kprint_int(i);                                                               \
-  kprint("|")
+  kprint("\n")
 
 /** @brief Inizializza il passup vector. */
 inline static void init_passup_vector(void);
@@ -76,12 +76,30 @@ void init_data_structures(void)
   init_dev_sem();
 }
 
+inline static void print_queue(const char *prefix, struct list_head *h, int max) 
+{
+  kprint("S>[");
+  struct list_head* ptr;
+  list_for_each(ptr, h){
+    pcb_t* pcb = container_of(ptr, pcb_t, p_list);
+    kprint_int((unsigned int)pcb);
+    kprint((char*)prefix);
+    kprint(",");
+    if(max == 0){
+      kprint("!!!!!!!!!!!!!!!!!!!!!\n");
+      PANIC();
+    }
+    --max;
+  }
+  kprint("]");
+}
+
 void exception_handler(void)
 {
   unsigned int cause, KUp;
   cpu_t now;
   state_t *saved_state;
-  int reenqueue = 1;
+  int reenqueue = RENQUEUE;
   size_tt i;
 
   /* Aggiorno l'età del processo attivo */
@@ -93,9 +111,10 @@ void exception_handler(void)
 
   cause = CAUSE_GET_EXCCODE(getCAUSE());
 
-  if (cause != 0 && cause != 8) {
-    LOGi("EXC", cause);
-  }
+  LOGi("EXC", cause);
+
+  if(act_proc!=NULL)
+    print_queue("exp", act_proc->p_prio ? &h_queue : &l_queue, 10);
 
   if (act_proc != NULL) {
     saved_state = (state_t *)BIOSDATAPAGE;
@@ -114,7 +133,7 @@ void exception_handler(void)
       if (getCAUSE() & CAUSE_IP(i)) {
         handle_interrupts(i);
       }
-      i++;
+      ++i;
     }
   } else if (cause == EXC_MOD || cause == EXC_TLBL || cause == EXC_TLBS) {
     /* TLB trap */
@@ -124,9 +143,11 @@ void exception_handler(void)
              cause == EXC_CPU || cause == EXC_OV) {
     reenqueue = passup_or_die(GENERALEXCEPT);
   } else if (cause == EXC_SYS) {
-    if (act_proc == NULL)
+    if (act_proc == NULL){
       /* syscall called in a while state when no process was executing */
+      kprint("!!! recieved syscall while act_proc == NULL\n");
       PANIC();
+    }
     /* Syscall */
     KUp = ((getSTATUS() & STATUS_KUp) >> STATUS_KUp_BIT);
     /* Se il processo e' in kernel-mode */
@@ -143,11 +164,13 @@ void exception_handler(void)
     }
   }
 
-  if (reenqueue == CONTINUE) {
-    // SUPER MEGA HACK
-    load_proc(act_proc);
-  } else if (reenqueue == RENQUEUE) {
-    enqueue_proc(act_proc, act_proc->p_prio);
+  if(act_proc != NULL) {
+    if (reenqueue == CONTINUE) {
+      // SUPER MEGA HACK
+      load_proc(act_proc);
+    } else if (reenqueue == RENQUEUE) {
+      enqueue_proc(act_proc, act_proc->p_prio);
+    }
   }
   LOG("rschdl");
   scheduler_next();

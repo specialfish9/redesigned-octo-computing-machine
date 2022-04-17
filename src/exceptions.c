@@ -12,12 +12,12 @@
 #include <umps3/umps/libumps.h>
 #include <umps3/umps/types.h>
 
-#define LOG(s) kprint("E>" s "|")
+#define LOG(s) kprint("E>" s "\n")
 
 #define LOGi(s, i)                                                             \
   kprint("E>" s);                                                              \
   kprint_int(i);                                                               \
-  kprint("|")
+  kprint("\n")
 
 /* Processo in esecuzione */
 extern pcb_t *act_proc;
@@ -42,8 +42,9 @@ static int do_io(int *cmdaddr, int cmdval);
 
 /**
   @brief Esegue un'operazione P sul semaforo di pseudo-clock.
+  //todo
  */
-inline static void wait_for_clock(void);
+inline static int wait_for_clock(void);
 
 /**
  @brief Uccide il processo padre e i processi figli del processo passato
@@ -51,6 +52,21 @@ inline static void wait_for_clock(void);
  @param p Il processo di riferimento.
 */
 inline static void kill_parent_and_progeny(pcb_t *p);
+
+inline static void print_queue(const char *prefix, struct list_head *h) 
+{
+  kprint("S>[");
+  struct list_head* ptr;
+  int i = 0;
+  list_for_each(ptr, h){
+    pcb_t* pcb = container_of(ptr, pcb_t, p_list);
+    kprint_int((unsigned int)pcb);
+    kprint((char*)prefix);
+    kprint(",");
+    i++;
+  }
+  kprint("]");
+}
 
 inline int handle_syscall(void)
 {
@@ -77,7 +93,7 @@ inline int handle_syscall(void)
         create_process((state_t *)arg1, (int)arg2, (support_t *)arg3);
     act_proc->p_s.reg_v0 = new_proc_pid;
 
-    enqueue_proc(search_by_pid(new_proc_pid), (int)arg2);
+    print_queue("aa", act_proc->p_prio ? &h_queue : &l_queue);
     LOGi("CREATE PROC", new_proc_pid);
     return CONTINUE;
   }
@@ -97,35 +113,39 @@ inline int handle_syscall(void)
     int *sem_addr = (int *)arg1;
     if (*sem_addr != 0 && *sem_addr != 1) {
       /* problema */
+        kprint("!!! sem value out of range");
       PANIC();
     }
-    passeren(sem_addr);
-    return RENQUEUE;
+    return passeren(sem_addr);
   }
   case VERHOGEN: {
     int *sem_addr = (int *)arg1;
     if (*sem_addr != 0 && *sem_addr != 1) {
       /* problema */
+        kprint("!!! sem value out of range");
       PANIC();
     }
-    verhogen(sem_addr);
-    return RENQUEUE;
+      LOGi("sem_val", *sem_addr);
+    
+    return verhogen(sem_addr) == NULL ? NOTHING : RENQUEUE;
   }
   case DOIO: {
     return do_io((int *)arg1, arg2);
   }
   /* SYSCALL che restituisce in v0 il tempo di utilizzo del processore da parte
-   */
+ */
   /* del processo attivo */
   case GETTIME: {
     /* p_time nel pcb del processo attivo è costantemente aggiornato durante */
     /* l'esecuzione, quindi si inserisce quel valore in v0 */
+      kprint("!!!!!!\n");
+      kprint_int(act_proc->p_time);
+      kprint("\n!!!!!!\n");
     act_proc->p_s.reg_v0 = act_proc->p_time;
     return CONTINUE;
   }
   case CLOCKWAIT: {
-    wait_for_clock();
-    return CONTINUE;
+    return wait_for_clock();
   }
   case GETSUPPORTPTR: {
     act_proc->p_s.reg_a0 = (memaddr)act_proc->p_supportStruct;
@@ -169,27 +189,36 @@ static int create_process(state_t *statep, int prio, support_t *supportp)
   return new_proc->p_pid;
 }
 
-inline void passeren(int *semaddr)
+inline int passeren(int *semaddr)
 {
   /* Se il valore del semaforo è 1 sblocco il processo, se è 0 lo blocco */
   pcb_t *tmp;
-  if (*semaddr == 0) {
 
+  if (*semaddr == 0) {
+    LOG("pass1");
+
+    if(!list_empty(&act_proc->p_list))
+      list_del(&act_proc->p_list);
     /* Controlli per bloccare il processo */
     if (insert_blocked(semaddr, act_proc)) {
       /* Se ritorna true non possiamo assegnare un semaforo */
       /* Non dovrebbe mai capitare, ma in caso */
+      kprint("!!! insert_blocked failed in passeren\n");
       PANIC();
     }
     sb_procs++;
+    return NOTHING;
   } else if ((tmp = remove_blocked(semaddr)) != NULL) {
+    LOG("pass2");
     /* Se ci accorgiamo che la risorsa è disponibile ma altri processi la
      * stavano aspettando */
-    --sb_procs;
     enqueue_proc(tmp, tmp->p_prio);
+    --sb_procs;
   } else {
+    LOG("pass3");
     *semaddr = 0;
   }
+    return RENQUEUE;
 }
 
 inline pcb_t *verhogen(int *semaddr)
@@ -198,39 +227,40 @@ inline pcb_t *verhogen(int *semaddr)
   pcb_t *tmp;
 
   if (*semaddr == 1) {
-    tmp = act_proc;
+    LOG("ver1");
+    if(act_proc == NULL)
+      return NULL;
+
     /* Controlli per bloccare il processo */
-    if (insert_blocked(semaddr, tmp)) {
+    if(!list_empty(&act_proc->p_list))
+      list_del(&act_proc->p_list);
+    if (insert_blocked(semaddr, act_proc)) {
       /* Se ritorna true non possiamo assegnare un semaforo */
       /* Non dovrebbe mai capitare, ma in caso */
+      kprint("!!! insert_blocked failed in verhogen\n");
       PANIC();
     }
 
     sb_procs++;
+    return NULL;
   } else if ((tmp = remove_blocked(semaddr)) != NULL) {
+    LOG("ver2");
     /* Se ci accorgiamo che la risorsa è disponibile ma altri processi la
      * stavano aspettando */
     enqueue_proc(tmp, tmp->p_prio);
     sb_procs--;
+    return tmp;
   } else {
+    LOG("ver3");
     *semaddr = 1;
+    return act_proc;
   }
-
-  return tmp;
 }
 
-static void wait_for_clock(void)
+static int wait_for_clock(void)
 {
   /* blocco il processo attivo sul semaforo */
-  insert_blocked(&sem_it, act_proc);
-  pcb_t *tmp = act_proc;
-
-  /*blocco il processo sul semaforo ricevuto come parametro*/
-  int *dev_sem = &sem_it;
-  insert_blocked(dev_sem, tmp);
-  tmp = NULL;
-
-  *dev_sem = 1;
+  return passeren(&sem_it);
 }
 
 static void kill_parent_and_progeny(pcb_t *p)

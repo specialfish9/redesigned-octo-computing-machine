@@ -18,7 +18,8 @@ static struct list_head semd;
 /*Restituisce il semaforo corrispondente alla
 chiave passata come input. Se non esiste tale
 SEMD restituisce NULL.*/
-static semd_t *get_semd(int *s_key)
+/* TODO static */
+semd_t *get_semd(int *s_key)
 {
   struct list_head *iter;
 
@@ -35,6 +36,9 @@ static semd_t *get_semd(int *s_key)
 
 int insert_blocked(int *semAdd, pcb_t *p)
 {
+  if(p == NULL){
+    kprint("P IS NULL");
+  }
   struct semd_t *s = get_semd(semAdd);
 
   if (s == NULL) { /*se il semaforo non è presente tra i SEMD*/
@@ -50,6 +54,7 @@ int insert_blocked(int *semAdd, pcb_t *p)
        * SEMD + inserisco il PCB*/
       list_del(semd_free_h->next);
       list_add(&(tmp->s_link), semd_h);
+      INIT_LIST_HEAD(&(tmp->s_procq));
       insert_proc_q(&(tmp->s_procq), p);
     }
   } else { /*se il semaforo è già esistente inserisco il PCB*/
@@ -94,7 +99,7 @@ pcb_t *out_blocked(pcb_t *p)
    * coda dei SEMD liberi*/
   if (list_empty(&(s->s_procq))) {
     list_del(&(s->s_link));
-    list_add(&(s->s_link), semd_free_h);
+    list_add_tail(&(s->s_link), semd_free_h);
   }
   return pcb;
 }
