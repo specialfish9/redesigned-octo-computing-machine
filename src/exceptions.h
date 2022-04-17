@@ -2,6 +2,9 @@
 #define EXCEPTIONS_H
 
 #include "pcb.h"
+#define NOTHING 0
+#define RENQUEUE 1
+#define CONTINUE 2
 
 /**
   @brief Gestore delle syscall.

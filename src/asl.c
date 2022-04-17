@@ -4,6 +4,7 @@
  *
  ******************************************************************************/
 #include "asl.h"
+#include "klog.h"
 #include "listx.h"
 #include "pandos_const.h"
 #include "pcb.h"
@@ -34,10 +35,14 @@ static semd_t *get_semd(int *s_key)
 
 int insert_blocked(int *semAdd, pcb_t *p)
 {
+  kprint("3");
   struct semd_t *s = get_semd(semAdd);
+  kprint("4");
 
   if (s == NULL) { /*se il semaforo non è presente tra i SEMD*/
+  kprint("5");
     if (list_empty(semd_free_h)) {
+      kprint("6");
       /*termino restituendo TRUE se non è possibile allocare un nuovo semaforo
        * perchè la lista di quelli liberi è vuota*/
       return TRUE;
@@ -52,6 +57,7 @@ int insert_blocked(int *semAdd, pcb_t *p)
       insert_proc_q(&(tmp->s_procq), p);
     }
   } else { /*se il semaforo è già esistente inserisco il PCB*/
+    kprint("7");
     insert_proc_q(&(s->s_procq), p);
   }
 

@@ -204,7 +204,8 @@ inline size_tt list_size(struct list_head *head)
   struct list_head *ptr;
   size_tt l = 0;
 
-  list_for_each(ptr, head) { l++; }
+  list_for_each(ptr, head) { l++; 
+  if (l > 50) return l; }
 
   return l;
 }

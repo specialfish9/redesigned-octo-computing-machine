@@ -85,7 +85,7 @@ void exception_handler(void)
   size_tt i;
 
   /* Aggiorno l'età del processo attivo */
-  if(act_proc != NULL) {
+  if (act_proc != NULL) {
     STCK(now);
     act_proc->p_time += (now - act_proc->p_tm_updt);
     act_proc->p_tm_updt = now;
@@ -93,14 +93,17 @@ void exception_handler(void)
 
   cause = CAUSE_GET_EXCCODE(getCAUSE());
 
-  LOGi("EXC", cause);
+  if (cause != 0 && cause != 8) {
+    LOGi("EXC", cause);
+  }
 
-  if(act_proc != NULL) {
+  if (act_proc != NULL) {
     saved_state = (state_t *)BIOSDATAPAGE;
-    /* TODO serve un modo per decidere se un processo deve essere inserito in coda
-    ai processi ready o il controllo deve essere preservato dallo scheduler.
-    bisogna aggiungere un'altra variabile un po' come `reenqueue` e passarla allo
-    scheduler che intal caso dovrebbe subito far partire l'act_process */
+    /* TODO serve un modo per decidere se un processo deve essere inserito in
+    coda ai processi ready o il controllo deve essere preservato dallo
+    scheduler. bisogna aggiungere un'altra variabile un po' come `reenqueue` e
+    passarla allo scheduler che intal caso dovrebbe subito far partire
+    l'act_process */
     memcpy(&act_proc->p_s, saved_state, sizeof(state_t));
   }
   if (cause == EXC_INT) {
@@ -121,7 +124,7 @@ void exception_handler(void)
              cause == EXC_CPU || cause == EXC_OV) {
     reenqueue = passup_or_die(GENERALEXCEPT);
   } else if (cause == EXC_SYS) {
-    if(act_proc==NULL)
+    if (act_proc == NULL)
       /* syscall called in a while state when no process was executing */
       PANIC();
     /* Syscall */
@@ -140,10 +143,13 @@ void exception_handler(void)
     }
   }
 
-  if (reenqueue) {
+  if (reenqueue == CONTINUE) {
+    // SUPER MEGA HACK
+    load_proc(act_proc);
+  } else if (reenqueue == RENQUEUE) {
     enqueue_proc(act_proc, act_proc->p_prio);
   }
-  LOG("rescheduling");
+  LOG("rschdl");
   scheduler_next();
 }
 

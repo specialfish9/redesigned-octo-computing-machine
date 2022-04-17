@@ -16,6 +16,8 @@
   kprint_int(i);                                                               \
   kprint("|")
 
+static int pidc = 1; // TODO leva
+
 /** Processo attivo */
 pcb_t *act_proc;
 /** Contatore processi soft blocked */
@@ -51,10 +53,23 @@ inline void create_init_proc(const memaddr entry_point)
                                   // STATUS_IEc | STATUS_IEp;
   RAMTOP(proc->p_s.reg_sp);
   proc->p_prio = PROCESS_PRIO_LOW;
-  proc->p_pid = (memaddr)proc;
+  proc->p_pid = pidc++; //(memaddr)proc;
 
   procs_count++;
   insert_proc_q(&l_queue, proc);
+}
+
+static void log_status(void)
+{
+  kprint("(p");
+  kprint_int(procs_count);
+  kprint("sb");
+  kprint_int(sb_procs);
+  kprint("H");
+  kprint_int(list_size(&h_queue));
+  kprint("L");
+  kprint_int(list_size(&l_queue));
+  kprint(")");
 }
 
 inline void scheduler_next(void)
@@ -62,6 +77,7 @@ inline void scheduler_next(void)
   pcb_t *next_proc;
 
   LOG("ch proc");
+  log_status();
 
   if (empty_proc_q(&h_queue) == FALSE) {
     /* Scegli un processo a priorità alta */
@@ -85,8 +101,9 @@ inline void scheduler_next(void)
     LOG("No process alive: halting");
     HALT();
   } else if (procs_count > 0 && sb_procs > 0) {
-    /* buona cosa da avere, evita che vengano fatte cazzate nella gestione degli interrupt dopo una wait */
-    LOG("No process available: waiting");
+    /* buona cosa da avere, evita che vengano fatte cazzate nella gestione degli
+     * interrupt dopo una wait */
+    LOG("npa:wait");
     act_proc = NULL;
     setTIMER(TIMESLICE * (*(int *)(TIMESCALEADDR)));
     /* Abilita gli interrupt e disabilita il timer */
@@ -113,8 +130,9 @@ inline pcb_t *mk_proc(state_t *statep, int prio, support_t *supportp)
 
   result->p_supportStruct = supportp;
   result->p_prio = prio;
+  LOG("SCHD");
   memcpy(&result->p_s, statep, sizeof(state_t));
-  result->p_pid = (unsigned int)result;
+  result->p_pid = pidc++; //(unsigned int)result;
 
   if (prio == PROCESS_PRIO_HIGH) {
     insert_proc_q(&h_queue, result);
@@ -184,7 +202,7 @@ inline void load_proc(pcb_t *pcb)
   } else if (act_proc->p_prio == PROCESS_PRIO_HIGH) {
     LOGi("Load hp pro", act_proc->p_pid);
   }
-  /* Aggiorno l'age del processo */
+  /* Aggiorno l'ultimo update dell'age del processo */
   STCK(act_proc->p_tm_updt);
 
   /* Lo carico */

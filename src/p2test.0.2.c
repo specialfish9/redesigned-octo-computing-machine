@@ -21,6 +21,10 @@
 #include <umps3/umps/libumps.h>
 
 #define LOG(s) kprint("TEST>" s "|")
+#define LOGi(s, i)                                                             \
+  kprint("TEST>" s);                                                           \
+  kprint_int(i);                                                               \
+  kprint("|")
 
 typedef unsigned int devregtr;
 
@@ -109,6 +113,7 @@ extern void p5mm();
 void print(char *msg)
 {
 
+  LOG(">>>");
   char *s = msg;
   devregtr *base = (devregtr *)(TERM0ADDR);
   devregtr *command = base + 3;
@@ -126,6 +131,7 @@ void print(char *msg)
     s++;
   }
   SYSCALL(VERHOGEN, (int)&sem_term_mut, 0, 0); /* V(sem_term_mut) */
+  LOG("<<<");
 }
 
 /* TLB-Refill Handler */
@@ -146,9 +152,10 @@ void uTLB_RefillHandler()
 /*                                                                   */
 void test()
 {
+  LOG("   TEST 1 STARTED!   ");
   SYSCALL(VERHOGEN, (int)&sem_testsem, 0, 0); /* V(sem_testsem)   */
 
-  print("mp1 v(sem_testsem)\n");
+  print("p1 v(sem_testsem)\n");
 
   /* set up states of the other processes */
 
@@ -242,9 +249,13 @@ void test()
   p2pid = SYSCALL(CREATEPROCESS, (int)&p2state, PROCESS_PRIO_LOW,
                   (int)NULL); /* start p2     */
 
+  LOG("p2created");
   print("p2 was started\n");
 
+  LOG("pv");
   SYSCALL(VERHOGEN, (int)&sem_startp2, 0, 0); /* V(sem_startp2)   */
+
+  LOG("av");
 
   SYSCALL(VERHOGEN, (int)&sem_endp2, 0, 0); /* V(sem_endp2) (blocking V!)     */
 
@@ -257,6 +268,7 @@ void test()
                   (int)NULL); /* start p3     */
 
   print("p3 is started\n");
+  PANIC();
 
   SYSCALL(PASSEREN, (int)&sem_endp3, 0, 0); /* P(sem_endp3)     */
 
@@ -323,11 +335,15 @@ void p2()
   cpu_t now1, now2;     /* times of day        */
   cpu_t cpu_t1, cpu_t2; /* cpu time used       */
 
+  LOG("    TEST 2 STARTED!    ");
+
   SYSCALL(PASSEREN, (int)&sem_startp2, 0, 0); /* P(sem_startp2)   */
 
   print("p2 starts\n");
 
   int pid = SYSCALL(GETPROCESSID, 0, 0, 0);
+  LOGi("pid", pid);
+  LOGi("p2pid", p2pid);
   if (pid != p2pid) {
     print("Inconsistent process id for p2!\n");
     PANIC();

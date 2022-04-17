@@ -81,7 +81,7 @@ inline void handle_interrupts(const int line)
   }
   case IL_TERMINAL: {
     int *sem[] = {sem_term_out, sem_term_in};
-    size_tt *bitmap = (size_tt*)CDEV_BITMAP_ADDR(line), index = 0;
+    size_tt *bitmap = (size_tt *)CDEV_BITMAP_ADDR(line), index = 0;
     while (*bitmap > 1) {
       ++index;
       *bitmap >>= 1;
@@ -96,13 +96,13 @@ inline void handle_interrupts(const int line)
     size_tt *command[2] = {&reg->transm_command, &reg->recv_command};
     for (int i = 0; i < 2; ++i) {
       pcb_t *p = verhogen(&sem[i][index]);
-      if (p != NULL){
+      if (p != NULL) {
         p->p_s.reg_v0 = status[i];
-        }
-
+      }
       /* send ack */
       *command[i] = 1;
     }
+    LOG("END");
     break;
   }
   default:
