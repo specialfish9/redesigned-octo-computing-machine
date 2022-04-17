@@ -194,40 +194,28 @@ inline void passeren(int *semaddr)
 
 inline pcb_t *verhogen(int *semaddr)
 {
-        LOG("START");
   /* Se il valore del semaforo è 0 sblocco il processo, se è 1 lo blocco */
   pcb_t *tmp;
 
   if (*semaddr == 1) {
-    kprint("1");
     tmp = act_proc;
-    kprint("2");
     /* Controlli per bloccare il processo */
     if (insert_blocked(semaddr, tmp)) {
-    kprint("3");
       /* Se ritorna true non possiamo assegnare un semaforo */
       /* Non dovrebbe mai capitare, ma in caso */
       PANIC();
     }
 
-    kprint("4");
     sb_procs++;
-    kprint("5");
   } else if ((tmp = remove_blocked(semaddr)) != NULL) {
-    kprint("6");
     /* Se ci accorgiamo che la risorsa è disponibile ma altri processi la
      * stavano aspettando */
     enqueue_proc(tmp, tmp->p_prio);
-    kprint("7");
     sb_procs--;
-    kprint("8");
   } else {
-    kprint("9");
     *semaddr = 1;
-    kprint("A");
   }
 
-        LOG("END");
   return tmp;
 }
 

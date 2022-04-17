@@ -29,6 +29,4 @@ extern void dbg_var(const char *, const int);
 /*Implementazione standard della funzione memcpy della libc.*/
 extern void memcpy(void *dest, void *src, size_tt n);
 
-/*TODO*/
-extern size_tt list_size(struct list_head *head);
 #endif

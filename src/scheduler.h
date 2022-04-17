@@ -54,15 +54,6 @@ extern void enqueue_proc(pcb_t *const pcb, const unsigned int priority);
 extern pcb_t *dequeue_proc(const unsigned int priority);
 
 /**
- * @brief Rimuove un processo specifico dalla coda ready indicata.
- * @param priority la priorita' della coda dalla quale si vuole rimuovere il
- * pcb.
- * @param pcb il pcb da rimuovere.
- * @return il pcb rimosso o NULL se non ci sono pcb in coda
- * */
-extern pcb_t *rm_proc(pcb_t *const pcb, const unsigned int priority);
-
-/**
  * @brief Carica il processo passato come parametro. Utilizzare con estrema
  * cautela.
  * @param pcb Riferimento del processo

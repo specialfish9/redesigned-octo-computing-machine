@@ -7,9 +7,9 @@
  */
 
 #define KLOG_LINES                                                             \
-  128 // Number of lines in the buffer. Adjustable, only limited by available
+  100 // Number of lines in the buffer. Adjustable, only limited by available
      // memory
-#define KLOG_LINE_SIZE 42 // Length of a single line in characters
+#define KLOG_LINE_SIZE 41 // Length of a single line in characters
 
 static void next_line(void);
 static void next_char(void);
