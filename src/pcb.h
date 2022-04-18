@@ -7,6 +7,8 @@
 #ifndef PCB_H
 #define PCB_H
 
+/* todo remove */
+#include "klog.h"
 #include "pandos_types.h"
 
 /**
@@ -70,4 +72,8 @@ extern pcb_t *remove_child(pcb_t *p);
  * padre).*/
 extern pcb_t *out_child(pcb_t *p);
 
+extern void fn();
+
+//TODO
+extern int is_alive(const pcb_t* const pcb);
 #endif

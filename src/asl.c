@@ -36,7 +36,7 @@ semd_t *get_semd(int *s_key)
 
 int insert_blocked(int *semAdd, pcb_t *p)
 {
-  if(p == NULL){
+  if (p == NULL) {
     kprint("P IS NULL");
   }
   struct semd_t *s = get_semd(semAdd);
@@ -76,6 +76,7 @@ pcb_t *remove_blocked(int *semAdd)
 
   /*rimuovo il primo elemento bloccato su quel SEMD*/
   struct pcb_t *pcb = remove_proc_q(&(s->s_procq));
+  pcb->p_semAdd = NULL;
   /*se la coda dei processi bloccati si svuota, trasferisco il semaforo nella
    * coda dei SEMD liberi*/
   if (list_empty(&(s->s_procq))) {
@@ -85,19 +86,48 @@ pcb_t *remove_blocked(int *semAdd)
   return pcb;
 }
 
+inline static void print_queue(const char *prefix, struct list_head *h)
+{
+  kprint("S>[");
+  struct list_head *ptr;
+  int i = 0;
+  list_for_each(ptr, h)
+  {
+    pcb_t *pcb = container_of(ptr, pcb_t, p_list);
+    kprint_int((unsigned int)pcb);
+    kprint((char *)prefix);
+    kprint(",");
+    i++;
+  }
+  kprint("]");
+}
+
 pcb_t *out_blocked(pcb_t *p)
 {
+  if (p == NULL || p->p_semAdd == NULL){
+    kprint("p or p_semAdd is null\n");
+    return NULL;
+  }
+
   struct semd_t *s = get_semd(p->p_semAdd);
 
-  if (s == NULL)
+  if (s == NULL) {
+    kprint("get semd returned null\n");
     return NULL;
+  }
 
+  p->p_semAdd = NULL;
   struct pcb_t *pcb =
       out_proc_q(&(s->s_procq), p); /*elimino il PCB p dalla lista*/
+  if (pcb == NULL) {
+    kprint("out proc q returns null\n");
+    return NULL;
+  }
 
   /*se la coda dei processi bloccati si svuota, trasferisco il semaforo nella
    * coda dei SEMD liberi*/
   if (list_empty(&(s->s_procq))) {
+    kprint("semaphore freed\n");
     list_del(&(s->s_link));
     list_add_tail(&(s->s_link), semd_free_h);
   }

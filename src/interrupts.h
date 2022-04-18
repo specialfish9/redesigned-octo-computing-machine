@@ -27,7 +27,8 @@ extern void init_dev_sem(void);
 /**
  * @brief Gestisce l'interrupt tirato nella linea specificata.
  * @param line Linea su cui viene tirato l'interrupt
+ * TODO
  */
-extern void handle_interrupts(const int line);
+extern int handle_interrupts(const int line);
 
 #endif

@@ -5,8 +5,8 @@
  ******************************************************************************/
 #include "utils.h"
 
-#include "listx.h"
 #include "klog.h"
+#include "listx.h"
 #include "pandos_const.h"
 #include "pandos_types.h"
 #include <umps3/umps/libumps.h>

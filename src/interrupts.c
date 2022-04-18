@@ -42,16 +42,17 @@ inline void init_dev_sem(void)
         sem_term_out[i] = 0;
 }
 
-inline static void print_queue(const char *prefix, struct list_head *h, int max) 
+inline static void print_queue(const char *prefix, struct list_head *h, int max)
 {
   kprint("S>[");
-  struct list_head* ptr;
-  list_for_each(ptr, h){
-    pcb_t* pcb = container_of(ptr, pcb_t, p_list);
+  struct list_head *ptr;
+  list_for_each(ptr, h)
+  {
+    pcb_t *pcb = container_of(ptr, pcb_t, p_list);
     kprint_int((unsigned int)pcb);
-    kprint((char*)prefix);
+    kprint((char *)prefix);
     kprint(",");
-    if(max==0){
+    if (max == 0) {
       kprint("!!!!!!!!!!!!!!!!!!!!!!!1");
       PANIC();
     }
@@ -60,27 +61,38 @@ inline static void print_queue(const char *prefix, struct list_head *h, int max)
   kprint("]");
 }
 
-inline void handle_interrupts(const int line)
+inline int handle_interrupts(const int line)
 {
   LOGi("INT", line);
+  if(act_proc!=NULL){
+  // kprint("act_proc->pSemAdd = ");
+  // kprint_hex((unsigned int)act_proc->p_semAdd);
+  // kprint("\n");
+  }
 
   switch (line) {
   case IL_IPI: {
     break; /* safely ignore */
   }
   case IL_CPUTIMER: { /* PLT */
+    /* Resetta il timer */
     setTIMER(TIMESLICE * (*(int *)(TIMESCALEADDR)));
-    break;
+      return RENQUEUE;
   }
   case IL_TIMER: {
     /* Pseudo-clock Tick */
-    LDIT(PSECOND);
-    pcb_t *p;
+  LDIT(PSECOND);
+      pcb_t*p;
+      kprint("sem_it = ");
+      kprint_int(sem_it);
+      kprint("\n");
+    while (sem_it != 1)
+      if((p=verhogen(&sem_it)) != NULL && p->p_semAdd !=NULL){
+          kprint("!!!!!!!!!!!!!!!!ver has process still in semaphore ");
+          kprint_int(p->p_pid);
+                 kprint("!!!!!!!!!!!!!!!\n");
+        }
 
-    while ((p = remove_blocked(&sem_it)) != NULL){
-      enqueue_proc(p, p->p_prio);
-        --sb_procs;
-      }
     sem_it = 0;
     break;
   }
@@ -108,25 +120,31 @@ inline void handle_interrupts(const int line)
       *bitmap >>= 1;
     }
 
-    termreg_t *reg = (termreg_t *) & ((devregarea_t *)RAMBASEADDR)->devreg[IL_TERMINAL - IL_DISK][index].term;
+    termreg_t *reg = (termreg_t *)&((devregarea_t *)RAMBASEADDR)
+                         ->devreg[IL_TERMINAL - IL_DISK][index]
+                         .term;
 
     /* todo check order, maybe transm and recv should be swapped */
     size_tt status[2] = {reg->transm_status, reg->recv_status};
     size_tt *command[2] = {&reg->transm_command, &reg->recv_command};
     for (int i = 0; i < 2; ++i) {
-      pcb_t *p = verhogen(&sem[i][index]);
-      if (p != NULL) {
-        p->p_s.reg_v0 = status[i];
-      }
-      /* send ack */
-      *command[i] = 1;
+        /* code taken from the p1 test */
+        if((status[i]&TERMSTATMASK) == 5) {
+          pcb_t *p = verhogen(&sem[i][index]);
+          if (p != NULL) {
+            p->p_s.reg_v0 = status[i];
+          }
+          /* send ack */
+          *command[i] = 1;
+          break;
+        }
     }
-    LOG("END");
     break;
   }
   default:
     break;
   }
+  return CONTINUE;
 }
 
 static inline void generic_interrupt_handler(int line, int *semaphores)

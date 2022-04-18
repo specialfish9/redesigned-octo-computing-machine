@@ -6,7 +6,7 @@
 #define RENQUEUE 1
 #define CONTINUE 2
 
-extern pcb_t* yielded_process;
+extern pcb_t *yielded_process;
 
 /**
   @brief Gestore delle syscall.

@@ -49,17 +49,18 @@ static int do_io(int *cmdaddr, int cmdval);
 */
 inline static void kill_parent_and_progeny(pcb_t *p);
 
-inline static void print_queue(const char *prefix, struct list_head *h) 
+inline static void print_queue(const char *prefix, struct list_head *h, int max)
 {
   kprint("S>[");
-  struct list_head* ptr;
-  int i = 0;
-  list_for_each(ptr, h){
-    pcb_t* pcb = container_of(ptr, pcb_t, p_list);
+  struct list_head *ptr;
+  list_for_each(ptr, h)
+  {
+    pcb_t *pcb = container_of(ptr, pcb_t, p_list);
     kprint_int((unsigned int)pcb);
-    kprint((char*)prefix);
+    kprint((char *)prefix);
     kprint(",");
-    i++;
+    if (max-- < 0)
+      PANIC();
   }
   kprint("]");
 }
@@ -78,22 +79,35 @@ inline int handle_syscall(void)
   arg1 = act_proc->p_s.reg_a1;
   arg2 = act_proc->p_s.reg_a2;
   arg3 = act_proc->p_s.reg_a3;
+  if(!is_alive(act_proc)){
+       kprint("syscall by zombie");
+        kprint("!!!!!!!!!!!!!!!!!!!\n");
+        PANIC(); 
+  }
 
-  kprint("E>NSYS");
-  kprint_int(number);
-  kprint("\n");
+  if (act_proc->p_semAdd != NULL) {
+    kprint("!!!blocked process issues a syscall ");
+    kprint_int(act_proc->p_pid);
+    kprint("\n");
+    PANIC();
+  }
 
   switch (number) {
   case CREATEPROCESS: {
+    kprint("CREATEPROCESS(");
+    kprint_int(act_proc->p_pid);
+    kprint(")\n");
     int new_proc_pid =
         create_process((state_t *)arg1, (int)arg2, (support_t *)arg3);
     act_proc->p_s.reg_v0 = new_proc_pid;
 
-    print_queue("aa", act_proc->p_prio ? &h_queue : &l_queue);
-    LOGi("CREATE PROC", new_proc_pid);
+    print_queue("pqueue", act_proc->p_prio ? &h_queue : &l_queue, 20);
     return CONTINUE;
   }
   case TERMPROCESS: {
+    kprint("TERMPROCESS(");
+    kprint_int(act_proc->p_pid);
+    kprint(")\n");
     pcb_t *res;
 
     int pid = (int)arg1;
@@ -103,54 +117,85 @@ inline int handle_syscall(void)
       res = search_by_pid(pid);
 
     kill_parent_and_progeny(res);
-    return NOTHING;
+    return is_alive(act_proc) ? RENQUEUE: NOTHING ;
   }
   case PASSEREN: {
+    kprint("PASSEREN(");
+    kprint_int(act_proc->p_pid);
+    kprint(")\n");
     int *sem_addr = (int *)arg1;
     if (*sem_addr != 0 && *sem_addr != 1) {
       /* problema */
-        kprint("!!! sem value out of range");
+      kprint("!!! sem value out of range");
       PANIC();
+    }
+    if (!is_alive(act_proc)) {
+       kprint("passeren on zombie");
+        kprint("!!!!!!!!!!!!!!!!!!!\n");
+        PANIC(); 
     }
     return passeren(sem_addr);
   }
   case VERHOGEN: {
+    kprint("VERHOGEN(");
+    kprint_int(act_proc->p_pid);
+    kprint(")\n");
     int *sem_addr = (int *)arg1;
     if (*sem_addr != 0 && *sem_addr != 1) {
       /* problema */
-        kprint("!!! sem value out of range");
+      kprint("!!! sem value out of range");
       PANIC();
     }
-      LOGi("sem_val", *sem_addr);
-    
+    LOGi("sem_val", *sem_addr);
+    if (!is_alive(act_proc)) {
+       kprint("verhogen on zombie");
+        PANIC(); 
+    }
     return verhogen(sem_addr) == NULL ? NOTHING : RENQUEUE;
   }
   case DOIO: {
+    kprint("DOIO(");
+    kprint_int(act_proc->p_pid);
+    kprint(")\n");
     return do_io((int *)arg1, arg2);
   }
   /* SYSCALL che restituisce in v0 il tempo di utilizzo del processore da parte
- */
+   */
   /* del processo attivo */
   case GETTIME: {
+    kprint("GETTIME(");
+    kprint_int(act_proc->p_pid);
+    kprint(")\n");
     /* p_time nel pcb del processo attivo è costantemente aggiornato durante */
     /* l'esecuzione, quindi si inserisce quel valore in v0 */
-      kprint("!!!!!!\n");
-      kprint_int(act_proc->p_time);
-      kprint("\n!!!!!!\n");
+    kprint("!!!!!!\n");
+    kprint_int(act_proc->p_time);
+    kprint("\n!!!!!!\n");
     act_proc->p_s.reg_v0 = act_proc->p_time;
     return CONTINUE;
   }
   case CLOCKWAIT: {
+    kprint("CLOCKWAIT(");
+    kprint_int(act_proc->p_pid);
+    kprint(", ");
+    kprint_int(sem_it);
+    kprint(")\n");
     return passeren(&sem_it);
   }
   case GETSUPPORTPTR: {
-    act_proc->p_s.reg_a0 = (memaddr)act_proc->p_supportStruct;
+    kprint("GETSUPPORTPTR(");
+    kprint_int(act_proc->p_pid);
+    kprint(")\n");
+    act_proc->p_s.reg_v0 = (memaddr)act_proc->p_supportStruct;
     return CONTINUE;
   }
   /* SYSCALL che inserisce un PID nel registro v0 del processo attivo in base a
    */
   /* cosa è scritto in a1 */
   case GETPROCESSID: {
+    kprint("GETPROCESSID(");
+    kprint_int(act_proc->p_pid);
+    kprint(")\n");
     int parent = arg1;
     /* Se l'argomento 1 è 0 (quindi se parent è falso), in v0 viene inserito il
      */
@@ -169,6 +214,9 @@ inline int handle_syscall(void)
     return CONTINUE;
   }
   case YIELD: {
+    kprint("YIELD(");
+    kprint_int(act_proc->p_pid);
+    kprint(")\n");
     yielded_process = act_proc;
     return NOTHING;
   }
@@ -194,7 +242,7 @@ inline int passeren(int *semaddr)
   if (*semaddr == 0) {
     LOG("pass1");
 
-    if(!list_empty(&act_proc->p_list))
+    if (!list_empty(&act_proc->p_list))
       list_del(&act_proc->p_list);
     /* Controlli per bloccare il processo */
     if (insert_blocked(semaddr, act_proc)) {
@@ -215,7 +263,7 @@ inline int passeren(int *semaddr)
     LOG("pass3");
     *semaddr = 0;
   }
-    return RENQUEUE;
+  return RENQUEUE;
 }
 
 inline pcb_t *verhogen(int *semaddr)
@@ -225,11 +273,11 @@ inline pcb_t *verhogen(int *semaddr)
 
   if (*semaddr == 1) {
     LOG("ver1");
-    if(act_proc == NULL)
+    if (act_proc == NULL)
       return NULL;
 
     /* Controlli per bloccare il processo */
-    if(!list_empty(&act_proc->p_list))
+    if (!list_empty(&act_proc->p_list))
       list_del(&act_proc->p_list);
     if (insert_blocked(semaddr, act_proc)) {
       /* Se ritorna true non possiamo assegnare un semaforo */
@@ -241,7 +289,11 @@ inline pcb_t *verhogen(int *semaddr)
     sb_procs++;
     return NULL;
   } else if ((tmp = remove_blocked(semaddr)) != NULL) {
-    LOG("ver2");
+    kprint("ver2 unblock ");
+    kprint_int(tmp->p_pid);
+    kprint("\n");
+    if(tmp->p_semAdd!=NULL)
+      LOG("ver2 did not remove from sem");
     /* Se ci accorgiamo che la risorsa è disponibile ma altri processi la
      * stavano aspettando */
     enqueue_proc(tmp, tmp->p_prio);
@@ -273,16 +325,15 @@ inline int passup_or_die(size_tt kind)
     return NOTHING;
   }
 
-  LOG("POD");
   /* Pass up */
   memcpy(act_proc->p_supportStruct->sup_exceptState + kind,
          (state_t *)BIOSDATAPAGE, sizeof(state_t));
-  LDCXT(act_proc->p_supportStruct->sup_exceptContext[kind].pc,
+  LDCXT(act_proc->p_supportStruct->sup_exceptContext[kind].stackPtr,
         act_proc->p_supportStruct->sup_exceptContext[kind].status,
         act_proc->p_supportStruct->sup_exceptContext[kind].pc);
 
   /* never reached */
-  return RENQUEUE;
+  return NOTHING;
 }
 
 inline static int do_io(int *cmdaddr, int cmdval)

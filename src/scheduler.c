@@ -26,8 +26,6 @@ pcb_t *act_proc;
 size_tt sb_procs;
 /** Numero di processi */
 static size_tt procs_count;
-static size_tt l_sz;
-static size_tt h_sz;
 /** Coda a bassa priorità */
 struct list_head l_queue;
 /** Coda ad alta priorità */
@@ -38,8 +36,6 @@ inline void init_scheduler(void)
   procs_count = 0;
   sb_procs = 0;
   act_proc = NULL;
-  l_sz = 0;
-  h_sz = 0;
   mk_empty_proc_q(&l_queue);
   mk_empty_proc_q(&h_queue);
 }
@@ -54,9 +50,7 @@ inline void create_init_proc(const memaddr entry_point)
   }
 
   proc->p_s.pc_epc = proc->p_s.reg_t9 = entry_point;
-  proc->p_s.status |=
-      0 | IEPON | IMON | TEBITON; // | STATUS_TE | STATUS_IM_MASK | STATUS_KUc |
-                                  // STATUS_IEc | STATUS_IEp;
+  proc->p_s.status = ALLOFF | STATUS_TE | STATUS_IM_MASK | STATUS_KUc |  STATUS_IEp;
   RAMTOP(proc->p_s.reg_sp);
   proc->p_prio = PROCESS_PRIO_LOW;
   proc->p_pid = pidc++; //(memaddr)proc;
@@ -67,33 +61,28 @@ inline void create_init_proc(const memaddr entry_point)
 
 static void log_status(void)
 {
-  kprint("process_count ");
-  kprint_int(procs_count);
-  kprint("\n");
-  kprint("sb_count ");
-  kprint_int(sb_procs);
-  kprint("\n");
-  // kprint("hs");
-  // kprint_int(h_sz);
-  // kprint("ls");
-  // kprint_int(l_sz);
-  // kprint(")");
+  // kprint("process_count ");
+  // kprint_int(procs_count);
+  // kprint("\n");
+  // kprint("sb_count ");
+  // kprint_int(sb_procs);
+  // kprint("\n");
 }
 
-inline static void print_queue(const char *prefix, struct list_head *h)
+inline static void print_queue(const char *prefix, struct list_head *h, int max)
 {
   kprint("S>[");
   struct list_head *ptr;
-  int i = 0;
   list_for_each(ptr, h)
   {
     pcb_t *pcb = container_of(ptr, pcb_t, p_list);
     kprint_int((unsigned int)pcb);
     kprint((char *)prefix);
     kprint(",");
-    i++;
+    if(max--<0)
+      PANIC();
   }
-  kprint("]");
+  kprint("]\n");
 }
 
 inline void scheduler_next(void)
@@ -102,7 +91,10 @@ inline void scheduler_next(void)
 
   log_status();
 
-  if (empty_proc_q(&h_queue) == FALSE) {
+  print_queue("h", &h_queue, 20);
+  print_queue("l", &l_queue, 20);
+  fn();
+  if (!empty_proc_q(&h_queue)) {
     /* Scegli un processo a priorità alta */
     next_proc = dequeue_proc(PROCESS_PRIO_HIGH);
     if (&(next_proc->p_s) == NULL) {
@@ -111,7 +103,7 @@ inline void scheduler_next(void)
     }
 
     load_proc(next_proc);
-  } else if (empty_proc_q(&l_queue) == FALSE) {
+  } else if (!empty_proc_q(&l_queue) ) {
     /* Scegli un processo a priorità bassa */
     next_proc = dequeue_proc(PROCESS_PRIO_LOW);
     if (&(next_proc->p_s) == NULL) {
@@ -126,7 +118,13 @@ inline void scheduler_next(void)
   } else if (procs_count > 0 && sb_procs > 0) {
     /* buona cosa da avere, evita che vengano fatte cazzate nella gestione degli
      * interrupt dopo una wait */
-    LOG("npa:wait");
+    kprint("WAIT()\n");
+    kprint("process_count = ");
+    kprint_int(procs_count);
+    kprint("\n");
+    kprint("sb_procs = ");
+    kprint_int(sb_procs);
+    kprint("\n");
     if (yielded_process != NULL) {
       enqueue_proc(yielded_process, yielded_process->p_prio);
       yielded_process = NULL;
@@ -160,7 +158,6 @@ inline pcb_t *mk_proc(state_t *statep, int prio, support_t *supportp)
 
   result->p_supportStruct = supportp;
   result->p_prio = prio;
-  LOG("SCHD");
   memcpy(&result->p_s, statep, sizeof(state_t));
   result->p_pid = pidc++; //(unsigned int)result;
 
@@ -174,15 +171,31 @@ inline pcb_t *mk_proc(state_t *statep, int prio, support_t *supportp)
 
 inline void kill_proc(pcb_t *p)
 {
-  --procs_count;
-  /* todo: check error on out_blocked */
-  if(p->p_parent != NULL && out_child(p) != p)
+  if(p == NULL){
+    kprint("killing a null process\n");
     PANIC();
-  if (p->p_semAdd != NULL && out_blocked(p) == p)
+  }
+  kprint("KILL(");
+  kprint_int(p->p_pid);
+  kprint(")");
+  // print_queue("KP", &l_queue);
+  --procs_count;
+  if (p->p_parent != NULL && out_child(p) != p) {
+    PANIC();
+  }
+  if (p->p_semAdd != NULL){
     --sb_procs;
+    if( out_blocked(p) == NULL) {
+      kprint("!!!!!! could not remove process from semaphore ");
+      kprint_int(p->p_pid);
+      kprint("\n");
+      PANIC();
+    }
+  }
   /*else*/ if (p->p_prio == PROCESS_PRIO_HIGH) {
     out_proc_q(&h_queue, p);
   } else if (p->p_prio == PROCESS_PRIO_LOW) {
+    LOG("deleting lp");
     out_proc_q(&l_queue, p);
   }
 
@@ -191,26 +204,28 @@ inline void kill_proc(pcb_t *p)
 
 inline void enqueue_proc(pcb_t *const pcb, const unsigned int priority)
 {
-  LOGi("ep", pcb->p_pid);
+  kprint("ENQUEUE(");
+  kprint_int(pcb->p_pid);
+  kprint(")\n");
   if (priority == PROCESS_PRIO_HIGH) {
-    h_sz++;
     insert_proc_q(&h_queue, pcb);
   } else if (priority == PROCESS_PRIO_LOW) {
-    l_sz++;
     insert_proc_q(&l_queue, pcb);
   }
 }
 
 inline pcb_t *dequeue_proc(const unsigned int priority)
 {
+  pcb_t*p=NULL;
   if (priority == PROCESS_PRIO_HIGH) {
-    h_sz--;
-    return remove_proc_q(&h_queue);
+    p= remove_proc_q(&h_queue);
   } else if (priority == PROCESS_PRIO_LOW) {
-    l_sz--;
-    return remove_proc_q(&l_queue);
+    p= remove_proc_q(&l_queue);
   }
-  return NULL;
+  kprint("DEQUEUE(): ");
+  kprint_hex((unsigned int)p);
+  kprint("\n");
+  return p;
 }
 
 inline void load_proc(pcb_t *pcb)
@@ -220,22 +235,27 @@ inline void load_proc(pcb_t *pcb)
     return;
   }
   if (yielded_process != NULL) {
-    enqueue_proc(yielded_process, yielded_process->p_prio);
-    yielded_process = NULL;
-  }
-  if (yielded_process != NULL) {
+    LOG("enqueueing yielded process");
     enqueue_proc(yielded_process, yielded_process->p_prio);
     yielded_process = NULL;
   }
 
   act_proc = pcb;
+  // kprint("act_proc->pSemAdd = ");
+  // kprint_hex((unsigned int)act_proc->p_semAdd);
+  // kprint("\n");
 
-  setTIMER(TIMESLICE * (*(int *)(TIMESCALEADDR)));
+setTIMER(TIMESLICE * (*(int *)(TIMESCALEADDR)));
+  act_proc->p_s.status |= STATUS_IEp | STATUS_TE;
   if (act_proc->p_prio == PROCESS_PRIO_LOW) {
-    LOGi("Load lp pro", act_proc->p_pid);
-    act_proc->p_s.status ^= STATUS_TE;
+    kprint("LOAD(");
+    kprint_int(act_proc->p_pid);
+    kprint(", low)\n");
   } else if (act_proc->p_prio == PROCESS_PRIO_HIGH) {
-    LOGi("Load hp pro", act_proc->p_pid);
+    kprint("LOAD(");
+    kprint_int(act_proc->p_pid);
+    kprint(", high)\n");
+    act_proc->p_s.status ^= STATUS_TE;
   }
   /* Aggiorno l'ultimo update dell'age del processo */
   STCK(act_proc->p_tm_updt);

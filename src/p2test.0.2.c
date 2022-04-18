@@ -17,7 +17,6 @@
 
 #include "pandos_const.h"
 #include "pandos_types.h"
-#include "klog.h"
 #include <umps3/umps/libumps.h>
 
 typedef unsigned int devregtr;
@@ -102,7 +101,6 @@ void p5sys(), p8root(), child1(), child2(), p8leaf1(), p8leaf2(), p8leaf3(), p8l
 extern void p5gen();
 extern void p5mm();
 
-void stop_on_me(){}
 
 /* a procedure to print on terminal 0 */
 void print(char *msg) {
@@ -112,9 +110,6 @@ void print(char *msg) {
     devregtr *command = base + 3;
     devregtr  status;
 
-    kprint("sem_term_mut: ");
-  kprint_int(sem_term_mut);
-  kprint("\n");
     SYSCALL(PASSEREN, (int)&sem_term_mut, 0, 0); /* P(sem_term_mut) */
     while (*s != EOS) {
         devregtr value = PRINTCHR | (((devregtr)*s) << 8);
@@ -257,7 +252,7 @@ void test() {
     SYSCALL(PASSEREN, (int)&sem_endp3, 0, 0); /* P(sem_endp3)     */
 
     SYSCALL(CREATEPROCESS, (int)&hp_p1state, PROCESS_PRIO_HIGH, (int)NULL);
-  SYSCALL(CREATEPROCESS, (int)&hp_p2state, PROCESS_PRIO_HIGH, (int)NULL);
+    SYSCALL(CREATEPROCESS, (int)&hp_p2state, PROCESS_PRIO_HIGH, (int)NULL);
 
     p4pid = SYSCALL(CREATEPROCESS, (int)&p4state, PROCESS_PRIO_LOW, (int)NULL); /* start p4     */
 
@@ -276,7 +271,6 @@ void test() {
 
     p9pid = SYSCALL(CREATEPROCESS, (int)&p9state, PROCESS_PRIO_LOW, (int)NULL); /* start p7		*/
 
-  kprint("\n\n\nHERE\n\n\n");
     SYSCALL(PASSEREN, (int)&sem_endp5, 0, 0); /* P(sem_endp5)		*/
 
     print("p1 knows p5 ended\n");
@@ -398,19 +392,6 @@ void p3() {
     }
 
     cpu_t2 = SYSCALL(GETTIME, 0, 0, 0);
-
-    kprint("-----------\n");
-    kprint("TIME TEST\n");
-    kprint_int(cpu_t1);
-    kprint(" ");
-    kprint_int(cpu_t2);
-    kprint("\n ");
-    kprint_int(cpu_t2 -cpu_t1);
-    kprint(" ");
-    kprint_int(MINCLOCKLOOP / (*((cpu_t *)TIMESCALEADDR)));
-    kprint("\n ");
-    kprint("-----------\n");
-  
 
     if (cpu_t2 - cpu_t1 < (MINCLOCKLOOP / (*((cpu_t *)TIMESCALEADDR)))) {
         print("error: p3 - CPU time incorrectly maintained\n");

@@ -5,12 +5,35 @@
  ******************************************************************************/
 
 #include "pcb.h"
+#include "klog.h"
 #include "listx.h"
 #include "pandos_const.h"
 #include "pandos_types.h"
+#include <umps3/umps/libumps.h>
 
-static pcb_t pcb_free_table[MAXPROC];
+ static pcb_t pcb_free_table[MAXPROC];
 static struct list_head pcb_free_h;
+
+inline int is_alive(const pcb_t* const pcb){
+  return pcb->p_pid != -1; // TODO 
+}
+
+void fn() {
+  for(size_tt i = 0; i< MAXPROC; ++i){
+    if(!is_alive(pcb_free_table+i))
+      continue;
+
+    kprint_int(pcb_free_table[i].p_pid);
+    if(pcb_free_table[i].p_semAdd!=NULL){
+      kprint(" is blocked, sem value");
+      kprint_int(*pcb_free_table[i].p_semAdd);
+      kprint("\n");
+    }else if(list_empty(&pcb_free_table[i].p_list))
+      kprint(" is in a queue\n");
+    else
+      kprint(" is alive\n");
+  }
+}
 
 pcb_t *search_by_pid(const unsigned int pid)
 {
@@ -31,12 +54,20 @@ void init_pcbs(void)
    * della pcbFree_table inserendoli in coda*/
   INIT_LIST_HEAD(&pcb_free_h);
   for (size_tt i = 0; i < MAXPROC; i++) {
+  /*todo remove*/
+  pcb_free_table[i].p_pid =-1;
+  pcb_free_table[i].p_semAdd =NULL;
     list_add_tail(&pcb_free_table[i].p_list, &pcb_free_h);
   }
 }
 
 /* Inserisce il PCB puntato da p nella lista dei PCB liberi.*/
-void free_pcb(pcb_t *p) { list_add(&p->p_list, &pcb_free_h); }
+void free_pcb(pcb_t *p) {
+  /*todo remove*/
+  p->p_pid =-1;
+  p->p_semAdd =NULL;
+  list_add(&p->p_list, &pcb_free_h);
+}
 
 /* Restituisce NULL se pcb_free_h è vuota. Altrimenti rimuove un elemento da
  * pcb_free, inizializza tutti i campi (NULL/0) e restituisce l’elemento
@@ -121,10 +152,16 @@ pcb_t *remove_proc_q(struct list_head *head)
 pcb_t *out_proc_q(struct list_head *head, pcb_t *p)
 {
   struct list_head *iter;
+  int i = 0;
 
   /* Ciclo for che scorre l'intera lista */
   list_for_each(iter, head)
   {
+    kprint("opq");
+    kprint_int(i++);
+    kprint("\n");
+    if (i > 10)
+      PANIC();
     /* Se l'elemento della lista in esame punta al p_list del pcb che cerchiamo,
      * esso viene eliminato e restituito. */
     if (iter == &(p->p_list)) {

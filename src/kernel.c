@@ -74,48 +74,51 @@ void init_data_structures(void)
   init_asl();
   init_scheduler();
   init_dev_sem();
-  yielded_process=NULL;
+  yielded_process = NULL;
 }
 
-inline static void print_queue(const char *prefix, struct list_head *h, int max) 
+inline static void print_queue(const char *prefix, struct list_head *h, int max)
 {
   kprint("S>[");
-  struct list_head* ptr;
-  list_for_each(ptr, h){
-    pcb_t* pcb = container_of(ptr, pcb_t, p_list);
-    kprint_int((unsigned int)pcb);
-    kprint((char*)prefix);
+  struct list_head *ptr;
+  list_for_each(ptr, h)
+  {
+    pcb_t *pcb = container_of(ptr, pcb_t, p_list);
+    kprint_int((unsigned int)pcb->p_pid);
+    kprint((char *)prefix);
     kprint(",");
-    if(max == 0){
+    if (max == 0) {
       kprint("!!!!!!!!!!!!!!!!!!!!!\n");
       PANIC();
     }
     --max;
   }
-  kprint("]");
+  kprint("]\n");
 }
 
 void exception_handler(void)
 {
   unsigned int cause, KUp;
   cpu_t now;
-  state_t *saved_state;
   int reenqueue = RENQUEUE;
   size_tt i;
 
-
   cause = CAUSE_GET_EXCCODE(getCAUSE());
 
-  LOGi("EXC", cause);
-  if(cause==8 && act_proc!=NULL){
-    LOGi("SYS", (int)act_proc->p_s.reg_a0);
+  if(cause != 0 && cause != 8){
+    kprint("EXCEPTION(");
+    kprint_int(cause);
+    kprint(")\n");
   }
 
-  if(act_proc!=NULL)
-    print_queue("exp", act_proc->p_prio ? &h_queue : &l_queue, 20);
+  if (act_proc != NULL){
+  // kprint("act_proc->pSemAdd = ");
+  // kprint_hex((unsigned int)act_proc->p_semAdd);
+  // kprint("\n");
+  }
 
   if (act_proc != NULL) {
-    saved_state = (state_t *)BIOSDATAPAGE;
+    state_t *saved_state = (state_t *)BIOSDATAPAGE;
     /* TODO serve un modo per decidere se un processo deve essere inserito in
     coda ai processi ready o il controllo deve essere preservato dallo
     scheduler. bisogna aggiungere un'altra variabile un po' come `reenqueue` e
@@ -129,7 +132,8 @@ void exception_handler(void)
     i = 0;
     while (i < N_INTERRUPT_LINES) {
       if (getCAUSE() & CAUSE_IP(i)) {
-        handle_interrupts(i);
+        reenqueue = handle_interrupts(i);
+        break;
       }
       ++i;
     }
@@ -141,7 +145,7 @@ void exception_handler(void)
              cause == EXC_CPU || cause == EXC_OV) {
     reenqueue = passup_or_die(GENERALEXCEPT);
   } else if (cause == EXC_SYS) {
-    if (act_proc == NULL){
+    if (act_proc == NULL) {
       /* syscall called in a while state when no process was executing */
       kprint("!!! recieved syscall while act_proc == NULL\n");
       PANIC();
@@ -154,10 +158,10 @@ void exception_handler(void)
 
       /* Incrementiamo il PC */
       act_proc->p_s.pc_epc = act_proc->p_s.reg_t9 =
-          saved_state->pc_epc + WORD_SIZE;
+          act_proc->p_s.pc_epc + WORD_SIZE;
     } else {
-      saved_state->cause =
-          (saved_state->cause & CLEAREXECCODE) | (PRIVINSTR << CAUSESHIFT);
+      act_proc->p_s.cause =
+          (act_proc->p_s.cause & CLEAREXECCODE) | (PRIVINSTR << CAUSESHIFT);
       reenqueue = passup_or_die(GENERALEXCEPT);
     }
   }
@@ -168,25 +172,33 @@ void exception_handler(void)
     act_proc->p_tm_updt = now;
   }
 
-  if(act_proc != NULL) {
+  if (act_proc != NULL) {
     if (reenqueue == CONTINUE) {
       // SUPER MEGA HACK
+  // kprint("act_proc->pSemAdd = ");
+  // kprint_hex((unsigned int)act_proc->p_semAdd);
+  // kprint("\n");
       load_proc(act_proc);
     } else if (reenqueue == RENQUEUE) {
+      // kprint("renqueue ");
+      // kprint_int(act_proc->p_pid);
+      // kprint("\n");
       enqueue_proc(act_proc, act_proc->p_prio);
     }
+  // kprint("act_proc->pSemAdd = ");
+  // kprint_hex((unsigned int)act_proc->p_semAdd);
+  // kprint("\n");
   }
-  LOG("rschdl");
+  kprint("(R)");
   scheduler_next();
 }
 
 /* TLB-Refill Handler */
 void uTLB_RefillHandler(void)
 {
-  LOG("TLB refill called");
-  setENTRYHI(0x80000000);
-  setENTRYLO(0x00000000);
-  TLBWR();
+    setENTRYHI(0x80000000);
+    setENTRYLO(0x00000000);
+    TLBWR();
 
   LDST((state_t *)BIOSDATAPAGE);
 }
