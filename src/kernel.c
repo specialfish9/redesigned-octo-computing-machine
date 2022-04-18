@@ -103,12 +103,6 @@ void exception_handler(void)
   int reenqueue = RENQUEUE;
   size_tt i;
 
-  /* Aggiorno l'età del processo attivo */
-  if (act_proc != NULL) {
-    STCK(now);
-    act_proc->p_time += (now - act_proc->p_tm_updt);
-    act_proc->p_tm_updt = now;
-  }
 
   cause = CAUSE_GET_EXCCODE(getCAUSE());
 
@@ -166,6 +160,12 @@ void exception_handler(void)
           (saved_state->cause & CLEAREXECCODE) | (PRIVINSTR << CAUSESHIFT);
       reenqueue = passup_or_die(GENERALEXCEPT);
     }
+  }
+  /* Aggiorno l'età del processo attivo */
+  if (act_proc != NULL) {
+    STCK(now);
+    act_proc->p_time += (now - act_proc->p_tm_updt);
+    act_proc->p_tm_updt = now;
   }
 
   if(act_proc != NULL) {

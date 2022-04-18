@@ -399,6 +399,19 @@ void p3() {
 
     cpu_t2 = SYSCALL(GETTIME, 0, 0, 0);
 
+    kprint("-----------\n");
+    kprint("TIME TEST\n");
+    kprint_int(cpu_t1);
+    kprint(" ");
+    kprint_int(cpu_t2);
+    kprint("\n ");
+    kprint_int(cpu_t2 -cpu_t1);
+    kprint(" ");
+    kprint_int(MINCLOCKLOOP / (*((cpu_t *)TIMESCALEADDR)));
+    kprint("\n ");
+    kprint("-----------\n");
+  
+
     if (cpu_t2 - cpu_t1 < (MINCLOCKLOOP / (*((cpu_t *)TIMESCALEADDR)))) {
         print("error: p3 - CPU time incorrectly maintained\n");
     } else {

@@ -81,7 +81,7 @@ inline int handle_syscall(void)
 
   kprint("E>NSYS");
   kprint_int(number);
-  kprint("|");
+  kprint("\n");
 
   switch (number) {
   case CREATEPROCESS: {
