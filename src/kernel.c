@@ -14,11 +14,8 @@
 #include <umps3/umps/libumps.h>
 #include <umps3/umps/types.h>
 
-#define LOG(s) kprint("K>" s "\n")
-#define LOGi(s, i)                                                             \
-  kprint("K>" s);                                                              \
-  kprint_int(i);                                                               \
-  kprint("\n")
+#define LOG(s) log("K", s)
+#define LOGi(s, i) logi("K", s, i);                                                             
 
 /** @brief Inizializza il passup vector. */
 inline static void init_passup_vector(void);
@@ -77,24 +74,6 @@ void init_data_structures(void)
   yielded_process = NULL;
 }
 
-inline static void print_queue(const char *prefix, struct list_head *h, int max)
-{
-  kprint("S>[");
-  struct list_head *ptr;
-  list_for_each(ptr, h)
-  {
-    pcb_t *pcb = container_of(ptr, pcb_t, p_list);
-    kprint_int((unsigned int)pcb->p_pid);
-    kprint((char *)prefix);
-    kprint(",");
-    if (max == 0) {
-      kprint("!!!!!!!!!!!!!!!!!!!!!\n");
-      PANIC();
-    }
-    --max;
-  }
-  kprint("]\n");
-}
 
 void exception_handler(void)
 {
@@ -106,26 +85,14 @@ void exception_handler(void)
   cause = CAUSE_GET_EXCCODE(getCAUSE());
 
   if(cause != 0 && cause != 8){
-    kprint("EXCEPTION(");
-    kprint_int(cause);
-    kprint(")\n");
-  }
-
-  if (act_proc != NULL){
-  // kprint("act_proc->pSemAdd = ");
-  // kprint_hex((unsigned int)act_proc->p_semAdd);
-  // kprint("\n");
+    LOGi("Exception: ", cause);
   }
 
   if (act_proc != NULL) {
     state_t *saved_state = (state_t *)BIOSDATAPAGE;
-    /* TODO serve un modo per decidere se un processo deve essere inserito in
-    coda ai processi ready o il controllo deve essere preservato dallo
-    scheduler. bisogna aggiungere un'altra variabile un po' come `reenqueue` e
-    passarla allo scheduler che intal caso dovrebbe subito far partire
-    l'act_process */
     memcpy(&act_proc->p_s, saved_state, sizeof(state_t));
   }
+
   if (cause == EXC_INT) {
     /* Interrupts */
     /* Controlla se ci sono interrupt su tutte le linee */
@@ -147,7 +114,6 @@ void exception_handler(void)
   } else if (cause == EXC_SYS) {
     if (act_proc == NULL) {
       /* syscall called in a while state when no process was executing */
-      kprint("!!! recieved syscall while act_proc == NULL\n");
       PANIC();
     }
     /* Syscall */
@@ -174,28 +140,19 @@ void exception_handler(void)
 
   if (act_proc != NULL) {
     if (reenqueue == CONTINUE) {
-      // SUPER MEGA HACK
-  // kprint("act_proc->pSemAdd = ");
-  // kprint_hex((unsigned int)act_proc->p_semAdd);
-  // kprint("\n");
       load_proc(act_proc);
     } else if (reenqueue == RENQUEUE) {
-      // kprint("renqueue ");
-      // kprint_int(act_proc->p_pid);
-      // kprint("\n");
       enqueue_proc(act_proc, act_proc->p_prio);
     }
-  // kprint("act_proc->pSemAdd = ");
-  // kprint_hex((unsigned int)act_proc->p_semAdd);
-  // kprint("\n");
   }
-  kprint("(R)");
+  LOG("Rescheduling");
   scheduler_next();
 }
 
 /* TLB-Refill Handler */
 void uTLB_RefillHandler(void)
 {
+    LOG("TLB refill handler invoked");
     setENTRYHI(0x80000000);
     setENTRYLO(0x00000000);
     TLBWR();
