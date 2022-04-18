@@ -74,6 +74,7 @@ void init_data_structures(void)
   init_asl();
   init_scheduler();
   init_dev_sem();
+  yielded_process=NULL;
 }
 
 inline static void print_queue(const char *prefix, struct list_head *h, int max) 
@@ -112,9 +113,12 @@ void exception_handler(void)
   cause = CAUSE_GET_EXCCODE(getCAUSE());
 
   LOGi("EXC", cause);
+  if(cause==8 && act_proc!=NULL){
+    LOGi("SYS", (int)act_proc->p_s.reg_a0);
+  }
 
   if(act_proc!=NULL)
-    print_queue("exp", act_proc->p_prio ? &h_queue : &l_queue, 10);
+    print_queue("exp", act_proc->p_prio ? &h_queue : &l_queue, 20);
 
   if (act_proc != NULL) {
     saved_state = (state_t *)BIOSDATAPAGE;

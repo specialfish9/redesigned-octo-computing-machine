@@ -12,6 +12,8 @@
 #include <umps3/umps/libumps.h>
 #include <umps3/umps/types.h>
 
+pcb_t *yielded_process;
+
 #define LOG(s) kprint("E>" s "\n")
 
 #define LOGi(s, i)                                                             \
@@ -39,12 +41,6 @@ inline static int create_process(state_t *statep, int prio,
  * TODO
  * */
 static int do_io(int *cmdaddr, int cmdval);
-
-/**
-  @brief Esegue un'operazione P sul semaforo di pseudo-clock.
-  //todo
- */
-inline static int wait_for_clock(void);
 
 /**
  @brief Uccide il processo padre e i processi figli del processo passato
@@ -145,7 +141,7 @@ inline int handle_syscall(void)
     return CONTINUE;
   }
   case CLOCKWAIT: {
-    return wait_for_clock();
+    return passeren(&sem_it);
   }
   case GETSUPPORTPTR: {
     act_proc->p_s.reg_a0 = (memaddr)act_proc->p_supportStruct;
@@ -173,7 +169,8 @@ inline int handle_syscall(void)
     return CONTINUE;
   }
   case YIELD: {
-    return CONTINUE;
+    yielded_process = act_proc;
+    return NOTHING;
   }
   default:
     return passup_or_die(GENERALEXCEPT);
@@ -255,12 +252,6 @@ inline pcb_t *verhogen(int *semaddr)
     *semaddr = 1;
     return act_proc;
   }
-}
-
-static int wait_for_clock(void)
-{
-  /* blocco il processo attivo sul semaforo */
-  return passeren(&sem_it);
 }
 
 static void kill_parent_and_progeny(pcb_t *p)

@@ -76,12 +76,11 @@ inline void handle_interrupts(const int line)
     /* Pseudo-clock Tick */
     LDIT(PSECOND);
     pcb_t *p;
-      semd_t *sem;
-    if((sem = get_semd(&sem_it)) != NULL)
-      print_queue("sem", &sem->s_procq, 10);
 
-    while ((p = remove_blocked(&sem_it)) != NULL)
+    while ((p = remove_blocked(&sem_it)) != NULL){
       enqueue_proc(p, p->p_prio);
+        --sb_procs;
+      }
     sem_it = 0;
     break;
   }

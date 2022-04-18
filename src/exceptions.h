@@ -6,6 +6,8 @@
 #define RENQUEUE 1
 #define CONTINUE 2
 
+extern pcb_t* yielded_process;
+
 /**
   @brief Gestore delle syscall.
   @return TRUE se il processo attivo deve essere rimesso in stato di ready,

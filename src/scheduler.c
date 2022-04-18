@@ -1,11 +1,11 @@
 #include "scheduler.h"
+#include "asl.h"
 #include "exceptions.h"
 #include "klog.h"
 #include "listx.h"
 #include "pandos_const.h"
 #include "pandos_types.h"
 #include "pcb.h"
-#include "asl.h"
 #include "utils.h"
 #include <umps3/umps/const.h>
 #include <umps3/umps/cp0.h>
@@ -65,7 +65,6 @@ inline void create_init_proc(const memaddr entry_point)
   insert_proc_q(&l_queue, proc);
 }
 
-
 static void log_status(void)
 {
   kprint("process_count ");
@@ -81,15 +80,16 @@ static void log_status(void)
   // kprint(")");
 }
 
-inline static void print_queue(const char *prefix, struct list_head *h) 
+inline static void print_queue(const char *prefix, struct list_head *h)
 {
   kprint("S>[");
-  struct list_head* ptr;
+  struct list_head *ptr;
   int i = 0;
-  list_for_each(ptr, h){
-    pcb_t* pcb = container_of(ptr, pcb_t, p_list);
+  list_for_each(ptr, h)
+  {
+    pcb_t *pcb = container_of(ptr, pcb_t, p_list);
     kprint_int((unsigned int)pcb);
-    kprint((char*)prefix);
+    kprint((char *)prefix);
     kprint(",");
     i++;
   }
@@ -100,8 +100,7 @@ inline void scheduler_next(void)
 {
   pcb_t *next_proc;
 
-    log_status();
-
+  log_status();
 
   if (empty_proc_q(&h_queue) == FALSE) {
     /* Scegli un processo a priorità alta */
@@ -128,6 +127,10 @@ inline void scheduler_next(void)
     /* buona cosa da avere, evita che vengano fatte cazzate nella gestione degli
      * interrupt dopo una wait */
     LOG("npa:wait");
+    if (yielded_process != NULL) {
+      enqueue_proc(yielded_process, yielded_process->p_prio);
+      yielded_process = NULL;
+    }
     act_proc = NULL;
     setTIMER(TIMESLICE * (*(int *)(TIMESCALEADDR)));
     /* Abilita gli interrupt e disabilita il timer */
@@ -172,13 +175,14 @@ inline pcb_t *mk_proc(state_t *statep, int prio, support_t *supportp)
 inline void kill_proc(pcb_t *p)
 {
   --procs_count;
-  if(p->p_semAdd != NULL && out_blocked(p) == p)
+  /* todo: check error on out_blocked */
+  if(p->p_parent != NULL && out_child(p) != p)
+    PANIC();
+  if (p->p_semAdd != NULL && out_blocked(p) == p)
     --sb_procs;
-  else if (p->p_prio == PROCESS_PRIO_HIGH) {
-    h_sz--;
+  /*else*/ if (p->p_prio == PROCESS_PRIO_HIGH) {
     out_proc_q(&h_queue, p);
   } else if (p->p_prio == PROCESS_PRIO_LOW) {
-    l_sz--;
     out_proc_q(&l_queue, p);
   }
 
@@ -209,21 +213,27 @@ inline pcb_t *dequeue_proc(const unsigned int priority)
   return NULL;
 }
 
-
 inline void load_proc(pcb_t *pcb)
 {
   if (pcb == NULL) {
     LOG("Attempt to load NULL pcb");
     return;
   }
+  if (yielded_process != NULL) {
+    enqueue_proc(yielded_process, yielded_process->p_prio);
+    yielded_process = NULL;
+  }
+  if (yielded_process != NULL) {
+    enqueue_proc(yielded_process, yielded_process->p_prio);
+    yielded_process = NULL;
+  }
 
   act_proc = pcb;
 
+  setTIMER(TIMESLICE * (*(int *)(TIMESCALEADDR)));
   if (act_proc->p_prio == PROCESS_PRIO_LOW) {
     LOGi("Load lp pro", act_proc->p_pid);
-
-    setTIMER(TIMESLICE * (*(int *)(TIMESCALEADDR)));
-
+    act_proc->p_s.status ^= STATUS_TE;
   } else if (act_proc->p_prio == PROCESS_PRIO_HIGH) {
     LOGi("Load hp pro", act_proc->p_pid);
   }

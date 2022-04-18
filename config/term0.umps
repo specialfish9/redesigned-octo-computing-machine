@@ -1,0 +1,11 @@
+p1 v(sem_testsem)
+p2 was started
+p2 starts
+p2 v's successfully
+p2 is OK
+p3 is started
+p3 - CLOCKWAIT OK
+error: p3 - CPU time incorrectly maintained
+hp_p1 starts
+hp_p2 starts
+kernel panic()
