@@ -15,12 +15,13 @@ static struct list_head pcb_free_h;
 
 inline int is_alive(const pcb_t *const pcb)
 {
-  struct list_head* ptr;
+  struct list_head *ptr;
 
-  list_for_each(ptr, &pcb_free_h){
+  list_for_each(ptr, &pcb_free_h)
+  {
     pcb_t *curr = container_of(ptr, pcb_t, p_list);
     if (curr->p_pid == pcb->p_pid)
-       return FALSE;
+      return FALSE;
   }
 
   return TRUE;
@@ -29,19 +30,20 @@ inline int is_alive(const pcb_t *const pcb)
 pcb_t *search_by_pid(const unsigned int pid)
 {
 
-  /* Versione sicura
+  /* Versione sicura */
   size_tt i;
   for (i = 0; i < MAXPROC; ++i) {
     if (pcb_free_table[i].p_pid == pid)
       return &pcb_free_table[i];
   }
-  return NULL;*/
-
-  return ((pid - (memaddr) pcb_free_table) % sizeof(pcb_t) &&
-          pid >= (memaddr)pcb_free_table &&
-          pid <= (memaddr)pcb_free_table + (sizeof(pcb_t) * MAXPROC))
+  return NULL;
+  /* VERSIONE UNSAFE 
+  memaddr base = (memaddr)pcb_free_table;
+  return (!((pid - base) % sizeof(pcb_t)) && 
+          pid >= base &&
+          pid <= (base + sizeof(pcb_t) * MAXPROC))
              ? (pcb_t *)pid
-             : NULL;
+             : NULL;*/
 }
 
 /* Inizializza la lista pcb_free in modo da contenere tutti gli elementi della
