@@ -1,16 +1,10 @@
 #include "scheduler.h"
 #include "asl.h"
-#include "klog.h"
-#include "listx.h"
-#include "pandos_const.h"
-#include "pandos_types.h"
 #include "pcb.h"
 #include "syscalls.h"
 #include "utils.h"
-#include <umps3/umps/const.h>
 #include <umps3/umps/cp0.h>
 #include <umps3/umps/libumps.h>
-#include <umps3/umps/types.h>
 
 #define LOG(s) log("S", s)
 #define LOGi(s, i) logi("S", s, i)

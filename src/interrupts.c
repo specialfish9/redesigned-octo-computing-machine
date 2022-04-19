@@ -1,16 +1,11 @@
 #include "interrupts.h"
 #include "asl.h"
-#include "kernel.h"
-#include "klog.h"
-#include "listx.h"
 #include "scheduler.h"
 #include "syscalls.h"
 #include "utils.h"
 #include <umps3/umps/arch.h>
-#include <umps3/umps/const.h>
 #include <umps3/umps/cp0.h>
 #include <umps3/umps/libumps.h>
-#include <umps3/umps/types.h>
 
 #define LOG(s) log("I", s)
 #define LOGi(s, i) logi("I", s, i)

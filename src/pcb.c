@@ -8,7 +8,6 @@
 #include "listx.h"
 #include "pandos_const.h"
 #include "pandos_types.h"
-#include <umps3/umps/libumps.h>
 
 static pcb_t pcb_free_table[MAXPROC];
 static struct list_head pcb_free_h;

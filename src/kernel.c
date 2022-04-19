@@ -1,19 +1,13 @@
 #include "kernel.h"
 #include "asl.h"
 #include "interrupts.h"
-#include "klog.h"
-#include "listx.h"
-#include "pandos_const.h"
-#include "pandos_types.h"
 #include "pcb.h"
 #include "scheduler.h"
 #include "syscalls.h"
 #include "utils.h"
 #include <umps3/umps/arch.h>
-#include <umps3/umps/const.h>
 #include <umps3/umps/cp0.h>
 #include <umps3/umps/libumps.h>
-#include <umps3/umps/types.h>
 
 /* Macro per il log */
 #define LOG(s) log("K", s)
