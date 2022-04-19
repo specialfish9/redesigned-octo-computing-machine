@@ -11,24 +11,26 @@
 #include "pandos_types.h"
 #include <umps3/umps/libumps.h>
 
- static pcb_t pcb_free_table[MAXPROC];
+static pcb_t pcb_free_table[MAXPROC];
 static struct list_head pcb_free_h;
 
-inline int is_alive(const pcb_t* const pcb){
-  return pcb->p_pid != -1; // TODO 
+inline int is_alive(const pcb_t *const pcb)
+{
+  return pcb->p_pid != -1; // TODO
 }
 
-void fn() {
-  for(size_tt i = 0; i< MAXPROC; ++i){
-    if(!is_alive(pcb_free_table+i))
+void fn()
+{
+  for (size_tt i = 0; i < MAXPROC; ++i) {
+    if (!is_alive(pcb_free_table + i))
       continue;
 
     kprint_int(pcb_free_table[i].p_pid);
-    if(pcb_free_table[i].p_semAdd!=NULL){
+    if (pcb_free_table[i].p_semAdd != NULL) {
       kprint(" is blocked, sem value");
       kprint_int(*pcb_free_table[i].p_semAdd);
       kprint("\n");
-    }else if(list_empty(&pcb_free_table[i].p_list))
+    } else if (list_empty(&pcb_free_table[i].p_list))
       kprint(" is in a queue\n");
     else
       kprint(" is alive\n");
@@ -54,18 +56,19 @@ void init_pcbs(void)
    * della pcbFree_table inserendoli in coda*/
   INIT_LIST_HEAD(&pcb_free_h);
   for (size_tt i = 0; i < MAXPROC; i++) {
-  /*todo remove*/
-  pcb_free_table[i].p_pid =-1;
-  pcb_free_table[i].p_semAdd =NULL;
+    /*todo remove*/
+    pcb_free_table[i].p_pid = -1;
+    pcb_free_table[i].p_semAdd = NULL;
     list_add_tail(&pcb_free_table[i].p_list, &pcb_free_h);
   }
 }
 
 /* Inserisce il PCB puntato da p nella lista dei PCB liberi.*/
-void free_pcb(pcb_t *p) {
+void free_pcb(pcb_t *p)
+{
   /*todo remove*/
-  p->p_pid =-1;
-  p->p_semAdd =NULL;
+  p->p_pid = -1;
+  p->p_semAdd = NULL;
   list_add(&p->p_list, &pcb_free_h);
 }
 

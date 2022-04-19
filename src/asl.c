@@ -104,7 +104,7 @@ inline static void print_queue(const char *prefix, struct list_head *h)
 
 pcb_t *out_blocked(pcb_t *p)
 {
-  if (p == NULL || p->p_semAdd == NULL){
+  if (p == NULL || p->p_semAdd == NULL) {
     kprint("p or p_semAdd is null\n");
     return NULL;
   }

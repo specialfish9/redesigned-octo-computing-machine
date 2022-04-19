@@ -21,7 +21,7 @@ extern void dbg_var(const char *, const int);
 /*Implementazione standard della funzione memcpy della libc.*/
 extern void memcpy(void *dest, void *src, size_tt n);
 
-extern void log(char* tag, char* mex);
-extern void logi(char* tag, char* mex, int value);
+extern void log(char *tag, char *mex);
+extern void logi(char *tag, char *mex, int value);
 
 #endif

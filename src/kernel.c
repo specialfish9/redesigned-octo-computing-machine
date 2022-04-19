@@ -1,6 +1,5 @@
 #include "kernel.h"
 #include "asl.h"
-#include "syscalls.h"
 #include "interrupts.h"
 #include "klog.h"
 #include "listx.h"
@@ -8,6 +7,7 @@
 #include "pandos_types.h"
 #include "pcb.h"
 #include "scheduler.h"
+#include "syscalls.h"
 #include "utils.h"
 #include <umps3/umps/arch.h>
 #include <umps3/umps/const.h>
@@ -17,7 +17,7 @@
 
 /* Macro per il log */
 #define LOG(s) log("K", s)
-#define LOGi(s, i) logi("K", s, i);                                                             
+#define LOGi(s, i) logi("K", s, i);
 
 /** @brief Inizializza il passup vector. */
 inline static void init_passup_vector(void);
@@ -76,7 +76,6 @@ void init_data_structures(void)
   yielded_proc = NULL;
 }
 
-
 void exception_handler(void)
 {
   unsigned int cause, KUp;
@@ -86,7 +85,7 @@ void exception_handler(void)
 
   cause = CAUSE_GET_EXCCODE(getCAUSE());
 
-  if(cause != 0 && cause != 8){
+  if (cause != 0 && cause != 8) {
     LOGi("Exception: ", cause);
   }
 
@@ -154,10 +153,10 @@ void exception_handler(void)
 /* TLB-Refill Handler */
 void uTLB_RefillHandler(void)
 {
-    LOG("TLB refill handler invoked");
-    setENTRYHI(0x80000000);
-    setENTRYLO(0x00000000);
-    TLBWR();
+  LOG("TLB refill handler invoked");
+  setENTRYHI(0x80000000);
+  setENTRYLO(0x00000000);
+  TLBWR();
 
   LDST((state_t *)BIOSDATAPAGE);
 }

@@ -15,7 +15,6 @@
 #define LOG(s) log("E", s)
 #define LOGi(s, i) logi("E", s, i)
 
-
 pcb_t *yielded_proc;
 
 /** Processo in esecuzione */
@@ -25,63 +24,72 @@ extern pcb_t *act_proc;
 extern size_tt sb_procs;
 
 /**
- * @brief Systemcall CREATE PROCESS (NSYS1). Crea un nuovo processo come figlio 
- * del chiamante. Se la syscall ha successo, mette nel registro v0 del processo 
+ * @brief Systemcall CREATE PROCESS (NSYS1). Crea un nuovo processo come figlio
+ * del chiamante. Se la syscall ha successo, mette nel registro v0 del processo
  * attivo il PID del nuovo processo, -1 altrimenti.
  * @param statep: stato che deve avere il processo.
  * @param prio: priorità da assegnare al processo.
  * @param supportp: puntatore alla struttura supporto del processo.
- * @return  TODO 
+ * @return L'azione che l'excepton handler deve fare una volta gestita la
+ * syscall.
  * */
 static enum eh_act create_process(state_t *statep, int prio,
-                                 support_t *suppportp);
+                                  support_t *suppportp);
 
 /**
  * @brief Systemcall DOIO (NSYS5)
  * @param cmdaddr Indirizzo del comando
  * @param cmdval Valore del comando
- * @return  TODO
+ * @return L'azione che l'excepton handler deve fare una volta gestita la
+ * syscall.
  * */
 static enum eh_act do_io(int *cmdaddr, int cmdval);
 
 /**
- * @brief Systemcall GET TIME (NSYS6). Restituisce in v0 il tempo di utilizzo 
+ * @brief Systemcall GET TIME (NSYS6). Restituisce in v0 il tempo di utilizzo
  * della CPU del processo.
- * @return TODO
+ * @return L'azione che l'excepton handler deve fare una volta gestita la
+ * syscall.
  */
 static enum eh_act get_time(void);
 
 /**
  * @brief Systemcall WAIT FOR CLOCK (NSYS7)
- * @return TODO
+ * @return L'azione che l'excepton handler deve fare una volta gestita la
+ * syscall.
  * */
 static enum eh_act wait_for_clock(void);
 
 /**
  * @brief Systemcall GET SUPPORT (NSYS8)
- * @return TODO
+ * @return L'azione che l'excepton handler deve fare una volta gestita la
+ * syscall.
  * */
 static enum eh_act get_support(void);
 
 /**
- * @brief Systemcall GET PROCESS PID (NSYS9). Inserisce un PID nel registro v0 
+ * @brief Systemcall GET PROCESS PID (NSYS9). Inserisce un PID nel registro v0
  * del processo attivo in base all'argomento passato.
  * @param arg1 TODO
- * @return TODO
+ * @return L'azione che l'excepton handler deve fare una volta gestita la
+ * syscall.
  * */
 static enum eh_act get_process_pid(const int arg1);
 
 /**
  * @brief Systemcall YIELD (NSYS10).
- * @return TODO
+ * @return L'azione che l'excepton handler deve fare una volta gestita la
+ * syscall.
  * */
 static enum eh_act yield(void);
 
 /**
- @brief Uccide il processo padre e i processi figli del processo passato
- come puntatore.
- @param p Il processo di riferimento.
-*/
+ * @brief Uccide il processo padre e i processi figli del processo passato
+ * come puntatore.
+ * @param p Il processo di riferimento.
+ * @return L'azione che l'excepton handler deve fare una volta gestita la
+ * syscall.
+ * */
 static void kill_parent_and_progeny(pcb_t *p);
 
 inline enum eh_act handle_syscall(void)
@@ -94,9 +102,9 @@ inline enum eh_act handle_syscall(void)
   arg2 = act_proc->p_s.reg_a2;
   arg3 = act_proc->p_s.reg_a3;
 
-  if(!is_alive(act_proc)){
+  if (!is_alive(act_proc)) {
     LOG("Syscall called by a zombie");
-    PANIC(); 
+    PANIC();
   }
 
   if (act_proc->p_semAdd != NULL) {
@@ -115,12 +123,12 @@ inline enum eh_act handle_syscall(void)
     pid = (int)arg1;
     if (!pid) {
       res = act_proc;
-      } else {
+    } else {
       res = search_by_pid(pid);
-      }
+    }
 
     kill_parent_and_progeny(res);
-    return is_alive(act_proc) ? RENQUEUE: NOTHING ;
+    return is_alive(act_proc) ? RENQUEUE : NOTHING;
   }
   case PASSEREN: {
     int *sem_addr;
@@ -134,8 +142,8 @@ inline enum eh_act handle_syscall(void)
     }
 
     if (!is_alive(act_proc)) {
-       LOG("Passeren on zombie");
-      PANIC(); 
+      LOG("Passeren on zombie");
+      PANIC();
     }
 
     return passeren(sem_addr);
@@ -152,8 +160,8 @@ inline enum eh_act handle_syscall(void)
     }
 
     if (!is_alive(act_proc)) {
-       LOG("verhogen on zombie");
-      PANIC(); 
+      LOG("verhogen on zombie");
+      PANIC();
     }
 
     return verhogen(sem_addr) == NULL ? NOTHING : RENQUEUE;
@@ -162,7 +170,7 @@ inline enum eh_act handle_syscall(void)
     return do_io((int *)arg1, arg2);
   }
   case GETTIME: {
-      return get_time();
+    return get_time();
   }
   case CLOCKWAIT: {
     return wait_for_clock();
@@ -181,7 +189,8 @@ inline enum eh_act handle_syscall(void)
   }
 }
 
-static enum eh_act create_process(state_t *statep, int prio, support_t *supportp)
+static enum eh_act create_process(state_t *statep, int prio,
+                                  support_t *supportp)
 {
   const pcb_t *const new_proc = mk_proc(statep, prio, supportp);
   if (new_proc == NULL)
@@ -250,7 +259,7 @@ inline pcb_t *verhogen(int *semaddr)
     kprint("ver2 unblock ");
     kprint_int(tmp->p_pid);
     kprint("\n");
-    if(tmp->p_semAdd!=NULL)
+    if (tmp->p_semAdd != NULL)
       LOG("ver2 did not remove from sem");
     /* Se ci accorgiamo che la risorsa è disponibile ma altri processi la
      * stavano aspettando */
@@ -335,44 +344,46 @@ inline enum eh_act do_io(int *cmdaddr, int cmdval)
   return NOTHING;
 }
 
-inline enum eh_act get_time(void) {
-    /* p_time nel pcb del processo attivo è costantemente aggiornato durante */
-    /* l'esecuzione, quindi si inserisce quel valore in v0 */
-    act_proc->p_s.reg_v0 = act_proc->p_time;
-    return CONTINUE;
-}
-
-inline enum eh_act wait_for_clock(void) {
-return passeren(&sem_it);
-}
-
-inline enum eh_act get_support(void) { 
-    act_proc->p_s.reg_v0 = (memaddr)act_proc->p_supportStruct;
+inline enum eh_act get_time(void)
+{
+  /* p_time nel pcb del processo attivo è costantemente aggiornato durante */
+  /* l'esecuzione, quindi si inserisce quel valore in v0 */
+  act_proc->p_s.reg_v0 = act_proc->p_time;
   return CONTINUE;
 }
 
-inline enum eh_act get_process_pid(const int arg1) {
-    int parent;
+inline enum eh_act wait_for_clock(void) { return passeren(&sem_it); }
 
-    parent = arg1;
-    /* Se l'argomento 1 è 0 (quindi se parent è falso), in v0 viene inserito il
-     */
-    /* PID del processo chiamante */
-    if (!parent)
-      act_proc->p_s.reg_v0 = act_proc->p_pid;
-    /* Altrimenti, se l'argomento è diverso da 0, e il processo chiamante ha */
-    /* effettivamente un processo padre, si inserisce in v0 il PID del padre */
-    else if (act_proc->p_parent != NULL)
-      act_proc->p_s.reg_v0 = act_proc->p_parent->p_pid;
-    else
-      /* Come richiesto nella specifica, se viene richiesto il PID del padre di
-       */
-      /* un processo senza genitore, viene restituito 0 */
-      act_proc->p_s.reg_v0 = 0;
-    return CONTINUE;
+inline enum eh_act get_support(void)
+{
+  act_proc->p_s.reg_v0 = (memaddr)act_proc->p_supportStruct;
+  return CONTINUE;
 }
 
-inline enum eh_act yield(void){
+inline enum eh_act get_process_pid(const int arg1)
+{
+  int parent;
+
+  parent = arg1;
+  /* Se l'argomento 1 è 0 (quindi se parent è falso), in v0 viene inserito il
+   */
+  /* PID del processo chiamante */
+  if (!parent)
+    act_proc->p_s.reg_v0 = act_proc->p_pid;
+  /* Altrimenti, se l'argomento è diverso da 0, e il processo chiamante ha */
+  /* effettivamente un processo padre, si inserisce in v0 il PID del padre */
+  else if (act_proc->p_parent != NULL)
+    act_proc->p_s.reg_v0 = act_proc->p_parent->p_pid;
+  else
+    /* Come richiesto nella specifica, se viene richiesto il PID del padre di
+     */
+    /* un processo senza genitore, viene restituito 0 */
+    act_proc->p_s.reg_v0 = 0;
+  return CONTINUE;
+}
+
+inline enum eh_act yield(void)
+{
   yielded_proc = act_proc;
   return NOTHING;
 }

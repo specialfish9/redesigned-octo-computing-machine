@@ -1,10 +1,10 @@
 #include "interrupts.h"
 #include "asl.h"
-#include "syscalls.h"
 #include "kernel.h"
 #include "klog.h"
 #include "listx.h"
 #include "scheduler.h"
+#include "syscalls.h"
 #include "utils.h"
 #include <umps3/umps/arch.h>
 #include <umps3/umps/const.h>
@@ -44,7 +44,6 @@ inline void init_dev_sem(void)
   }
 }
 
-
 inline enum eh_act handle_interrupts(const int line)
 {
   switch (line) {
@@ -54,17 +53,17 @@ inline enum eh_act handle_interrupts(const int line)
   case IL_CPUTIMER: { /* PLT */
     /* Resetta il timer */
     setTIMER(TIMESLICE * (*(int *)(TIMESCALEADDR)));
-      return RENQUEUE;
+    return RENQUEUE;
   }
   case IL_TIMER: {
     /* Pseudo-clock Tick */
-  LDIT(PSECOND);
-      pcb_t*p;
+    LDIT(PSECOND);
+    pcb_t *p;
 
     while (sem_it != 1) {
-      if((p=verhogen(&sem_it)) != NULL && p->p_semAdd !=NULL){
-          LOGi("Verhogen has process still in semaphore ", p->p_pid);
-        }
+      if ((p = verhogen(&sem_it)) != NULL && p->p_semAdd != NULL) {
+        LOGi("Verhogen has process still in semaphore ", p->p_pid);
+      }
     }
     sem_it = 0;
     break;
@@ -100,15 +99,15 @@ inline enum eh_act handle_interrupts(const int line)
     size_tt status[2] = {reg->transm_status, reg->recv_status};
     size_tt *command[2] = {&reg->transm_command, &reg->recv_command};
     for (int i = 0; i < 2; ++i) {
-        if((status[i]&TERMSTATMASK) == 5) {
-          pcb_t *p = verhogen(&sem[i][index]);
-          if (p != NULL) {
-            p->p_s.reg_v0 = status[i];
-          }
-          /* Manda l'ack */
-          *command[i] = 1;
-          break;
+      if ((status[i] & TERMSTATMASK) == 5) {
+        pcb_t *p = verhogen(&sem[i][index]);
+        if (p != NULL) {
+          p->p_s.reg_v0 = status[i];
         }
+        /* Manda l'ack */
+        *command[i] = 1;
+        break;
+      }
     }
     break;
   }

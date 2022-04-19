@@ -1,8 +1,8 @@
 #ifndef INTERRUPTS_H
 #define INTERRUPTS_H
 
-#include <umps3/umps/const.h>
 #include "kernel.h"
+#include <umps3/umps/const.h>
 
 /** Semaforo Interval Timer */
 extern int sem_it;
@@ -27,7 +27,8 @@ extern void init_dev_sem(void);
 /**
  * @brief Gestisce l'interrupt tirato nella linea specificata.
  * @param line Linea su cui viene tirato l'interrupt
- * @return L'azione che l'excepton handler deve fare una volta gestito l'interrupt
+ * @return L'azione che l'excepton handler deve fare una volta gestito
+ * l'interrupt
  */
 extern enum eh_act handle_interrupts(const int line);
 

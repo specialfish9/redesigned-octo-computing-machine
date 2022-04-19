@@ -74,6 +74,6 @@ extern pcb_t *out_child(pcb_t *p);
 
 extern void fn();
 
-//TODO
-extern int is_alive(const pcb_t* const pcb);
+// TODO
+extern int is_alive(const pcb_t *const pcb);
 #endif

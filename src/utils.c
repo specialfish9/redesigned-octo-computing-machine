@@ -25,15 +25,17 @@ inline void memcpy(void *dest, void *src, size_tt n)
     cdest[i] = csrc[i];
 }
 
-inline void log(char* tag, char* mex) {
+inline void log(char *tag, char *mex)
+{
   kprint(tag);
   kprint(">");
   kprint(mex);
   kprint("\n");
 }
 
-inline void logi(char* tag, char* mex, int val){
-  //char val_str[100];
+inline void logi(char *tag, char *mex, int val)
+{
+  // char val_str[100];
 
   //_itoa(val, val_str);
 
@@ -54,7 +56,6 @@ void dbg_var(const char *name, const int var)
   _strcat(res, var_str, res);
   log("", res);
 }
-
 
 /* Funzioni per la manipolazione di stringhe */
 
