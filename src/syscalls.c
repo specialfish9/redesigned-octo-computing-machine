@@ -350,6 +350,13 @@ inline enum eh_act get_support(void)
   return CONTINUE;
 }
 
+
+/**
+ * @brief Inserisce in v0 il PID del processo chiamante o del suo processo padre
+ * @param arg1 (parent): Se è uguale a 0 si scrive il pid del chiamante in v0, altrimenti del padre del chiamante
+ * @return L'azione che l'excepton handler deve fare una volta gestita la
+ * syscall.
+ * */
 inline enum eh_act get_process_pid(const int arg1)
 {
   int parent;
