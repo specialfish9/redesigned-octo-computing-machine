@@ -3,7 +3,6 @@
 
 #include <umps3/umps/const.h>
 
-/* todo mettere static */
 /** Semaforo Interval Timer */
 extern int sem_it;
 /** Semaforo disk device */
@@ -27,7 +26,7 @@ extern void init_dev_sem(void);
 /**
  * @brief Gestisce l'interrupt tirato nella linea specificata.
  * @param line Linea su cui viene tirato l'interrupt
- * TODO
+ * @return L'azione che l'excepton handler deve fare una volta gestito l'interrupt
  */
 extern int handle_interrupts(const int line);
 

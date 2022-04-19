@@ -11,12 +11,8 @@
 #include <umps3/umps/libumps.h>
 #include <umps3/umps/types.h>
 
-#define LOGi(s, i)                                                             \
-  kprint("I>" s);                                                              \
-  kprint_int(i);                                                               \
-  kprint("\n")
-
-#define LOG(s) kprint("I>" s "\n")
+#define LOG(s) log("I", s)
+#define LOGi(s, i) logi("I", s, i)
 
 #define TERMSTATMASK 0xFF
 #define RECVD 5
@@ -29,7 +25,11 @@ int sem_printer[DEVPERINT];
 int sem_term_in[DEVPERINT];
 int sem_term_out[DEVPERINT];
 
-/** TODO add doc*/
+/**
+ * @brief Gestisce gli inerrupt dei device
+ * @param line La linea su cui viene tirato l'interrupt
+ * @param semaphore Riferimento all'array dei semafori di quel device
+ * */
 static inline void generic_interrupt_handler(int line, int *semaphores);
 
 inline void init_dev_sem(void)
@@ -37,39 +37,15 @@ inline void init_dev_sem(void)
   size_tt i;
 
   sem_it = 0;
-  for (i = 0; i < DEVPERINT; ++i)
+  for (i = 0; i < DEVPERINT; ++i) {
     sem_disk[i] = sem_flash[i] = sem_net[i] = sem_printer[i] = sem_term_in[i] =
         sem_term_out[i] = 0;
+  }
 }
 
-inline static void print_queue(const char *prefix, struct list_head *h, int max)
-{
-  kprint("S>[");
-  struct list_head *ptr;
-  list_for_each(ptr, h)
-  {
-    pcb_t *pcb = container_of(ptr, pcb_t, p_list);
-    kprint_int((unsigned int)pcb);
-    kprint((char *)prefix);
-    kprint(",");
-    if (max == 0) {
-      kprint("!!!!!!!!!!!!!!!!!!!!!!!1");
-      PANIC();
-    }
-    max--;
-  }
-  kprint("]");
-}
 
 inline int handle_interrupts(const int line)
 {
-  LOGi("INT", line);
-  if(act_proc!=NULL){
-  // kprint("act_proc->pSemAdd = ");
-  // kprint_hex((unsigned int)act_proc->p_semAdd);
-  // kprint("\n");
-  }
-
   switch (line) {
   case IL_IPI: {
     break; /* safely ignore */
@@ -83,16 +59,12 @@ inline int handle_interrupts(const int line)
     /* Pseudo-clock Tick */
   LDIT(PSECOND);
       pcb_t*p;
-      kprint("sem_it = ");
-      kprint_int(sem_it);
-      kprint("\n");
-    while (sem_it != 1)
-      if((p=verhogen(&sem_it)) != NULL && p->p_semAdd !=NULL){
-          kprint("!!!!!!!!!!!!!!!!ver has process still in semaphore ");
-          kprint_int(p->p_pid);
-                 kprint("!!!!!!!!!!!!!!!\n");
-        }
 
+    while (sem_it != 1) {
+      if((p=verhogen(&sem_it)) != NULL && p->p_semAdd !=NULL){
+          LOGi("Verhogen has process still in semaphore ", p->p_pid);
+        }
+    }
     sem_it = 0;
     break;
   }
@@ -108,7 +80,7 @@ inline int handle_interrupts(const int line)
     generic_interrupt_handler(IL_ETHERNET - IL_DISK, sem_disk);
     break;
   }
-  case IL_PRINTER: { /* TODO */
+  case IL_PRINTER: {
     generic_interrupt_handler(IL_PRINTER - IL_DISK, sem_disk);
     break;
   }
@@ -124,17 +96,15 @@ inline int handle_interrupts(const int line)
                          ->devreg[IL_TERMINAL - IL_DISK][index]
                          .term;
 
-    /* todo check order, maybe transm and recv should be swapped */
     size_tt status[2] = {reg->transm_status, reg->recv_status};
     size_tt *command[2] = {&reg->transm_command, &reg->recv_command};
     for (int i = 0; i < 2; ++i) {
-        /* code taken from the p1 test */
         if((status[i]&TERMSTATMASK) == 5) {
           pcb_t *p = verhogen(&sem[i][index]);
           if (p != NULL) {
             p->p_s.reg_v0 = status[i];
           }
-          /* send ack */
+          /* Manda l'ack */
           *command[i] = 1;
           break;
         }
@@ -147,7 +117,7 @@ inline int handle_interrupts(const int line)
   return CONTINUE;
 }
 
-static inline void generic_interrupt_handler(int line, int *semaphores)
+inline void generic_interrupt_handler(int line, int *semaphores)
 {
   size_tt bitmap, index;
   dtpreg_t *reg;
@@ -162,6 +132,6 @@ static inline void generic_interrupt_handler(int line, int *semaphores)
   p = verhogen(semaphores + index);
   if (p != NULL)
     p->p_s.reg_v0 = reg->status;
-  /* send ack */
+  /* Manda ack */
   reg->command = 1;
 }
