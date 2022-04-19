@@ -42,7 +42,9 @@ structure:
 	@echo -e "*** STRUCTURE ***"
 	@echo -e "Generating project structure...":
 	@mkdir -p doc
+	@mkdir -p obj
 	@mkdir -p out 
+	@mkdir -p output
 
 # use umps3-mkdev to create the disk0 device
 disk0.umps:
