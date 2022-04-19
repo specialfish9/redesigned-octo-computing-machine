@@ -207,7 +207,6 @@ inline int passeren(int *semaddr)
   pcb_t *tmp;
 
   if (*semaddr == 0) {
-    LOG("pass1");
 
     if (!list_empty(&act_proc->p_list))
       list_del(&act_proc->p_list);
@@ -215,19 +214,17 @@ inline int passeren(int *semaddr)
     if (insert_blocked(semaddr, act_proc)) {
       /* Se ritorna true non possiamo assegnare un semaforo */
       /* Non dovrebbe mai capitare, ma in caso */
-      kprint("!!! insert_blocked failed in passeren\n");
+      LOG("insert_blocked failed in passeren\n");
       PANIC();
     }
     sb_procs++;
     return NOTHING;
   } else if ((tmp = remove_blocked(semaddr)) != NULL) {
-    LOG("pass2");
     /* Se ci accorgiamo che la risorsa è disponibile ma altri processi la
      * stavano aspettando */
     enqueue_proc(tmp, tmp->p_prio);
     --sb_procs;
   } else {
-    LOG("pass3");
     *semaddr = 0;
   }
   return RENQUEUE;
@@ -239,7 +236,6 @@ inline pcb_t *verhogen(int *semaddr)
   pcb_t *tmp;
 
   if (*semaddr == 1) {
-    LOG("ver1");
     if (act_proc == NULL)
       return NULL;
 
@@ -249,25 +245,19 @@ inline pcb_t *verhogen(int *semaddr)
     if (insert_blocked(semaddr, act_proc)) {
       /* Se ritorna true non possiamo assegnare un semaforo */
       /* Non dovrebbe mai capitare, ma in caso */
-      kprint("!!! insert_blocked failed in verhogen\n");
+      LOG("insert_blocked failed in verhogen\n");
       PANIC();
     }
 
     sb_procs++;
     return NULL;
   } else if ((tmp = remove_blocked(semaddr)) != NULL) {
-    kprint("ver2 unblock ");
-    kprint_int(tmp->p_pid);
-    kprint("\n");
-    if (tmp->p_semAdd != NULL)
-      LOG("ver2 did not remove from sem");
     /* Se ci accorgiamo che la risorsa è disponibile ma altri processi la
      * stavano aspettando */
     enqueue_proc(tmp, tmp->p_prio);
     sb_procs--;
     return tmp;
   } else {
-    LOG("ver3");
     *semaddr = 1;
     return act_proc;
   }

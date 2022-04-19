@@ -8,7 +8,6 @@
 
 #include "pandos_types.h"
 
-semd_t *get_semd(int *s_key);
 /**
  @brief Inizializza la ASL.
 */

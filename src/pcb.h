@@ -7,9 +7,9 @@
 #ifndef PCB_H
 #define PCB_H
 
-/* todo remove */
-#include "klog.h"
 #include "pandos_types.h"
+
+/* UTILITY SUI PCB */
 
 /**
  * @brief Ritorna un pcb dato il suo PID.
@@ -17,6 +17,14 @@
  * @return Il pcb associato
  * */
 extern pcb_t *search_by_pid(const unsigned int);
+
+/**
+ * @brief Ritorna TRUE se il pcb passato come parametro e' ancora vivo, FALSE
+ * altrimenti
+ * @param pcb Il pcb da controllare
+ * @returns TRUE o FALSE
+ * */
+extern int is_alive(const pcb_t *const pcb);
 
 /* CODA DEI PCB */
 
@@ -72,8 +80,4 @@ extern pcb_t *remove_child(pcb_t *p);
  * padre).*/
 extern pcb_t *out_child(pcb_t *p);
 
-extern void fn();
-
-// TODO
-extern int is_alive(const pcb_t *const pcb);
 #endif

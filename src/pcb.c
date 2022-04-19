@@ -5,7 +5,6 @@
  ******************************************************************************/
 
 #include "pcb.h"
-#include "klog.h"
 #include "listx.h"
 #include "pandos_const.h"
 #include "pandos_types.h"
@@ -19,33 +18,22 @@ inline int is_alive(const pcb_t *const pcb)
   return pcb->p_pid != -1; // TODO
 }
 
-void fn()
-{
-  for (size_tt i = 0; i < MAXPROC; ++i) {
-    if (!is_alive(pcb_free_table + i))
-      continue;
-
-    kprint_int(pcb_free_table[i].p_pid);
-    if (pcb_free_table[i].p_semAdd != NULL) {
-      kprint(" is blocked, sem value");
-      kprint_int(*pcb_free_table[i].p_semAdd);
-      kprint("\n");
-    } else if (list_empty(&pcb_free_table[i].p_list))
-      kprint(" is in a queue\n");
-    else
-      kprint(" is alive\n");
-  }
-}
-
 pcb_t *search_by_pid(const unsigned int pid)
 {
-  size_tt i;
 
+  /* Versione sicura
+  size_tt i;
   for (i = 0; i < MAXPROC; ++i) {
     if (pcb_free_table[i].p_pid == pid)
       return &pcb_free_table[i];
   }
-  return NULL;
+  return NULL;*/
+
+  return ((pid - (memaddr) pcb_free_table) % sizeof(pcb_t) &&
+          pid >= (memaddr)pcb_free_table &&
+          pid <= (memaddr)pcb_free_table + (sizeof(pcb_t) * MAXPROC))
+             ? (pcb_t *)pid
+             : NULL;
 }
 
 /* Inizializza la lista pcb_free in modo da contenere tutti gli elementi della
@@ -155,16 +143,10 @@ pcb_t *remove_proc_q(struct list_head *head)
 pcb_t *out_proc_q(struct list_head *head, pcb_t *p)
 {
   struct list_head *iter;
-  int i = 0;
 
   /* Ciclo for che scorre l'intera lista */
   list_for_each(iter, head)
   {
-    kprint("opq");
-    kprint_int(i++);
-    kprint("\n");
-    if (i > 10)
-      PANIC();
     /* Se l'elemento della lista in esame punta al p_list del pcb che cerchiamo,
      * esso viene eliminato e restituito. */
     if (iter == &(p->p_list)) {

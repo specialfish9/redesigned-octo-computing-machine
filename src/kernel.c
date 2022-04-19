@@ -85,10 +85,6 @@ void exception_handler(void)
 
   cause = CAUSE_GET_EXCCODE(getCAUSE());
 
-  if (cause != 0 && cause != 8) {
-    LOGi("Exception: ", cause);
-  }
-
   if (act_proc != NULL) {
     state_t *saved_state = (state_t *)BIOSDATAPAGE;
     memcpy(&act_proc->p_s, saved_state, sizeof(state_t));
@@ -114,6 +110,7 @@ void exception_handler(void)
     reenqueue = passup_or_die(GENERALEXCEPT);
   } else if (cause == EXC_SYS) {
     if (act_proc == NULL) {
+      LOG("Syscall called with no active process. Panicing...");
       /* Syscall chiamata quando nessun processo è in esecuzione. */
       PANIC();
     }
@@ -146,7 +143,6 @@ void exception_handler(void)
       enqueue_proc(act_proc, act_proc->p_prio);
     }
   }
-  LOG("Rescheduling");
   scheduler_next();
 }
 
