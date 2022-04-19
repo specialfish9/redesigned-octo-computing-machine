@@ -49,22 +49,6 @@ static int do_io(int *cmdaddr, int cmdval);
 */
 inline static void kill_parent_and_progeny(pcb_t *p);
 
-inline static void print_queue(const char *prefix, struct list_head *h, int max)
-{
-  kprint("S>[");
-  struct list_head *ptr;
-  list_for_each(ptr, h)
-  {
-    pcb_t *pcb = container_of(ptr, pcb_t, p_list);
-    kprint_int((unsigned int)pcb);
-    kprint((char *)prefix);
-    kprint(",");
-    if (max-- < 0)
-      PANIC();
-  }
-  kprint("]");
-}
-
 inline int handle_syscall(void)
 {
   int number;
@@ -101,7 +85,6 @@ inline int handle_syscall(void)
         create_process((state_t *)arg1, (int)arg2, (support_t *)arg3);
     act_proc->p_s.reg_v0 = new_proc_pid;
 
-    print_queue("pqueue", act_proc->p_prio ? &h_queue : &l_queue, 20);
     return CONTINUE;
   }
   case TERMPROCESS: {

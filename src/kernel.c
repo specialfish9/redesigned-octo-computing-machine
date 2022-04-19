@@ -14,6 +14,7 @@
 #include <umps3/umps/libumps.h>
 #include <umps3/umps/types.h>
 
+/* Macro per il log */
 #define LOG(s) log("K", s)
 #define LOGi(s, i) logi("K", s, i);                                                             
 
@@ -113,7 +114,7 @@ void exception_handler(void)
     reenqueue = passup_or_die(GENERALEXCEPT);
   } else if (cause == EXC_SYS) {
     if (act_proc == NULL) {
-      /* syscall called in a while state when no process was executing */
+      /* Syscall chiamata quando nessun processo è in esecuzione. */
       PANIC();
     }
     /* Syscall */

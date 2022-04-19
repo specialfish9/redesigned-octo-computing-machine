@@ -33,14 +33,14 @@ inline void log(char* tag, char* mex) {
 }
 
 inline void logi(char* tag, char* mex, int val){
-  char val_str[100];
+  //char val_str[100];
 
-  _itoa(val, val_str);
+  //_itoa(val, val_str);
 
   kprint(tag);
   kprint(">");
   kprint(mex);
-  kprint(val_str);
+  kprint_int(val);
   kprint("\n");
 }
 

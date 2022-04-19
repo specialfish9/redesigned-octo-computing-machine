@@ -3,12 +3,10 @@
 
 #include "pandos_types.h"
 
+/** Puntatore al pcb del processo attivo */
 extern pcb_t *act_proc;
+/** Numero di processi soft blocked*/
 extern size_tt sb_procs;
-/** Coda a bassa priorità */
-extern struct list_head l_queue;
-/** Coda ad alta priorità */
-extern struct list_head h_queue;
 
 /**
  * @brief Inizializza le variabili e le strutture dati dello scheduler.
