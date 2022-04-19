@@ -1,19 +1,17 @@
-#ifndef EXCEPTIONS_H
-#define EXCEPTIONS_H
+#ifndef SYSCALLS_H
+#define SYSCALLS_H
 
 #include "pcb.h"
-#define NOTHING 0
-#define RENQUEUE 1
-#define CONTINUE 2
+#include "kernel.h"
 
-extern pcb_t *yielded_process;
+extern pcb_t *yielded_proc;
 
 /**
   @brief Gestore delle syscall.
   @return TRUE se il processo attivo deve essere rimesso in stato di ready,
   FALSE altrimenti.
 */
-extern int handle_syscall(void);
+extern enum eh_act handle_syscall(void);
 
 /**
   @brief Gestisce le eccezioni non gestite dagli appositi handler decidendo
@@ -25,14 +23,14 @@ extern int handle_syscall(void);
 extern int passup_or_die(size_tt kind);
 
 /**
-  @brief Esegue un'operazione P sul semaforo binario.
+  @brief Syscall PASSEREN (NSYS3). Esegue un'operazione P sul semaforo binario.
   @param semaddr puntatore al semaforo.
    TODO
 */
 extern int passeren(int *semaddr);
 
 /**
-  @brief Esegue un'operazione V sul semaforo binario.
+  @brief Syscall VERHOGEN (NSYS4). Esegue un'operazione V sul semaforo binario.
   @param semaddr puntatore al semaforo.
   @return todo
 */

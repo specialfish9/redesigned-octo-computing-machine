@@ -1,5 +1,6 @@
+#include "kernel.h"
 #include "asl.h"
-#include "exceptions.h"
+#include "syscalls.h"
 #include "interrupts.h"
 #include "klog.h"
 #include "listx.h"
@@ -72,7 +73,7 @@ void init_data_structures(void)
   init_asl();
   init_scheduler();
   init_dev_sem();
-  yielded_process = NULL;
+  yielded_proc = NULL;
 }
 
 

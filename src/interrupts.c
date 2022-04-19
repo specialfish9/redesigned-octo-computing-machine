@@ -1,6 +1,7 @@
 #include "interrupts.h"
 #include "asl.h"
-#include "exceptions.h"
+#include "syscalls.h"
+#include "kernel.h"
 #include "klog.h"
 #include "listx.h"
 #include "scheduler.h"
@@ -44,7 +45,7 @@ inline void init_dev_sem(void)
 }
 
 
-inline int handle_interrupts(const int line)
+inline enum eh_act handle_interrupts(const int line)
 {
   switch (line) {
   case IL_IPI: {

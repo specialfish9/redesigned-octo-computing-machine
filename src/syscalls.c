@@ -1,4 +1,4 @@
-#include "exceptions.h"
+#include "syscalls.h"
 #include "asl.h"
 #include "interrupts.h"
 #include "klog.h"
@@ -12,209 +12,184 @@
 #include <umps3/umps/libumps.h>
 #include <umps3/umps/types.h>
 
-pcb_t *yielded_process;
+#define LOG(s) log("E", s)
+#define LOGi(s, i) logi("E", s, i)
 
-#define LOG(s) kprint("E>" s "\n")
 
-#define LOGi(s, i)                                                             \
-  kprint("E>" s);                                                              \
-  kprint_int(i);                                                               \
-  kprint("\n")
+pcb_t *yielded_proc;
 
-/* Processo in esecuzione */
+/** Processo in esecuzione */
 extern pcb_t *act_proc;
-/* Numero di processi sb */
+
+/** Numero di processi sb */
 extern size_tt sb_procs;
 
 /**
-  @brief Crea un nuovo processo come figlio del chiamante.
-  @param statep: stato che deve avere il processo.
-  @param prio: priorità da assegnare al processo.
-  @param supportp: puntatore alla struttura supporto del processo.
-  @return Il PID de processo se la syscall ha successo -1 altrimenti
- */
-inline static int create_process(state_t *statep, int prio,
+ * @brief Systemcall CREATE PROCESS (NSYS1). Crea un nuovo processo come figlio 
+ * del chiamante. Se la syscall ha successo, mette nel registro v0 del processo 
+ * attivo il PID del nuovo processo, -1 altrimenti.
+ * @param statep: stato che deve avere il processo.
+ * @param prio: priorità da assegnare al processo.
+ * @param supportp: puntatore alla struttura supporto del processo.
+ * @return  TODO 
+ * */
+static enum eh_act create_process(state_t *statep, int prio,
                                  support_t *suppportp);
 
 /**
- * @brief do io
- * TODO
+ * @brief Systemcall DOIO (NSYS5)
+ * @param cmdaddr Indirizzo del comando
+ * @param cmdval Valore del comando
+ * @return  TODO
  * */
-static int do_io(int *cmdaddr, int cmdval);
+static enum eh_act do_io(int *cmdaddr, int cmdval);
+
+/**
+ * @brief Systemcall GET TIME (NSYS6). Restituisce in v0 il tempo di utilizzo 
+ * della CPU del processo.
+ * @return TODO
+ */
+static enum eh_act get_time(void);
+
+/**
+ * @brief Systemcall WAIT FOR CLOCK (NSYS7)
+ * @return TODO
+ * */
+static enum eh_act wait_for_clock(void);
+
+/**
+ * @brief Systemcall GET SUPPORT (NSYS8)
+ * @return TODO
+ * */
+static enum eh_act get_support(void);
+
+/**
+ * @brief Systemcall GET PROCESS PID (NSYS9). Inserisce un PID nel registro v0 
+ * del processo attivo in base all'argomento passato.
+ * @param arg1 TODO
+ * @return TODO
+ * */
+static enum eh_act get_process_pid(const int arg1);
+
+/**
+ * @brief Systemcall YIELD (NSYS10).
+ * @return TODO
+ * */
+static enum eh_act yield(void);
 
 /**
  @brief Uccide il processo padre e i processi figli del processo passato
  come puntatore.
  @param p Il processo di riferimento.
 */
-inline static void kill_parent_and_progeny(pcb_t *p);
+static void kill_parent_and_progeny(pcb_t *p);
 
-inline int handle_syscall(void)
+inline enum eh_act handle_syscall(void)
 {
   int number;
   unsigned int arg1, arg2, arg3;
-
-  /* for higher priority processes this is not expected, though a good rule of
-  thumb is to assert the act_process is outside any queue when an interrupt is
-  being handled and having it re-inserted in the right place (either head or
-  tail of the queue) when the scheduler takes over */
 
   number = (int)act_proc->p_s.reg_a0;
   arg1 = act_proc->p_s.reg_a1;
   arg2 = act_proc->p_s.reg_a2;
   arg3 = act_proc->p_s.reg_a3;
+
   if(!is_alive(act_proc)){
-       kprint("syscall by zombie");
-        kprint("!!!!!!!!!!!!!!!!!!!\n");
-        PANIC(); 
+    LOG("Syscall called by a zombie");
+    PANIC(); 
   }
 
   if (act_proc->p_semAdd != NULL) {
-    kprint("!!!blocked process issues a syscall ");
-    kprint_int(act_proc->p_pid);
-    kprint("\n");
+    LOGi("Syscall called by blocked process ", act_proc->p_pid);
     PANIC();
   }
 
   switch (number) {
   case CREATEPROCESS: {
-    kprint("CREATEPROCESS(");
-    kprint_int(act_proc->p_pid);
-    kprint(")\n");
-    int new_proc_pid =
-        create_process((state_t *)arg1, (int)arg2, (support_t *)arg3);
-    act_proc->p_s.reg_v0 = new_proc_pid;
-
-    return CONTINUE;
+    return create_process((state_t *)arg1, (int)arg2, (support_t *)arg3);
   }
   case TERMPROCESS: {
-    kprint("TERMPROCESS(");
-    kprint_int(act_proc->p_pid);
-    kprint(")\n");
     pcb_t *res;
+    int pid;
 
-    int pid = (int)arg1;
-    if (pid == 0)
+    pid = (int)arg1;
+    if (!pid) {
       res = act_proc;
-    else
+      } else {
       res = search_by_pid(pid);
+      }
 
     kill_parent_and_progeny(res);
     return is_alive(act_proc) ? RENQUEUE: NOTHING ;
   }
   case PASSEREN: {
-    kprint("PASSEREN(");
-    kprint_int(act_proc->p_pid);
-    kprint(")\n");
-    int *sem_addr = (int *)arg1;
+    int *sem_addr;
+
+    sem_addr = (int *)arg1;
+
     if (*sem_addr != 0 && *sem_addr != 1) {
       /* problema */
-      kprint("!!! sem value out of range");
+      LOG("Sem value out of range");
       PANIC();
     }
+
     if (!is_alive(act_proc)) {
-       kprint("passeren on zombie");
-        kprint("!!!!!!!!!!!!!!!!!!!\n");
-        PANIC(); 
+       LOG("Passeren on zombie");
+      PANIC(); 
     }
+
     return passeren(sem_addr);
   }
   case VERHOGEN: {
-    kprint("VERHOGEN(");
-    kprint_int(act_proc->p_pid);
-    kprint(")\n");
-    int *sem_addr = (int *)arg1;
+    int *sem_addr;
+
+    sem_addr = (int *)arg1;
+
     if (*sem_addr != 0 && *sem_addr != 1) {
       /* problema */
-      kprint("!!! sem value out of range");
+      LOG("Sem value out of range");
       PANIC();
     }
-    LOGi("sem_val", *sem_addr);
+
     if (!is_alive(act_proc)) {
-       kprint("verhogen on zombie");
-        PANIC(); 
+       LOG("verhogen on zombie");
+      PANIC(); 
     }
+
     return verhogen(sem_addr) == NULL ? NOTHING : RENQUEUE;
   }
   case DOIO: {
-    kprint("DOIO(");
-    kprint_int(act_proc->p_pid);
-    kprint(")\n");
     return do_io((int *)arg1, arg2);
   }
-  /* SYSCALL che restituisce in v0 il tempo di utilizzo del processore da parte
-   */
-  /* del processo attivo */
   case GETTIME: {
-    kprint("GETTIME(");
-    kprint_int(act_proc->p_pid);
-    kprint(")\n");
-    /* p_time nel pcb del processo attivo è costantemente aggiornato durante */
-    /* l'esecuzione, quindi si inserisce quel valore in v0 */
-    kprint("!!!!!!\n");
-    kprint_int(act_proc->p_time);
-    kprint("\n!!!!!!\n");
-    act_proc->p_s.reg_v0 = act_proc->p_time;
-    return CONTINUE;
+      return get_time();
   }
   case CLOCKWAIT: {
-    kprint("CLOCKWAIT(");
-    kprint_int(act_proc->p_pid);
-    kprint(", ");
-    kprint_int(sem_it);
-    kprint(")\n");
-    return passeren(&sem_it);
+    return wait_for_clock();
   }
   case GETSUPPORTPTR: {
-    kprint("GETSUPPORTPTR(");
-    kprint_int(act_proc->p_pid);
-    kprint(")\n");
-    act_proc->p_s.reg_v0 = (memaddr)act_proc->p_supportStruct;
-    return CONTINUE;
+    return get_support();
   }
-  /* SYSCALL che inserisce un PID nel registro v0 del processo attivo in base a
-   */
-  /* cosa è scritto in a1 */
   case GETPROCESSID: {
-    kprint("GETPROCESSID(");
-    kprint_int(act_proc->p_pid);
-    kprint(")\n");
-    int parent = arg1;
-    /* Se l'argomento 1 è 0 (quindi se parent è falso), in v0 viene inserito il
-     */
-    /* PID del processo chiamante */
-    if (!parent)
-      act_proc->p_s.reg_v0 = act_proc->p_pid;
-    /* Altrimenti, se l'argomento è diverso da 0, e il processo chiamante ha */
-    /* effettivamente un processo padre, si inserisce in v0 il PID del padre */
-    else if (act_proc->p_parent != NULL)
-      act_proc->p_s.reg_v0 = act_proc->p_parent->p_pid;
-    else
-      /* Come richiesto nella specifica, se viene richiesto il PID del padre di
-       */
-      /* un processo senza genitore, viene restituito 0 */
-      act_proc->p_s.reg_v0 = 0;
-    return CONTINUE;
+    return get_process_pid(arg1);
   }
   case YIELD: {
-    kprint("YIELD(");
-    kprint_int(act_proc->p_pid);
-    kprint(")\n");
-    yielded_process = act_proc;
-    return NOTHING;
+    return yield();
   }
   default:
     return passup_or_die(GENERALEXCEPT);
   }
 }
 
-static int create_process(state_t *statep, int prio, support_t *supportp)
+static enum eh_act create_process(state_t *statep, int prio, support_t *supportp)
 {
-  pcb_t *const new_proc = mk_proc(statep, prio, supportp);
+  const pcb_t *const new_proc = mk_proc(statep, prio, supportp);
   if (new_proc == NULL)
     return -1;
 
-  return new_proc->p_pid;
+  act_proc->p_s.reg_v0 = new_proc->p_pid;
+
+  return CONTINUE;
 }
 
 inline int passeren(int *semaddr)
@@ -319,7 +294,7 @@ inline int passup_or_die(size_tt kind)
   return NOTHING;
 }
 
-inline static int do_io(int *cmdaddr, int cmdval)
+inline enum eh_act do_io(int *cmdaddr, int cmdval)
 {
   size_tt i, j;
   int line = -1, index = -1;
@@ -357,5 +332,47 @@ inline static int do_io(int *cmdaddr, int cmdval)
   }
   passeren(sem + index);
   *((unsigned int *)cmdaddr) = cmdval;
+  return NOTHING;
+}
+
+inline enum eh_act get_time(void) {
+    /* p_time nel pcb del processo attivo è costantemente aggiornato durante */
+    /* l'esecuzione, quindi si inserisce quel valore in v0 */
+    act_proc->p_s.reg_v0 = act_proc->p_time;
+    return CONTINUE;
+}
+
+inline enum eh_act wait_for_clock(void) {
+return passeren(&sem_it);
+}
+
+inline enum eh_act get_support(void) { 
+    act_proc->p_s.reg_v0 = (memaddr)act_proc->p_supportStruct;
+  return CONTINUE;
+}
+
+inline enum eh_act get_process_pid(const int arg1) {
+    int parent;
+
+    parent = arg1;
+    /* Se l'argomento 1 è 0 (quindi se parent è falso), in v0 viene inserito il
+     */
+    /* PID del processo chiamante */
+    if (!parent)
+      act_proc->p_s.reg_v0 = act_proc->p_pid;
+    /* Altrimenti, se l'argomento è diverso da 0, e il processo chiamante ha */
+    /* effettivamente un processo padre, si inserisce in v0 il PID del padre */
+    else if (act_proc->p_parent != NULL)
+      act_proc->p_s.reg_v0 = act_proc->p_parent->p_pid;
+    else
+      /* Come richiesto nella specifica, se viene richiesto il PID del padre di
+       */
+      /* un processo senza genitore, viene restituito 0 */
+      act_proc->p_s.reg_v0 = 0;
+    return CONTINUE;
+}
+
+inline enum eh_act yield(void){
+  yielded_proc = act_proc;
   return NOTHING;
 }

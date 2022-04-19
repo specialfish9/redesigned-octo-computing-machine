@@ -1,6 +1,6 @@
 #include "scheduler.h"
 #include "asl.h"
-#include "exceptions.h"
+#include "syscalls.h"
 #include "klog.h"
 #include "listx.h"
 #include "pandos_const.h"
@@ -82,9 +82,9 @@ inline void scheduler_next(void)
     LOG("No process alive: halting");
     HALT();
   } else if (procs_count > 0 && sb_procs > 0) {
-    if (yielded_process != NULL) {
-      enqueue_proc(yielded_process, yielded_process->p_prio);
-      yielded_process = NULL;
+    if (yielded_proc != NULL) {
+      enqueue_proc(yielded_proc, yielded_proc->p_prio);
+      yielded_proc = NULL;
     }
     act_proc = NULL;
     setTIMER(TIMESLICE * (*(int *)(TIMESCALEADDR)));
@@ -179,9 +179,9 @@ inline void load_proc(pcb_t *pcb)
     LOG("Attempt to load NULL pcb");
     return;
   }
-  if (yielded_process != NULL) {
-    enqueue_proc(yielded_process, yielded_process->p_prio);
-    yielded_process = NULL;
+  if (yielded_proc != NULL) {
+    enqueue_proc(yielded_proc, yielded_proc->p_prio);
+    yielded_proc = NULL;
   }
 
   act_proc = pcb;
