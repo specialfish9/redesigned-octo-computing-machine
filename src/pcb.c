@@ -15,7 +15,15 @@ static struct list_head pcb_free_h;
 
 inline int is_alive(const pcb_t *const pcb)
 {
-  return pcb->p_pid != -1; // TODO
+  struct list_head* ptr;
+
+  list_for_each(ptr, &pcb_free_h){
+    pcb_t *curr = container_of(ptr, pcb_t, p_list);
+    if (curr->p_pid == pcb->p_pid)
+       return FALSE;
+  }
+
+  return TRUE;
 }
 
 pcb_t *search_by_pid(const unsigned int pid)
