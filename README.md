@@ -48,14 +48,14 @@ make docs
 ## Struttura di ROCM
 
 ### Sorgenti
-1. FASE 1
-      * asl (funzioni per la gestione delle Active Semaphore Lists)
-      * pcb (funzioni per la gestione di code e alberi dei PCB)
-2. FASE 2
-      * kernel (inizializzazione e nucleo del sistema operativo)
-      * scheduler (gestore dei processi attivi e "soft blocked")
-      * syscalls (chiamate di sistema invocate dal kernel)
-      * interrupts (interrupts associati ai dispositivi connessi e al clock di sistema)
+* FASE 1
+     * asl (funzioni per la gestione delle Active Semaphore Lists)
+     * pcb (funzioni per la gestione di code e alberi dei PCB)
+* FASE 2
+     * kernel (inizializzazione e nucleo del sistema operativo)
+     * scheduler (gestore dei processi attivi e "soft blocked")
+     * syscalls (chiamate di sistema invocate dal kernel)
+     * interrupts (interrupts associati ai dispositivi connessi e al clock di sistema)
 
 ### Funzioni principali (fase 2)
 * ```main()``` in **kernel** &#8594; DESCRIZIONE DESCRIZIONE DESCRIZIONE
