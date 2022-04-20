@@ -49,14 +49,23 @@ make docs
 
 ### Sorgenti
 1. FASE 1
-    * asl (funzioni per la gestione delle Active Semaphore Lists)
-    * pcb (funzioni per la gestione di code e alberi dei PCB)
+      * asl (funzioni per la gestione delle Active Semaphore Lists)
+      * pcb (funzioni per la gestione di code e alberi dei PCB)
 2. FASE 2
-    * interrupts (interrupts associati ai dispositivi connessi e al clock di sistema)
-    * syscalls (chiamate di sistema invocate dal kernel)
-    * scheduler (gestore dei processi attivi e "soft blocked")
-    * kernel (inizializzazione e nucleo del sistema operativo)
+      * kernel (inizializzazione e nucleo del sistema operativo)
+      * scheduler (gestore dei processi attivi e "soft blocked")
+      * syscalls (chiamate di sistema invocate dal kernel)
+      * interrupts (interrupts associati ai dispositivi connessi e al clock di sistema)
 
+### Funzioni principali (fase 2)
+* ```main()``` in **kernel** &#8594; DESCRIZIONE DESCRIZIONE DESCRIZIONE
+* ```exception_handler()``` in **kernel** &#8594; DESCRIZIONE DESCRIZIONE DESCRIZIONE
+* ```init_scheduler()``` in **scheduler** &#8594; DESCRIZIONE DESCRIZIONE DESCRIZIONE
+* ```scheduler_next()``` in **scheduler** &#8594; DESCRIZIONE DESCRIZIONE DESCRIZIONE
+* ```handle_syscall()``` in **syscalls** &#8594; DESCRIZIONE DESCRIZIONE DESCRIZIONE
+* ```passup_or_die(size_tt kind)``` in **syscalls** &#8594; DESCRIZIONE DESCRIZIONE DESCRIZIONE
+* ```handle_interrupts(const int line)``` in **interrupts** &#8594; DESCRIZIONE DESCRIZIONE DESCRIZIONE
+* ```generic_interrupt_handler(int line, int *semaphores)``` in **interrupts** &#8594; DESCRIZIONE DESCRIZIONE DESCRIZIONE
 
 ## Scelte implementative
 
