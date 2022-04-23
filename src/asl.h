@@ -1,8 +1,10 @@
-/*********************************asl.h****************************************
+/**
  *
- *  Dichiarazione delle funzioni che gestiscono la Active Semaphore List (ASL)
+ * @file utils.h
+ * @brief Dichiarazione delle funzioni che gestiscono la Active Semaphore List (ASL)
  *
- ******************************************************************************/
+ */
+
 #ifndef ASL_H
 #define ASL_H
 

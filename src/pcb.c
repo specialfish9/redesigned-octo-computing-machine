@@ -1,8 +1,8 @@
-/*********************************pcb.c****************************************
+/**
  *
- *  Implementazioni delle funzioni che gestiscono la coda e l'albero dei PCB.
- *
- ******************************************************************************/
+ * @file pcb.h
+ * @brief Implementazione delle funzioni che gestiscono la coda e l'albero dei PCB.
+ */
 
 #include "pcb.h"
 #include "listx.h"
@@ -52,8 +52,6 @@ void init_pcbs(void)
 /* Inserisce il PCB puntato da p nella lista dei PCB liberi.*/
 void free_pcb(pcb_t *p)
 {
-  /*todo remove*/
-  p->p_pid = -1;
   p->p_semAdd = NULL;
   list_add(&p->p_list, &pcb_free_h);
 }

@@ -1,3 +1,11 @@
+/**
+ *
+ * @file scheduler.h
+ * @brief Definizioni delle funzioni implementate dallo scheduler. Lo scheduler 
+ * si organizza i processi in stato di ready a seconda della loro priorità.
+ * In paricolare si occupa di creare, mandare in esecuzione ed uccidere i processi.
+ *
+ */
 #ifndef SCHEDULER_H
 #define SCHEDULER_H
 

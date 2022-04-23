@@ -1,8 +1,9 @@
-/*********************************asl.c****************************************
+/**
  *
- *  Implementazione delle funzioni che gestiscono la Active Semaphore List (ASL)
+ * @file utils.h
+ * @brief Implementazione delle funzioni che gestiscono la Active Semaphore List (ASL)
  *
- ******************************************************************************/
+ */
 #include "asl.h"
 #include "listx.h"
 #include "pandos_const.h"

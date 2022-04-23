@@ -1,3 +1,9 @@
+/**
+ *
+ * @file scheduler.h
+ * @brief Implementazioni delle funzioni dello scheduler.
+ *
+ */
 #include "scheduler.h"
 #include "asl.h"
 #include "pcb.h"

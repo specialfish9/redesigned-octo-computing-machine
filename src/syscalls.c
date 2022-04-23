@@ -1,3 +1,12 @@
+/**
+ *
+ * @file syscalls.c
+ * @brief Implementazione delle funzioni neccessarie per gestire le systemcall.
+ *
+ * Oltre alle funzioni esposte dal header @ref syscalls.h, contiene l'implementazione
+ * di ciascuna syscall con codice da -1 a -10.
+ *
+ */
 #include "syscalls.h"
 #include "asl.h"
 #include "interrupts.h"
@@ -9,12 +18,19 @@
 #define LOG(s) log("E", s)
 #define LOGi(s, i) logi("E", s, i)
 
+/** 
+ * @var Processo Yielded 
+ * */
 pcb_t *yielded_proc;
 
-/** Processo in esecuzione */
+/**
+ * @var Processo in esecuzione 
+ * */
 extern pcb_t *act_proc;
 
-/** Numero di processi sb */
+/** 
+ * @var Numero di processi sb
+ * */
 extern size_tt sb_procs;
 
 /**

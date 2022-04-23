@@ -1,3 +1,9 @@
+/**
+ *
+ * @file interrupts.c
+ * @brief Implementazione delle funzioni dichiarate in @ref interrupts.h
+ *
+ */
 #include "interrupts.h"
 #include "asl.h"
 #include "scheduler.h"

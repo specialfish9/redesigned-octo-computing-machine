@@ -2,20 +2,21 @@
 
 DOXYFILE_ENCODING      = UTF-8
 PROJECT_NAME           = "Really Optimistic Computing Machine"
-PROJECT_NUMBER         = 2
+PROJECT_NUMBER         = 2.0
 PROJECT_BRIEF          = "A PandOS+ implementation"
 OUTPUT_DIRECTORY       = doc 
 ALLOW_UNICODE_NAMES    = YES
 OUTPUT_LANGUAGE        = Italian 
 FULL_PATH_NAMES        = YES
 INPUT                  = src/
+EXCLUDE                = src/p2test.0.2.
 
 # With the PROJECT_LOGO tag one can specify an logo or icon that is included in
 # the documentation. The maximum height of the logo should not exceed 55 pixels
 # and the maximum width should not exceed 200 pixels. Doxygen will copy the logo
 # to the output directory.
 
-PROJECT_LOGO           =
+PROJECT_LOGO           = assets/logo.png
 
 
 

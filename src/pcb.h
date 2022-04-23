@@ -1,8 +1,8 @@
-/*********************************pcb.h****************************************
+/**
  *
- *  Dichiarazione delle funzioni che gestiscono la coda e l'albero dei PCB.
- *
- ******************************************************************************/
+ * @file pcb.h
+ * @brief Dichiarazione delle funzioni che gestiscono la coda e l'albero dei PCB.
+ */
 
 #ifndef PCB_H
 #define PCB_H

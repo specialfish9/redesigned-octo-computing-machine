@@ -1,22 +1,49 @@
+/**
+ *
+ * @file interrupts.h
+ * @brief Espone le funzioni necessarie per la gestione degli interrput e i 
+ * semafori associati ai vari device.
+ *
+ */
 #ifndef INTERRUPTS_H
 #define INTERRUPTS_H
 
 #include "kernel.h"
 #include <umps3/umps/const.h>
 
-/** Semaforo Interval Timer */
+/** 
+ * @var Semaforo Interval Timer 
+ * */
 extern int sem_it;
-/** Semaforo disk device */
+
+/**
+ * @var Semaforo disk device 
+ * */
 extern int sem_disk[DEVPERINT];
-/** Semaforo flash device */
+
+/** 
+ * @var Semaforo flash device
+ * */
 extern int sem_flash[DEVPERINT];
-/** Semaforo net TODO device*/
+
+/** 
+ * @var Semaforo network device
+ * */
 extern int sem_net[DEVPERINT];
-/** Semaforo printer device */
+
+/** 
+ * @var Semaforo printer device 
+ * */
 extern int sem_printer[DEVPERINT];
-/** Semaforo terminal device (input)*/
+
+/** 
+ * @var Semaforo terminal device (input)
+ * */
 extern int sem_term_in[DEVPERINT];
-/** Semaforo terminal device (output)*/
+
+/** 
+ * @var Semaforo terminal device (output)
+ * */
 extern int sem_term_out[DEVPERINT];
 
 /**

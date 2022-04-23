@@ -1,10 +1,11 @@
-/***********************************utils.c************************************
+/**
  *
- * Implementazione di utils.h.
+ * @file utils.c
+ * @brief Funzioni di Utility.
  *
- ******************************************************************************/
-#include "utils.h"
+ */
 
+#include "utils.h"
 #include "klog.h"
 #include "listx.h"
 
