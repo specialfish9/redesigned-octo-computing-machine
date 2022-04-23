@@ -16,7 +16,7 @@
  * @param Il pid
  * @return Il pcb associato
  * */
-extern pcb_t *search_by_pid(const unsigned int);
+extern pcb_t *search_by_pid(const unsigned int pid);
 
 /**
  * @brief Ritorna TRUE se il pcb passato come parametro e' ancora vivo, FALSE

@@ -1,6 +1,7 @@
 #include "kernel.h"
 #include "asl.h"
 #include "interrupts.h"
+#include "pandos_types.h"
 #include "pcb.h"
 #include "scheduler.h"
 #include "syscalls.h"
@@ -13,16 +14,24 @@
 #define LOG(s) log("K", s)
 #define LOGi(s, i) logi("K", s, i);
 
-/** @brief Inizializza il passup vector. */
+/** 
+ * @brief Inizializza il passup vector. 
+ * */
 inline static void init_passup_vector(void);
 
-/** Inizializza le strutture dati necessarie per il kernel */
+/**
+ * @brief Inizializza le strutture dati necessarie per il kernel 
+ * */
 inline static void init_data_structures(void);
 
-/** @brief Gestore delle eccezioni.*/
+/**
+ * @brief Gestore delle eccezioni.
+ * */
 inline static void exception_handler(void);
 
-/** @brief Gestore del refil del TLB. */
+/** 
+ * @brief Gestore del refil del TLB.
+ * */
 inline static void uTLB_RefillHandler(void);
 
 int main(void)

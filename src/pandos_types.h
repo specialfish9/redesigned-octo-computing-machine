@@ -61,7 +61,7 @@ typedef struct pcb_t {
   int p_prio;
 
   /* process id */
-  int p_pid;
+  unsigned int p_pid;
 } pcb_t, *pcb_PTR;
 
 /* semaphore descriptor (SEMD) data structure */

@@ -28,21 +28,12 @@ inline int is_alive(const pcb_t *const pcb)
 
 pcb_t *search_by_pid(const unsigned int pid)
 {
-
-  /* Versione sicura */
-  size_tt i;
-  for (i = 0; i < MAXPROC; ++i) {
-    if (pcb_free_table[i].p_pid == pid)
-      return &pcb_free_table[i];
-  }
-  return NULL;
-  /* VERSIONE UNSAFE 
-  memaddr base = (memaddr)pcb_free_table;
+  memaddr base = (memaddr) pcb_free_table;
   return (!((pid - base) % sizeof(pcb_t)) && 
           pid >= base &&
           pid <= (base + sizeof(pcb_t) * MAXPROC))
              ? (pcb_t *)pid
-             : NULL;*/
+             : NULL;
 }
 
 /* Inizializza la lista pcb_free in modo da contenere tutti gli elementi della
@@ -53,8 +44,6 @@ void init_pcbs(void)
    * della pcbFree_table inserendoli in coda*/
   INIT_LIST_HEAD(&pcb_free_h);
   for (size_tt i = 0; i < MAXPROC; i++) {
-    /*todo remove*/
-    pcb_free_table[i].p_pid = -1;
     pcb_free_table[i].p_semAdd = NULL;
     list_add_tail(&pcb_free_table[i].p_list, &pcb_free_h);
   }
