@@ -111,8 +111,8 @@ Per tenere conto del totale dei millisecondi in cui un processo è stato in esec
 ```cpu_t p_time```. Per renderne più agevole l'aggiornamento è stato ritenuto opportuno modificare la struttura
 ```pcb_t``` aggiungendo il campo ```cpu_t p_tm_updt``` che rappresenta il valore del TOD nel momento dell'ultima
 modifica di ```p_time```. 
-In caso di un'eccezione di tipo syscall, il tempo impiegato per la gestione di questa viene assegnato al processo che
-l'ha generata, mentre nel caso di un interrupt non se ne terrà conto.
+In caso di un'eccezione il tempo impiegato per la gestione di questa viene assegnato al processo che
+l'ha generata, se esiste.
 
 ### NSYS3 e NSYS4 (passeren e verhogen)
 Le funzioni passeren e verhogen hanno un funzionamento quasi speculare: nel caso della NSYS3 (P) se il valore del
