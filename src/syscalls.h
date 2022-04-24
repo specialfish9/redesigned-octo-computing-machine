@@ -33,8 +33,7 @@ extern int passeren(int *semaddr);
 /**
  * @brief Syscall VERHOGEN (NSYS4). Esegue un'operazione V sul semaforo binario.
  * @param semaddr puntatore al semaforo.
- * @return L'azione che l'excepton handler deve fare una volta gestita la
- * syscall.
+ * @return puntatore al processo in questione.
  * */
 extern pcb_t *verhogen(int *semaddr);
 
