@@ -1,10 +1,10 @@
 /**
  *
  * @file kernel.c
- * @brief Implementazione del kernel di ROCM. 
+ * @brief Implementazione del kernel di ROCM.
  *
- * Contiene le implementazioni dell'inizializzazione del sistema operativo in fase
- * di boot e dell'exception handler.
+ * Contiene le implementazioni dell'inizializzazione del sistema operativo in
+ * fase di boot e dell'exception handler.
  *
  */
 #include "kernel.h"
@@ -24,29 +24,29 @@
 #define LOGi(s, i) logi("K", s, i);
 
 /**
- * @brief Inizializza le strutture dati necessarie per il kernel 
+ * @brief Inizializza le strutture dati necessarie per il kernel
  * */
 inline static void init_data_structures(void);
 
-/** 
- * @brief Inizializza il passup vector. 
+/**
+ * @brief Inizializza il passup vector.
  * */
 inline static void init_passup_vector(void);
 
 /**
- * @brief Gestore delle eccezioni. Viene chiamato quando si verifica un'eccezione
- * e a seconda del tipo di eccezione esegue delle azioni.
+ * @brief Gestore delle eccezioni. Viene chiamato quando si verifica
+ * un'eccezione e a seconda del tipo di eccezione esegue delle azioni.
  * */
 inline static void exception_handler(void);
 
-/** 
+/**
  * @brief Gestore del refil del TLB.
  * */
 inline static void uTLB_RefillHandler(void);
 
 /**
- * @brief Inizializzazione del sistema operativo. Inizializza le strutture dati 
- * necessarie, crea il processo di init e lascia il controllo allo scheduler. 
+ * @brief Inizializzazione del sistema operativo. Inizializza le strutture dati
+ * necessarie, crea il processo di init e lascia il controllo allo scheduler.
  * */
 int main(void)
 {

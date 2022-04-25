@@ -1,7 +1,8 @@
 /**
  *
  * @file pcb.h
- * @brief Implementazione delle funzioni che gestiscono la coda e l'albero dei PCB.
+ * @brief Implementazione delle funzioni che gestiscono la coda e l'albero dei
+ * PCB.
  */
 
 #include "pcb.h"
@@ -28,9 +29,8 @@ inline int is_alive(const pcb_t *const pcb)
 
 pcb_t *search_by_pid(const unsigned int pid)
 {
-  memaddr base = (memaddr) pcb_free_table;
-  return (!((pid - base) % sizeof(pcb_t)) && 
-          pid >= base &&
+  memaddr base = (memaddr)pcb_free_table;
+  return (!((pid - base) % sizeof(pcb_t)) && pid >= base &&
           pid <= (base + sizeof(pcb_t) * MAXPROC))
              ? (pcb_t *)pid
              : NULL;

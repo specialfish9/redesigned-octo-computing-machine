@@ -3,8 +3,8 @@
  * @file syscalls.c
  * @brief Implementazione delle funzioni neccessarie per gestire le systemcall.
  *
- * Oltre alle funzioni esposte dal header @ref syscalls.h, contiene l'implementazione
- * di ciascuna syscall con codice da -1 a -10.
+ * Oltre alle funzioni esposte dal header @ref syscalls.h, contiene
+ * l'implementazione di ciascuna syscall con codice da -1 a -10.
  *
  */
 #include "syscalls.h"
@@ -18,17 +18,17 @@
 #define LOG(s) log("E", s)
 #define LOGi(s, i) logi("E", s, i)
 
-/** 
- * @var Processo Yielded 
+/**
+ * @var Processo Yielded
  * */
 pcb_t *yielded_proc;
 
 /**
- * @var Processo in esecuzione 
+ * @var Processo in esecuzione
  * */
 extern pcb_t *act_proc;
 
-/** 
+/**
  * @var Numero di processi sb
  * */
 extern size_tt sb_procs;
@@ -78,9 +78,10 @@ static enum eh_act wait_for_clock(void);
 static enum eh_act get_support(void);
 
 /**
- * @brief Systemcall GET PROCESS PID (NSYS9).Inserisce in v0 il PID del processo 
+ * @brief Systemcall GET PROCESS PID (NSYS9).Inserisce in v0 il PID del processo
  * chiamante o del suo processo padre
- * @param arg1 (parent): Se è uguale a 0 si scrive il pid del chiamante in v0, altrimenti del padre del chiamante
+ * @param arg1 (parent): Se è uguale a 0 si scrive il pid del chiamante in v0,
+ * altrimenti del padre del chiamante
  * @return L'azione che l'excepton handler deve fare una volta gestita la
  * syscall.
  * */
@@ -359,7 +360,6 @@ inline enum eh_act get_support(void)
   act_proc->p_s.reg_v0 = (memaddr)act_proc->p_supportStruct;
   return CONTINUE;
 }
-
 
 inline enum eh_act get_process_pid(const int arg1)
 {

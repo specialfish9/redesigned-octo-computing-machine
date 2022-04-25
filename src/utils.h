@@ -16,7 +16,7 @@
 #define NAME_OF(name) #name
 
 /**
- * @brief Macro utility per il debug: stampa il nome di una varibile seguito 
+ * @brief Macro utility per il debug: stampa il nome di una varibile seguito
  * dal suo valore.
  * @param Il nome della variabile */
 #define DBG(name) dbg_var(#name, name)
@@ -45,7 +45,7 @@ extern void memcpy(void *dest, void *src, size_tt n);
 extern void log(char *tag, char *mex);
 
 /**
- * @brief Funzione per loggare un messaggio sul buffer di klog seguito da un 
+ * @brief Funzione per loggare un messaggio sul buffer di klog seguito da un
  * valore intero.
  * @param tag Log tag.
  * @param mex Il messaggio.

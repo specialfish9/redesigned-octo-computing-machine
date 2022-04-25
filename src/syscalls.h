@@ -3,7 +3,7 @@
  * @file syscalls.h
  * @brief Gestore delle syscall.
  *
- * Espone la funzione necessaria per gestire le system call e alcune altre 
+ * Espone la funzione necessaria per gestire le system call e alcune altre
  * funzioni. Espone inoltre passeren e verhogen in quanto sono utili anche per
  * la gestione di alcuni interrupt.
  *
@@ -23,7 +23,7 @@ extern pcb_t *yielded_proc;
 extern enum eh_act handle_syscall(void);
 
 /**
- * @brief Gestisce le eccezioni non gestite dagli appositi handler decidendo 
+ * @brief Gestisce le eccezioni non gestite dagli appositi handler decidendo
  * se passarle al livello di supporto o uccidere il processo.
  * @param kind Il tipo
  * @return TRUE se il processo attivo deve essere rimesso in stato di ready,

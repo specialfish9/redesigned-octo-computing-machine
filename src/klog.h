@@ -16,13 +16,13 @@
  * */
 void kprint(char *);
 /**
- * @brief Stampa il valore esadecimale passato come parametro nel buffer di 
+ * @brief Stampa il valore esadecimale passato come parametro nel buffer di
  * memoria.
  * @param Il valore esadecimale.
  * */
 void kprint_hex(unsigned int);
 /**
- * @brief Stampa il valore di un intero passato come parametro nel buffer di 
+ * @brief Stampa il valore di un intero passato come parametro nel buffer di
  * memoria.
  * @param L'intero da stampare.
  * */

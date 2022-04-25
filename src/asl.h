@@ -1,7 +1,8 @@
 /**
  *
  * @file utils.h
- * @brief Dichiarazione delle funzioni che gestiscono la Active Semaphore List (ASL)
+ * @brief Dichiarazione delle funzioni che gestiscono la Active Semaphore List
+ * (ASL)
  *
  */
 
