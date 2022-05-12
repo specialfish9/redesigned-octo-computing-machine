@@ -48,7 +48,7 @@ typedef struct pcb_t {
 
   /* process status information */
   state_t p_s;     /* processor state */
-  cpu_t p_time;    /* amount of cpu time used by proc */
+  cpu_t p_time;    /* cpu time used by proc */
   cpu_t p_tm_updt; /* last p_time update */
 
   /* Pointer to the semaphore the process is currently blocked on */
@@ -61,7 +61,7 @@ typedef struct pcb_t {
   int p_prio;
 
   /* process id */
-  unsigned int p_pid;
+  int p_pid;
 } pcb_t, *pcb_PTR;
 
 /* semaphore descriptor (SEMD) data structure */
@@ -74,5 +74,12 @@ typedef struct semd_t {
   /* Semaphore list */
   struct list_head s_link;
 } semd_t, *semd_PTR;
+
+/* Page swap pool information structure type */
+typedef struct swap_t {
+  int sw_asid;        /* ASID number			*/
+  int sw_pageNo;      /* page's virt page no.	*/
+  pteEntry_t *sw_pte; /* page's PTE entry.	*/
+} swap_t;
 
 #endif

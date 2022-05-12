@@ -2,6 +2,7 @@ output/*
 obj/*.o
 doc/*
 *.tar.gz
+*.umps
 
 # Prerequisites
 *.d

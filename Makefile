@@ -4,8 +4,8 @@ else
 	UMPS3_DIR_PREFIX = /usr/local
 endif
 
-UMPS3_DATA_DIR = $(UMPS3_DIR_PREFIX)/share/umps3
-UMPS3_INCLUDE_DIR = $(UMPS3_DIR_PREFIX)/include
+SUPDIR = $(UMPS3_DIR_PREFIX)/share/umps3
+INCDIR = $(UMPS3_DIR_PREFIX)/include
 
 SRC_PATH := src
 OBJ_PATH := obj
@@ -21,9 +21,9 @@ CLEAN_LIST := $(OUT_PATH)/* \
 				$(DOC_PATH)/* \
 
 CFLAGS = -ffreestanding -ansi -Wall -c -mips1 -mabi=32 -mfp32 \
-				 -mno-gpopt -G 0 -fno-pic -mno-abicalls -EL  -std=gnu99
+				 -mno-gpopt -G 0 -fno-pic -mno-abicalls -EL -std=gnu99
 
-LDFLAGS = -G 0 -nostdlib -T $(UMPS3_DATA_DIR)/umpscore.ldscript -m elf32ltsmip
+LDFLAGS = -G 0 -nostdlib -T $(SUPDIR)/umpscore.ldscript -m elf32ltsmip
 
 CC = mipsel-linux-gnu-gcc
 LD = mipsel-linux-gnu-ld
@@ -35,7 +35,7 @@ KERNEL_NAME = ROCM_kernel
 DISK_NAME = disk0
 
 #main target
-all: figlet structure kernel.core.umps disk0.umps #docs
+all: figlet structure kernel.core.umps disk0 #docs
 	@echo -e "Done :D"
 
 structure:
@@ -47,7 +47,7 @@ structure:
 	@mkdir -p output
 
 # use umps3-mkdev to create the disk0 device
-disk0.umps:
+disk0:
 	@echo -e "*** DISK ***"
 	@echo -e "Creating disk " $@ "..."
 	@$(UDEV) -d $(OUT_PATH)/$(DISK_NAME).umps
@@ -65,15 +65,15 @@ kernel: $(OBJS) crtso.o libumps.o
 
 %.o: $(SRC_PATH)/%.c
 	@echo -e "Building " $@ "..."
-	@$(CC) $(CFLAGS) -I$(UMPS3_INCLUDE_DIR) -o $(OBJ_PATH)/$@ $<
+	@$(CC) $(CFLAGS) -I$(INCDIR) -o $(OBJ_PATH)/$@ $<
 
 crtso.o:
 	@echo -e "Building " $@ "..."
-	@$(CC) $(CFLAGS) -I$(UMPS3_INCLUDE_DIR)/umps3 -o $(OBJ_PATH)/$@ $(UMPS3_DATA_DIR)/crtso.S
+	@$(CC) $(CFLAGS) -I$(INCDIR)/umps3 -o $(OBJ_PATH)/$@ $(SUPDIR)/crtso.S
 
 libumps.o:
 	@echo -e "Building " $@ "..."
-	@$(CC) $(CFLAGS) -I$(UMPS3_INCLUDE_DIR)/umps3 -o $(OBJ_PATH)/$@ $(UMPS3_DATA_DIR)/libumps.S
+	@$(CC) $(CFLAGS) -I$(INCDIR)/umps3 -o $(OBJ_PATH)/$@ $(SUPDIR)/libumps.S
 
 format:
 	@echo -e "*** FORMAT ***"
