@@ -187,7 +187,7 @@ inline enum eh_act handle_syscall(void)
   }
 }
 
-static enum eh_act create_process(state_t *statep, int prio,
+inline enum eh_act create_process(state_t *statep, int prio,
                                   support_t *supportp)
 {
   const pcb_t *const new_proc = mk_proc(statep, prio, supportp);

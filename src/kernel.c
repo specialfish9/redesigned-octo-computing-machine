@@ -23,6 +23,9 @@
 #define LOG(s) log("K", s)
 #define LOGi(s, i) logi("K", s, i);
 
+/* TODO remove */
+void test() {}
+
 /**
  * @brief Inizializza le strutture dati necessarie per il kernel
  * */
@@ -63,7 +66,6 @@ int main(void)
             STATUS_TE);
 
   /* Kernel entry point */
-  extern void test();
   create_init_proc((memaddr)test);
   LOG("ip created");
 
