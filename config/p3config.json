@@ -1,6 +1,6 @@
 {
     "boot": {
-        "core-file": "kernel.core.umps",
+        "core-file": "../output/ROCM_kernel.core.umps",
         "load-core-file": true
     },
     "bootstrap-rom": "/usr/local/share/umps3/coreboot.rom.umps",
@@ -8,99 +8,99 @@
     "devices": {
         "flash0": {
             "enabled": true,
-            "file": "testers/strConcat.umps"
+            "file": "test/strConcat.umps"
         },
         "flash1": {
             "enabled": true,
-            "file": "testers/terminalTest2.umps"
+            "file": "test/terminalTest2.umps"
         },
         "flash2": {
             "enabled": true,
-            "file": "testers/terminalTest3.umps"
+            "file": "test/terminalTest3.umps"
         },
         "flash3": {
             "enabled": true,
-            "file": "testers/terminalTest4.umps"
+            "file": "test/terminalTest4.umps"
         },
         "flash4": {
             "enabled": true,
-            "file": "testers/terminalTest5.umps"
+            "file": "test/terminalTest5.umps"
         },
         "flash5": {
             "enabled": true,
-            "file": "testers/fibEight.umps"
+            "file": "test/fibEight.umps"
         },
         "flash6": {
             "enabled": true,
-            "file": "testers/printerTest.umps"
+            "file": "test/printerTest.umps"
         },
         "flash7": {
             "enabled": true,
-            "file": "testers/fibEleven.umps"
+            "file": "test/fibEleven.umps"
         },
         "printer0": {
             "enabled": true,
-            "file": "printer0.umps"
+            "file": "test/printer0.umps"
         },
         "printer1": {
             "enabled": true,
-            "file": "printer1.umps"
+            "file": "test/printer1.umps"
         },
         "printer2": {
             "enabled": true,
-            "file": "printer2.umps"
+            "file": "test/printer2.umps"
         },
         "printer3": {
             "enabled": true,
-            "file": "printer3.umps"
+            "file": "test/printer3.umps"
         },
         "printer4": {
             "enabled": true,
-            "file": "printer4.umps"
+            "file": "test/printer4.umps"
         },
         "printer5": {
             "enabled": true,
-            "file": "printer5.umps"
+            "file": "test/printer5.umps"
         },
         "printer6": {
             "enabled": true,
-            "file": "printer6.umps"
+            "file": "test/printer6.umps"
         },
         "printer7": {
             "enabled": true,
-            "file": "printer7.umps"
+            "file": "test/printer7.umps"
         },
         "terminal0": {
             "enabled": true,
-            "file": "term0.umps"
+            "file": "test/term0.umps"
         },
         "terminal1": {
             "enabled": true,
-            "file": "term1.umps"
+            "file": "test/term1.umps"
         },
         "terminal2": {
             "enabled": true,
-            "file": "term2.umps"
+            "file": "test/term2.umps"
         },
         "terminal3": {
             "enabled": true,
-            "file": "term3.umps"
+            "file": "test/term3.umps"
         },
         "terminal4": {
             "enabled": true,
-            "file": "term4.umps"
+            "file": "test/term4.umps"
         },
         "terminal5": {
             "enabled": true,
-            "file": "term5.umps"
+            "file": "test/term5.umps"
         },
         "terminal6": {
             "enabled": true,
-            "file": "term6.umps"
+            "file": "test/term6.umps"
         },
         "terminal7": {
             "enabled": true,
-            "file": "term7.umps"
+            "file": "test/term7.umps"
         }
     },
     "execution-rom": "/usr/local/share/umps3/exec.rom.umps",

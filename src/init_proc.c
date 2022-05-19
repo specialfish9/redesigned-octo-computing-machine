@@ -1,4 +1,4 @@
-#include "instantiator_proc.h"
+#include "init_proc.h"
 #include "pandos_types.h"
 #include "pandos_const.h"
 #include <umps3/umps/cp0.h>
