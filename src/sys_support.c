@@ -1,9 +1,16 @@
 
+#include "sys_support.h"
+#include "asl.h"
+#include "utils.h"
+#include <umps3/umps/arch.h>
+#include <umps3/umps/libumps.h>
+
+
 /*
 unsigned int retValue = SYSCALL (GETTOD, 0, 0, 0);
 GETTOD=1
 */
-unsigned int get_TOD(){
+extern unsigned int get_TOD(){
     //l'handler dovrà prendere il valore restituito da questa funzione e piazzarlo nel registro v0 di U-proc
     unsigned int ret;
     STCK(ret);
@@ -25,7 +32,7 @@ unsigned int get_TOD(){
 SYSCALL (TERMINATE, 0, 0, 0);
 TERMINATE=2
 */
-void terminate(){
+extern void terminate(){
     //spara al processo utente che l'ha chiamato
     pcb_t *proc = act_proc;  //NON SO SE SIA GIUSTO, DEVO CAPIRE SE U-PROC E IL PROCESSO ATTIVO SIANO DUE COSE EQUIVALENTI
 
@@ -37,7 +44,7 @@ void terminate(){
 int retValue = SYSCALL (WRITEPRINTER, char *virtAddr, int len, 0);
 WRITEPRINTER=3
 */
-int write_to_printer(){
+extern int write_to_printer(char *virtAddr, int len){
     //sospende il processo chiamante fino alla fine della trasmissione al printer associato al processo
     //PARAMETRI: indirizzo virtuale del primo carattere della stringa da trasmettere + lunghezza della stringa
     //RETURN: restituisce il numero di caratteri trasmessi (se ha avuto successo), altrimenti (status diverso da 1, device ready) return dello status del device con segno cambiato
@@ -50,7 +57,7 @@ int write_to_printer(){
 int retValue = SYSCALL (WRITETERMINAL, char *virtAddr, int len, 0);
 WRITETERMINAL=4
 */
-void write_to_terminal(){
+extern int write_to_terminal(char *virtAddr, int len){
     //sospende il processo chiamante fino alla fine della trasmissione al terminale associato al processo
     //PARAMETRI: indirizzo virtuale del primo carattere della stringa da trasmettere + lunghezza della stringa
     //RETURN: restituisce il numero di caratteri trasmessi (se ha avuto successo), altrimenti (status diverso da 5, character transmitted) return dello status del device con segno cambiato
@@ -63,11 +70,54 @@ void write_to_terminal(){
 int retValue = SYSCALL (READTERMINAL, char *virtAddr, 0, 0);
 READTERMINAL=5
 */
-void read_from_terminal(){
+extern int read_from_terminal(char *virtAddr){
     //sospende il processo chiamante fino a che una linea di input (stringa) è stata trasmessa dal terminale associato al processo
     //PARAMETRI: indirizzo virtuale di un buffer stringa dove devono essere inseriti i caratteri ricevuti
     //RETURN: restituisce il numero di caratteri trasmessi (se ha avuto successo), altrimenti (status diverso da 5, chatacter received) return dello status del device con segno cambiato
     //l'handler dovrà prendere il valore restituito da questa funzione e piazzarlo nel registro v0 di U-proc
     //NB: i caratteri ricevuti vanno inseriti nel buffer a partire dall'indirizzo ricevuto come parametro in a1
     //ERRORI: se l'indirizzo è fuori dallo spazio logico degli indirizzi del processo: ammazza il processo (SYS2)
+}
+
+
+
+
+
+
+
+
+
+
+//HANDLER CHE PROBABILMENTE NON VA; E' SOLO UNA BASE DA CUI PARTIRE
+void sys_support_handler(void){
+    int number;
+    unsigned int arg1, arg2, arg3;
+
+    number = (int)act_proc->p_s.reg_a0;
+    arg1 = act_proc->p_s.reg_a1;
+    arg2 = act_proc->p_s.reg_a2;
+    arg3 = act_proc->p_s.reg_a3;
+
+    switch(number){
+        case GETTOD:{
+            return get_TOD();
+        }
+        case TERMINATE:{
+            terminate();
+            break;
+        }
+        case WRITEPRINTER:{
+            return write_to_printer((char*)arg1, arg2);
+        }
+        case WRITETERMINAL:{
+            return write_to_terminal((char*)arg1, arg2);
+            break;
+        }
+        case READTERMINAL:{
+            return read_from_terminal((char*)arg1);
+            break;
+        }
+    }
+
+
 }
