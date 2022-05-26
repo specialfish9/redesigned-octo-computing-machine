@@ -34,19 +34,6 @@ extern pcb_t *act_proc;
 extern size_tt sb_procs;
 
 /**
- * @brief Systemcall CREATE PROCESS (NSYS1). Crea un nuovo processo come figlio
- * del chiamante. Se la syscall ha successo, mette nel registro v0 del processo
- * attivo il PID del nuovo processo, -1 altrimenti.
- * @param statep: stato che deve avere il processo.
- * @param prio: priorità da assegnare al processo.
- * @param supportp: puntatore alla struttura supporto del processo.
- * @return L'azione che l'excepton handler deve fare una volta gestita la
- * syscall.
- * */
-static enum eh_act create_process(state_t *statep, int prio,
-                                  support_t *suppportp);
-
-/**
  * @brief Systemcall DOIO (NSYS5)
  * @param cmdaddr Indirizzo del comando
  * @param cmdval Valore del comando
@@ -200,7 +187,7 @@ inline enum eh_act handle_syscall(void)
   }
 }
 
-static enum eh_act create_process(state_t *statep, int prio,
+inline enum eh_act create_process(state_t *statep, int prio,
                                   support_t *supportp)
 {
   const pcb_t *const new_proc = mk_proc(statep, prio, supportp);

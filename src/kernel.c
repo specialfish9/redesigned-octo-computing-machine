@@ -23,6 +23,9 @@
 #define LOG(s) log("K", s)
 #define LOGi(s, i) logi("K", s, i);
 
+/* TODO remove */
+void test() {}
+
 /**
  * @brief Inizializza le strutture dati necessarie per il kernel
  * */
@@ -63,7 +66,6 @@ int main(void)
             STATUS_TE);
 
   /* Kernel entry point */
-  extern void test();
   create_init_proc((memaddr)test);
   LOG("ip created");
 
@@ -169,10 +171,24 @@ void exception_handler(void)
 /* TLB-Refill Handler */
 void uTLB_RefillHandler(void)
 {
-  LOG("TLB refill handler invoked");
-  setENTRYHI(0x80000000);
-  setENTRYLO(0x00000000);
+  /* 1) Locate the correct  Page Table entry in the Current Process’s Page
+      Table; a component of p supportStruct */
+  state_t *exc_state;
+  unsigned int pg_n;
+  pteEntry_t missing_entry;
+  
+  exc_state = (state_t*) BIOSDATAPAGE;
+  pg_n = ENTRYHI_GET_VPN(exc_state->entry_hi);
+
+  missing_entry = act_proc->p_supportStruct->sup_privatePgTbl[pg_n];
+
+  /* 2) Write the entry into the TLB using the TLBWR instruction */
+  setENTRYHI(missing_entry.pte_entryHI);
+  setENTRYLO(missing_entry.pte_entryLO);
   TLBWR();
 
-  LDST((state_t *)BIOSDATAPAGE);
+  /* 3)Return control (LDST) to the Current Process to restart the address
+      translation process */
+  enqueue_proc(act_proc, act_proc->p_prio);
+  scheduler_next();
 }
