@@ -59,4 +59,13 @@ extern int passeren(int *semaddr);
  * */
 extern pcb_t *verhogen(int *semaddr);
 
+/**
+ * @brief Uccide il processo padre e i processi figli del processo passato
+ * come puntatore.
+ * @param p Il processo di riferimento.
+ * @return L'azione che l'excepton handler deve fare una volta gestita la
+ * syscall.
+ * */
+extern void kill_parent_and_progeny(pcb_t *p);
+
 #endif

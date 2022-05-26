@@ -1,9 +1,15 @@
 
 #include "sys_support.h"
+#include "kernel.h"
+#include "pcb.h"
+#include "syscalls.h"
 #include "asl.h"
+#include "interrupts.h"
+#include "scheduler.h"
 #include "utils.h"
 #include <umps3/umps/arch.h>
 #include <umps3/umps/libumps.h>
+#include <umps3/umps/const.h>
 
 
 /*
@@ -98,26 +104,44 @@ void sys_support_handler(void){
     arg2 = act_proc->p_s.reg_a2;
     arg3 = act_proc->p_s.reg_a3;
 
+
+    int ret=-1;
     switch(number){
         case GETTOD:{
-            return get_TOD();
+            ret=get_TOD();
         }
         case TERMINATE:{
             terminate();
             break;
         }
         case WRITEPRINTER:{
-            return write_to_printer((char*)arg1, arg2);
+            ret=write_to_printer((char*)arg1, arg2);
         }
         case WRITETERMINAL:{
-            return write_to_terminal((char*)arg1, arg2);
-            break;
+            ret=write_to_terminal((char*)arg1, arg2);
         }
         case READTERMINAL:{
-            return read_from_terminal((char*)arg1);
-            break;
+            ret=read_from_terminal((char*)arg1);
+        }
+        default:{
+
         }
     }
-
+    /*
+    TODO:
+        -after successful completion of syscall place any return status in v0 of U-proc and return control to calling process
+        -increment PC by 4
+    */
 
 }
+
+
+
+/*
+TODO:
+    TRAP EXCEPTION HANDLER:
+        -terminate process (same operations as SYS2)
+        -if the process to be terminated is holding mutual exclusion on a support level semaphore (swap pool sem)
+            mutex must be released before terminating (NSYS4 + NSYS2)
+    RIMUOVERE COMMENTI/APPUNTI
+*/
