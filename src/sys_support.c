@@ -9,14 +9,13 @@
 #include "utils.h"
 #include <umps3/umps/arch.h>
 #include <umps3/umps/libumps.h>
-#include <umps3/umps/const.h>
-
+#include "pandos_const.h"
 
 /*
 unsigned int retValue = SYSCALL (GETTOD, 0, 0, 0);
 GETTOD=1
 */
-extern unsigned int get_TOD(){
+inline unsigned int get_TOD(void){
     //l'handler dovrà prendere il valore restituito da questa funzione e piazzarlo nel registro v0 di U-proc
     unsigned int ret;
     STCK(ret);
@@ -38,7 +37,11 @@ extern unsigned int get_TOD(){
 SYSCALL (TERMINATE, 0, 0, 0);
 TERMINATE=2
 */
-extern void terminate(){
+inline void terminate(void){
+/*
+ TODO   usare la funzione di terminate della fase 2 al posto di kill_parent_and_progeny
+*/
+
     //spara al processo utente che l'ha chiamato
     pcb_t *proc = act_proc;  //NON SO SE SIA GIUSTO, DEVO CAPIRE SE U-PROC E IL PROCESSO ATTIVO SIANO DUE COSE EQUIVALENTI
 
@@ -50,7 +53,7 @@ extern void terminate(){
 int retValue = SYSCALL (WRITEPRINTER, char *virtAddr, int len, 0);
 WRITEPRINTER=3
 */
-extern int write_to_printer(char *virtAddr, int len){
+inline int write_to_printer(char *virtAddr, int len){
     //sospende il processo chiamante fino alla fine della trasmissione al printer associato al processo
     //PARAMETRI: indirizzo virtuale del primo carattere della stringa da trasmettere + lunghezza della stringa
     //RETURN: restituisce il numero di caratteri trasmessi (se ha avuto successo), altrimenti (status diverso da 1, device ready) return dello status del device con segno cambiato
@@ -63,7 +66,7 @@ extern int write_to_printer(char *virtAddr, int len){
 int retValue = SYSCALL (WRITETERMINAL, char *virtAddr, int len, 0);
 WRITETERMINAL=4
 */
-extern int write_to_terminal(char *virtAddr, int len){
+inline int write_to_terminal(char *virtAddr, int len){
     //sospende il processo chiamante fino alla fine della trasmissione al terminale associato al processo
     //PARAMETRI: indirizzo virtuale del primo carattere della stringa da trasmettere + lunghezza della stringa
     //RETURN: restituisce il numero di caratteri trasmessi (se ha avuto successo), altrimenti (status diverso da 5, character transmitted) return dello status del device con segno cambiato
@@ -76,7 +79,7 @@ extern int write_to_terminal(char *virtAddr, int len){
 int retValue = SYSCALL (READTERMINAL, char *virtAddr, 0, 0);
 READTERMINAL=5
 */
-extern int read_from_terminal(char *virtAddr){
+inline int read_from_terminal(char *virtAddr){
     //sospende il processo chiamante fino a che una linea di input (stringa) è stata trasmessa dal terminale associato al processo
     //PARAMETRI: indirizzo virtuale di un buffer stringa dove devono essere inseriti i caratteri ricevuti
     //RETURN: restituisce il numero di caratteri trasmessi (se ha avuto successo), altrimenti (status diverso da 5, chatacter received) return dello status del device con segno cambiato
@@ -92,10 +95,17 @@ extern int read_from_terminal(char *virtAddr){
 
 
 
+void support_handler(void){
+    //se exc è syscall > 0
+        //support_syscall_handler() / se è = 0 ci entra lo stesso probabilmente e va nel caso default
+    //altrimenti se exc è trap
+        //support_trap_handler()
+}
+
 
 
 //HANDLER CHE PROBABILMENTE NON VA; E' SOLO UNA BASE DA CUI PARTIRE
-void sys_support_handler(void){
+void support_syscall_handler(void){
     int number;
     unsigned int arg1, arg2, arg3;
 
@@ -105,7 +115,7 @@ void sys_support_handler(void){
     arg3 = act_proc->p_s.reg_a3;
 
 
-    int ret=-1;
+    int ret=0;
     switch(number){
         case GETTOD:{
             ret=get_TOD();
@@ -124,9 +134,12 @@ void sys_support_handler(void){
             ret=read_from_terminal((char*)arg1);
         }
         default:{
-
+            //PANIC o qualcosa del genere
         }
     }
+
+    if(ret != 0)
+        act_proc->p_s.reg_v0 = ret;
     /*
     TODO:
         -after successful completion of syscall place any return status in v0 of U-proc and return control to calling process
@@ -135,13 +148,8 @@ void sys_support_handler(void){
 
 }
 
-
-
-/*
-TODO:
-    TRAP EXCEPTION HANDLER:
-        -terminate process (same operations as SYS2)
-        -if the process to be terminated is holding mutual exclusion on a support level semaphore (swap pool sem)
-            mutex must be released before terminating (NSYS4 + NSYS2)
-    RIMUOVERE COMMENTI/APPUNTI
-*/
+void support_trap_handler(void){
+    //se il processo tiene mutua esclusione su un semaforo mutex del livello supporto (es. swap pool sem)
+        //rilascia la risorsa (NSYS4 / verhogen?)
+    //ammazza il processo (SYS2)
+}
