@@ -53,7 +53,7 @@ inline void terminate(void){
 int retValue = SYSCALL (WRITEPRINTER, char *virtAddr, int len, 0);
 WRITEPRINTER=3
 */
-inline int write_to_printer(char *virtAddr, int len){
+inline int write_to_printer(char *virtAddr, int len){       //cresta
     //sospende il processo chiamante fino alla fine della trasmissione al printer associato al processo
     //PARAMETRI: indirizzo virtuale del primo carattere della stringa da trasmettere + lunghezza della stringa
     //RETURN: restituisce il numero di caratteri trasmessi (se ha avuto successo), altrimenti (status diverso da 1, device ready) return dello status del device con segno cambiato
@@ -66,7 +66,7 @@ inline int write_to_printer(char *virtAddr, int len){
 int retValue = SYSCALL (WRITETERMINAL, char *virtAddr, int len, 0);
 WRITETERMINAL=4
 */
-inline int write_to_terminal(char *virtAddr, int len){
+inline int write_to_terminal(char *virtAddr, int len){      //cresta
     //sospende il processo chiamante fino alla fine della trasmissione al terminale associato al processo
     //PARAMETRI: indirizzo virtuale del primo carattere della stringa da trasmettere + lunghezza della stringa
     //RETURN: restituisce il numero di caratteri trasmessi (se ha avuto successo), altrimenti (status diverso da 5, character transmitted) return dello status del device con segno cambiato
@@ -79,7 +79,7 @@ inline int write_to_terminal(char *virtAddr, int len){
 int retValue = SYSCALL (READTERMINAL, char *virtAddr, 0, 0);
 READTERMINAL=5
 */
-inline int read_from_terminal(char *virtAddr){
+inline int read_from_terminal(char *virtAddr){      //yonas
     //sospende il processo chiamante fino a che una linea di input (stringa) è stata trasmessa dal terminale associato al processo
     //PARAMETRI: indirizzo virtuale di un buffer stringa dove devono essere inseriti i caratteri ricevuti
     //RETURN: restituisce il numero di caratteri trasmessi (se ha avuto successo), altrimenti (status diverso da 5, chatacter received) return dello status del device con segno cambiato
