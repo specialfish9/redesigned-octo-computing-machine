@@ -16,4 +16,9 @@ enum eh_act {
   CONTINUE = 2  /* Continuare con l'esecuzione del processo corrente */
 };
 
+/**
+ * @brief Gestore del refil del TLB.
+ * */
+extern void uTLB_RefillHandler(void);
+
 #endif

@@ -15,6 +15,7 @@
 #include "scheduler.h"
 #include "syscalls.h"
 #include "utils.h"
+#include "init_proc.h"
 #include <umps3/umps/arch.h>
 #include <umps3/umps/cp0.h>
 #include <umps3/umps/libumps.h>
@@ -22,9 +23,7 @@
 /* Macro per il log */
 #define LOG(s) log("K", s)
 #define LOGi(s, i) logi("K", s, i);
-
-/* TODO remove */
-void test() {}
+#define LOGh(s, i) logh("K", s, i);
 
 /**
  * @brief Inizializza le strutture dati necessarie per il kernel
@@ -43,11 +42,6 @@ inline static void init_passup_vector(void);
 inline static void exception_handler(void);
 
 /**
- * @brief Gestore del refil del TLB.
- * */
-inline static void uTLB_RefillHandler(void);
-
-/**
  * @brief Inizializzazione del sistema operativo. Inizializza le strutture dati
  * necessarie, crea il processo di init e lascia il controllo allo scheduler.
  * */
@@ -55,7 +49,7 @@ int main(void)
 {
   /*Inizializziamo le strutture dati necessarie */
   init_data_structures();
-  LOG("ds done");
+  LOG("data str done");
 
   /* Carichiamo l'interval timer*/
   LDIT(PSECOND);
@@ -66,7 +60,7 @@ int main(void)
             STATUS_TE);
 
   /* Kernel entry point */
-  create_init_proc((memaddr)test);
+  create_init_proc((memaddr)instantiator_proc);
   LOG("ip created");
 
   /* Lasciamo il controllo allo scheduler */
@@ -106,10 +100,12 @@ void exception_handler(void)
 
   cause = CAUSE_GET_EXCCODE(getCAUSE());
 
+  LOGi("ex", cause);
+
   if (act_proc != NULL) {
     state_t *saved_state = (state_t *)BIOSDATAPAGE;
     memcpy(&act_proc->p_s, saved_state, sizeof(state_t));
-  }
+  } 
 
   if (cause == EXC_INT) {
     /* Interrupts */
@@ -169,26 +165,25 @@ void exception_handler(void)
 }
 
 /* TLB-Refill Handler */
-void uTLB_RefillHandler(void)
+inline void uTLB_RefillHandler(void)
 {
-  /* 1) Locate the correct  Page Table entry in the Current Process’s Page
-      Table; a component of p supportStruct */
   state_t *exc_state;
   unsigned int pg_n;
   pteEntry_t missing_entry;
-  
+
+  /* 1) Trova l'entry corretta nella page table del processo */
   exc_state = (state_t*) BIOSDATAPAGE;
   pg_n = ENTRYHI_GET_VPN(exc_state->entry_hi);
 
   missing_entry = act_proc->p_supportStruct->sup_privatePgTbl[pg_n];
 
-  /* 2) Write the entry into the TLB using the TLBWR instruction */
+  /* 2) Scrivi l'entry nel TLB */
   setENTRYHI(missing_entry.pte_entryHI);
   setENTRYLO(missing_entry.pte_entryLO);
   TLBWR();
 
-  /* 3)Return control (LDST) to the Current Process to restart the address
-      translation process */
+  /* 3) Ritorna il controllo al processo corrente per riprovare il processo 
+   * di traduzione dell'indirizzo */
   enqueue_proc(act_proc, act_proc->p_prio);
   scheduler_next();
 }

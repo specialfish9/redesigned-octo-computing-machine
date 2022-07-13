@@ -59,4 +59,11 @@ extern int passeren(int *semaddr);
  * */
 extern pcb_t *verhogen(int *semaddr);
 
+/**
+ * @brief Systemcall GET SUPPORT (NSYS8)
+ * @return L'azione che l'excepton handler deve fare una volta gestita la
+ * syscall.
+ * */
+extern enum eh_act get_support(void);
+
 #endif
