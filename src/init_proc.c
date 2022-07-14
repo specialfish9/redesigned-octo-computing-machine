@@ -10,10 +10,10 @@
 
 #define LOG "IP"
 
-// TODO tmp
+extern void tlb_exc_handler(void);
+
+// TODO tmp gabrieele e yonas
 static void exc_handler(void);
-// TODO tmp
-static void test1() { log("<", "cazzo"); PANIC(); }
 
 static int semaforo_a_cazzo = 0;
 
@@ -48,7 +48,7 @@ inline void instantiator_proc(void) {
     init_page_table(tp_supps[i].sup_privatePgTbl, i);
 
     context_t context[2];
-    context[0].pc = (memaddr) test1;
+    context[0].pc = (memaddr) tlb_exc_handler;
     context[1].pc = (memaddr) exc_handler;
     /* Timer enabled, interupts on and kernel mode */
     context[0].status = STATUS_TE | STATUS_IM_MASK | STATUS_KUc | STATUS_IEp;

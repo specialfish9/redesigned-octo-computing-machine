@@ -3,6 +3,6 @@
 
 extern void init_supp_structures(void);
 
-extern void TLB_exc_handler(void);
+extern void tlb_exc_handler(void);
 
 #endif
