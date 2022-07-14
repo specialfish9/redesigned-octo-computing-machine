@@ -31,7 +31,6 @@ swppl_entry_t swppl_tbl[SWAP_POOL_SIZE];
  * */
 static size_tt frm_ch_ptr = 0;
 
-
 /* TODO static */
 int chose_frame(void);
 static int write_to_dev(void);
@@ -55,6 +54,7 @@ inline void tlb_exc_handler(void)
   dtpreg_t *dev_reg;
   swppl_entry_t *ch_frame_entry;
   unsigned int chosen_frame;
+  int dev_stat;
 
   act_proc_sup = (support_t*) SYSCALL(GETSUPPORTPTR, 0, 0, 0);
   if (act_proc_sup == NULL) {
@@ -101,12 +101,13 @@ inline void tlb_exc_handler(void)
        * di codice scritta in questo progetto. */
 
       /* Prendo i registri del device */
-      dev_reg = (dtpreg_t *)&((devregarea_t *)RAMBASEADDR)->devreg[FLASHINT][ch_frame_entry->asid].dtp; 
+      dev_reg = (dtpreg_t*) DEV_REG_ADDR(3, act_proc_sup->sup_asid);
+
       /* Metto in data0 il pfn che voglio scrivere */
       dev_reg->data0 = ENTRYLO_GET_PFN(proc_pgtbl_entry->pte_entryLO);
+
       /* Scrivo su command il comando per scrivere (lol)*/
-      int dev_stat = SYSCALL(DOIO, dev_reg->command, FLASHWRITE, 0);
-      if (dev_stat != 1) {
+      if ((dev_stat = SYSCALL(DOIO, (int) DEV_REG_ADDR(FLASHINT, act_proc_sup->sup_asid), FLASHWRITE, 0)) != 1) {
         LOGi("error writing frame to dev", dev_stat);
         /* TODO trap */
         return;
@@ -114,9 +115,11 @@ inline void tlb_exc_handler(void)
     }    
     LOG("Libero");
 
-    dev_reg = (dtpreg_t *)&((devregarea_t *)RAMBASEADDR)->devreg[FLASHINT][act_proc_sup->sup_asid].dtp; 
-    int dev_stat = SYSCALL(DOIO, dev_reg->command, FLASHREAD, 0);
-    if (dev_stat != 1) {
+    /* Prendo il device register */
+    dev_reg = (dtpreg_t*) DEV_REG_ADDR(3, act_proc_sup->sup_asid);
+
+    /* Uso la NSYS5 per dire al controller del device di leggere */
+    if ((dev_stat = SYSCALL(DOIO, (int) DEV_REG_ADDR(FLASHINT, act_proc_sup->sup_asid), FLASHREAD, 0)) != 1) {
       LOGi("error reading frame content from dev", dev_stat);
       /* TODO trap */
       return;
@@ -150,6 +153,7 @@ inline void tlb_exc_handler(void)
 
     /* SUPER-TODO capire come fare un ldst in modo safe per non mandare a puttane
      * lo scheduler */
+    LOG("DOne");
     LDST(&act_proc_sup->sup_exceptState[0]);
   }
 

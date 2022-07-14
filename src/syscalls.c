@@ -18,6 +18,7 @@
 #define LOG(s) log("E", s)
 #define LOGi(s, i) logi("E", s, i)
 
+/*TODO*/
 int debugS;
 
 /**
@@ -304,6 +305,11 @@ inline enum eh_act do_io(int *cmdaddr, int cmdval)
   int line = -1, index = -1;
   int *sem;
   int *dev = (int *)DEVICE_FROM_COMDADDR(cmdaddr);
+
+  if (cmdaddr == 0|| cmdaddr == NULL) {
+    LOG("DOIO with null or zero command addr");
+    PANIC();
+  }
 
   /* Cerco la linea di interrupt e l'indice del device */
   for (i = 0; i < N_EXT_IL; ++i) {
