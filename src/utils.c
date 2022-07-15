@@ -47,7 +47,7 @@ inline void logi(char *tag, char *mex, int val)
   kprint("\n");
 }
 
-inline void logh(char *tag, char *mex, unsigned int value) 
+inline void logh(char *tag, char *mex, unsigned int value)
 {
   kprint(tag);
   kprint(">");

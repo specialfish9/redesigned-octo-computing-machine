@@ -295,7 +295,6 @@ inline int passup_or_die(size_tt kind)
         act_proc->p_supportStruct->sup_exceptContext[kind].status,
         act_proc->p_supportStruct->sup_exceptContext[kind].pc);
 
-
   /* never reached */
   return NOTHING;
 }
@@ -307,7 +306,7 @@ inline enum eh_act do_io(int *cmdaddr, int cmdval)
   int *sem;
   int *dev = (int *)DEVICE_FROM_COMDADDR(cmdaddr);
 
-  if (cmdaddr == 0|| cmdaddr == NULL) {
+  if (cmdaddr == 0 || cmdaddr == NULL) {
     LOG("DOIO with null or zero command addr");
     PANIC();
   }

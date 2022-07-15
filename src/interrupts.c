@@ -127,7 +127,7 @@ inline void generic_interrupt_handler(int line, int *semaphores)
   pcb_t *p;
 
   /* Prendo la bitmap */
-  bitmap = *((size_tt*) CDEV_BITMAP_ADDR(line));
+  bitmap = *((size_tt *)CDEV_BITMAP_ADDR(line));
 
   /* Scorro la bitmap fino a trovare la posizione dell'uno piu' significativo.
    * Ad ogni iterazione incremento l'indice avendo cura di riportarlo a zero
@@ -142,7 +142,7 @@ inline void generic_interrupt_handler(int line, int *semaphores)
 
   /* Recupero il device register corrispondente */
   reg = (dtpreg_t *)&((devregarea_t *)RAMBASEADDR)->devreg[line][index].dtp;
-  
+
   /* Faccio una V sul semaforo del device */
   p = verhogen(semaphores + index);
 

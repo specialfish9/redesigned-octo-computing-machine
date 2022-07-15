@@ -9,13 +9,13 @@
  */
 #include "kernel.h"
 #include "asl.h"
+#include "init_proc.h"
 #include "interrupts.h"
 #include "pandos_types.h"
 #include "pcb.h"
 #include "scheduler.h"
 #include "syscalls.h"
 #include "utils.h"
-#include "init_proc.h"
 #include <umps3/umps/arch.h>
 #include <umps3/umps/cp0.h>
 #include <umps3/umps/libumps.h>
@@ -100,12 +100,13 @@ void exception_handler(void)
 
   cause = CAUSE_GET_EXCCODE(getCAUSE());
 
-  if (cause != 0 && cause != 8) LOGi("ex", cause);
+  if (cause != 0 && cause != 8)
+    LOGi("ex", cause);
 
   if (act_proc != NULL) {
     state_t *saved_state = (state_t *)BIOSDATAPAGE;
     memcpy(&act_proc->p_s, saved_state, sizeof(state_t));
-  } 
+  }
 
   if (cause == EXC_INT) {
     /* Interrupts */
@@ -159,10 +160,12 @@ void exception_handler(void)
       load_proc(act_proc);
     } else if (reenqueue == RENQUEUE) {
       enqueue_proc(act_proc, act_proc->p_prio);
-    } 
+    }
   }
   scheduler_next();
 }
+
+static unsigned int debugK;
 
 /* TLB-Refill Handler */
 inline void uTLB_RefillHandler(void)
@@ -172,17 +175,20 @@ inline void uTLB_RefillHandler(void)
   pteEntry_t missing_entry;
 
   /* 1) Trova l'entry corretta nella page table del processo */
-  exc_state = (state_t*) BIOSDATAPAGE;
+  exc_state = (state_t *)BIOSDATAPAGE;
   pg_n = ENTRYHI_GET_VPN(exc_state->entry_hi);
+  LOGi("TLBREFILL", pg_n);
 
   missing_entry = act_proc->p_supportStruct->sup_privatePgTbl[pg_n];
+
+  debugK = missing_entry.pte_entryHI;
 
   /* 2) Scrivi l'entry nel TLB */
   setENTRYHI(missing_entry.pte_entryHI);
   setENTRYLO(missing_entry.pte_entryLO);
   TLBWR();
 
-  /* 3) Ritorna il controllo al processo corrente per riprovare il processo 
+  /* 3) Ritorna il controllo al processo corrente per riprovare il processo
    * di traduzione dell'indirizzo */
   enqueue_proc(act_proc, act_proc->p_prio);
   scheduler_next();
