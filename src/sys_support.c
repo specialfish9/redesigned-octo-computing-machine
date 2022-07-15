@@ -8,8 +8,14 @@
 #include "scheduler.h"
 #include "utils.h"
 #include <umps3/umps/arch.h>
+#include <umps3/umps/types.h>
+#include <umps3/umps/const.h>
 #include <umps3/umps/libumps.h>
+#include <umps3/umps/cp0.h>
+
 #include "pandos_const.h"
+
+#define PRINTCHR 2
 
 /*
 unsigned int retValue = SYSCALL (GETTOD, 0, 0, 0);
@@ -45,7 +51,7 @@ inline void terminate(void){
     //spara al processo utente che l'ha chiamato
     pcb_t *proc = act_proc;  //NON SO SE SIA GIUSTO, DEVO CAPIRE SE U-PROC E IL PROCESSO ATTIVO SIANO DUE COSE EQUIVALENTI
 
-    SYSCALL(TERMPROCESS, proc, 0, 0);
+    SYSCALL(TERMPROCESS, proc->p_pid, 0, 0);
     //return is_alive(act_proc) ? RENQUEUE : NOTHING;
 }
 
@@ -53,24 +59,24 @@ inline void terminate(void){
 int retValue = SYSCALL (WRITEPRINTER, char *virtAddr, int len, 0);
 WRITEPRINTER=3
 */
-inline int write_to_printer(unsigned int virtAddr, int len){       //cresta
+inline int write_to_printer(unsigned int virtAddr, int len, unsigned int asid){       //cresta
     //USARE REGISTRO COMMAND DA QUALCHE PARTE       
     
     //ogni device di tipo printer ha un campo status (qua devo farlo funzionare solo se lo status è 1, altrimenti restituisco -status)
     //operazione di stampa avviata caricando il campo command
-    (dtpreg_t *) dev_reg = DEV_REG_ADDR(IL_PRINTER,act_proc_sup.sup_asid-1)         //sup_asid è l'id del processo, associazione 1:1 tra processi e devices
+    dtpreg_t * dev_reg = (dtpreg_t*)DEV_REG_ADDR(IL_PRINTER,asid-1);         //sup_asid è l'id del processo, associazione 1:1 tra processi e devices
     //ciclo che scorre tutta la stringa, inserisce su dev_reg.data0 il carattere attuale, chiama la syscall e poi riesegue
     //int iostatus = SYSCALL(DOIO,(int *)dev_reg.command, PRINTCHR, 0);
     //se iostatus != 1 restituire -iostatus
     int i;
     for(i=0; i<len; i++){
-        dev_reg.data0 = virtAddr+i;      //carico il carattere da trasmettere sul campoi data0, data1 non viene usato
-        if((char*)(virtAddr+i) == '\0'){
+        dev_reg->data0 = virtAddr+i;      //carico il carattere da trasmettere sul campoi data0, data1 non viene usato
+        if((char)(virtAddr+i) == '\0'){
             break;
         }
-        SYSCALL(DOIO, (int *)dev_reg.command, PRINTCHR, 0);
-        if(dev_reg.transm_status != READY)
-            return -dev_reg.transm_status;
+        SYSCALL(DOIO, (int)&dev_reg->command, PRINTCHR, 0);
+        if(dev_reg->status != READY)
+            return -dev_reg->status;
     }
     return i;
     //TODO bloccare processo chiamante durante la trasmissione
@@ -88,17 +94,18 @@ inline int write_to_printer(unsigned int virtAddr, int len){       //cresta
 int retValue = SYSCALL (WRITETERMINAL, char *virtAddr, int len, 0);
 WRITETERMINAL=4
 */
-inline int write_to_terminal(unsigned int virtAddr, int len){      //cresta
-    (termreg_t *) dev_reg = DEV_REG_ADDR(IL_TERMINAL,act_proc_sup.sup_asid-1)         //sup_asid è l'id del processo, associazione 1:1 tra processi e devices
+inline int write_to_terminal(unsigned int virtAddr, int len, unsigned int asid){      //cresta
+//TODO 
+    termreg_t * dev_reg = (termreg_t*)DEV_REG_ADDR(IL_TERMINAL,asid-1);         //sup_asid è l'id del processo, associazione 1:1 tra processi e devices
     int i;
     for(i=0; i<len; i++){
-        dev_reg.transm_command = virtAddr+i;      //carico il carattere da trasmettere sul campo data0, data1 non viene usato
-        if((char*)(virtAddr+i) == '\0'){
+        dev_reg->transm_command = virtAddr+i;      //carico il carattere da trasmettere sul campo data0, data1 non viene usato
+        if((char)(virtAddr+i) == '\0'){
             break;
         }
-        SYSCALL(DOIO, (int *)dev_reg.command, TRANSMITCHAR, 0);
-        if(dev_reg.transm_status != 5)       //TODO CERCARE LA COSTANTE AL POSTO DI 5
-            return -dev_reg.transm_status;
+        SYSCALL(DOIO, (int)&dev_reg->transm_command, TRANSMITCHAR, 0);
+        if(dev_reg->transm_status != 5)       //TODO CERCARE LA COSTANTE AL POSTO DI 5
+            return -dev_reg->transm_status;
     }
     return i;
     //TODO bloccare processo chiamante durante la trasmissione
@@ -145,7 +152,7 @@ void support_syscall_handler(void){
 
     support_t* act_proc_sup = (support_t*)SYSCALL(GETSUPPORTPTR,0,0,0);
     if(act_proc_sup == NULL){
-        LOG("Error on get support");
+        //LOG("Error on get support");
         return;     //TODO gestire l'errore meglio
     }
 
@@ -165,10 +172,10 @@ void support_syscall_handler(void){
             break;
         }
         case WRITEPRINTER:{
-            ret=write_to_printer(arg1, arg2);
+            ret=write_to_printer(arg1, arg2, act_proc_sup->sup_asid);
         }
         case WRITETERMINAL:{
-            ret=write_to_terminal(arg1, arg2);
+            ret=write_to_terminal(arg1, arg2, act_proc_sup->sup_asid);
         }
         case READTERMINAL:{
             ret=read_from_terminal(arg1);
