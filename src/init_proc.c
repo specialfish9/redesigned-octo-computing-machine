@@ -40,7 +40,7 @@ inline void instantiator_proc(void) {
     tp_states[i].reg_sp = USERSTACKTOP;
 
     /* Timer enabled, interrupts enabled and usermode */ 
-    tp_states[i].status = STATUS_TE | STATUS_IM_MASK | STATUS_IEp;
+    tp_states[i].status = STATUS_TE | STATUS_IEc | STATUS_IEp | STATUS_KUc;
     tp_states[i].entry_hi = 0 & (i << ENTRYHI_ASID_BIT);
 
     /* support */

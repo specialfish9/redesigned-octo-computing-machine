@@ -100,7 +100,7 @@ void exception_handler(void)
 
   cause = CAUSE_GET_EXCCODE(getCAUSE());
 
-  LOGi("ex", cause);
+  if (cause != 0 && cause != 8) LOGi("ex", cause);
 
   if (act_proc != NULL) {
     state_t *saved_state = (state_t *)BIOSDATAPAGE;
@@ -159,7 +159,7 @@ void exception_handler(void)
       load_proc(act_proc);
     } else if (reenqueue == RENQUEUE) {
       enqueue_proc(act_proc, act_proc->p_prio);
-    }
+    } 
   }
   scheduler_next();
 }

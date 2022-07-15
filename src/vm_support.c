@@ -14,6 +14,8 @@
 #define LOG(s) log("VM", s)
 #define LOGi(s, i) logi("VM", s, i)
 
+#define PAGE_N(pgaddr) (pgaddr - 0x80000) / PAGESIZE
+
 typedef struct {
   int asid;
   int vpn;
@@ -24,6 +26,8 @@ typedef struct {
 int swp_pl_sem = 1; 
 /* TODO static */
 swppl_entry_t swppl_tbl[SWAP_POOL_SIZE];
+/* TODO cancella */
+static int debugV;
 
 /*
  * @var Putatore al frame da scegliere quando si esegue l'algoritmo di 
@@ -47,23 +51,14 @@ inline void init_supp_structures(void) {
 
 inline void tlb_exc_handler(void) 
 {
-  support_t *act_proc_sup; 
-  unsigned int cause;
-  unsigned int missing_pg;
-  state_t *saved_state;
-  dtpreg_t *dev_reg;
-  swppl_entry_t *ch_frame_entry;
-  unsigned int chosen_frame;
-  int dev_stat;
-
-  act_proc_sup = (support_t*) SYSCALL(GETSUPPORTPTR, 0, 0, 0);
+  support_t *act_proc_sup = (support_t*) SYSCALL(GETSUPPORTPTR, 0, 0, 0);
   if (act_proc_sup == NULL) {
     LOG("Error on getsupport");
     return;
     /* TODO handle error */
   }
   
-  cause = CAUSE_GET_EXCCODE(act_proc_sup->sup_exceptState[0].cause); 
+  unsigned int cause = CAUSE_GET_EXCCODE(act_proc_sup->sup_exceptState[PGFAULTEXCEPT].cause); 
   LOGi("tlbeh", cause);
 
   if (cause == EXC_MOD) {
@@ -75,12 +70,10 @@ inline void tlb_exc_handler(void)
     SYSCALL(PASSEREN, (unsigned int) &swp_pl_sem, 0, 0);
 
     /* Recupero lo stato salvato dell'eccezione */
-    saved_state = (state_t *)BIOSDATAPAGE;
+    state_t *saved_state = (state_t *)BIOSDATAPAGE;
 
-    missing_pg = saved_state->entry_hi >> VPNSHIFT;
-    LOGi("Missing pg:", missing_pg);
-    
-    ch_frame_entry = &swppl_tbl[(chosen_frame = chose_frame())];
+    unsigned int chosen_frame = chose_frame();
+    swppl_entry_t *ch_frame_entry = &swppl_tbl[chosen_frame];
 
     LOGi("Chosen frame", chosen_frame);
 
@@ -89,6 +82,7 @@ inline void tlb_exc_handler(void)
       LOG("occupato");
       /* Recupero la tabella delle pagine del processo */
       pteEntry_t *proc_pgtbl_entry = ch_frame_entry->pg_tbl_entry;
+
       /* Marco la pagina come invalida */
       proc_pgtbl_entry->pte_entryLO &= 0 << ENTRYLO_VALID_BIT; 
 
@@ -101,13 +95,14 @@ inline void tlb_exc_handler(void)
        * di codice scritta in questo progetto. */
 
       /* Prendo i registri del device */
-      dev_reg = (dtpreg_t*) DEV_REG_ADDR(3, act_proc_sup->sup_asid);
+      dtpreg_t *dev_reg = (dtpreg_t*) DEV_REG_ADDR(FLASHINT, act_proc_sup->sup_asid);
 
       /* Metto in data0 il pfn che voglio scrivere */
       dev_reg->data0 = ENTRYLO_GET_PFN(proc_pgtbl_entry->pte_entryLO);
 
       /* Scrivo su command il comando per scrivere (lol)*/
-      if ((dev_stat = SYSCALL(DOIO, (int) DEV_REG_ADDR(FLASHINT, act_proc_sup->sup_asid), FLASHWRITE, 0)) != 1) {
+      unsigned int dev_stat;
+      if ((dev_stat = SYSCALL(DOIO, (unsigned int) &dev_reg->command, FLASHWRITE, 0)) != READY) {
         LOGi("error writing frame to dev", dev_stat);
         /* TODO trap */
         return;
@@ -115,18 +110,28 @@ inline void tlb_exc_handler(void)
     }    
     LOG("Libero");
 
-    /* Prendo il device register */
-    dev_reg = (dtpreg_t*) DEV_REG_ADDR(3, act_proc_sup->sup_asid);
+    unsigned int missing_pg = saved_state->entry_hi >> VPNSHIFT;
+    LOGi("Missing pg:", missing_pg);
 
+
+    /* Prendo il device register del dispositivo flash associato al processo */
+    dtpreg_t *dev_reg = (dtpreg_t*) DEV_REG_ADDR(FLASHINT, act_proc_sup->sup_asid);
+
+    /* Scrivi il contenuto di data0 sul frame della swap pool scelto */
+    dev_reg->data0 = (unsigned int) SWAP_POOL_BEGIN + (chosen_frame * PAGESIZE);
+
+    /* Imposto il command */
+    unsigned int cmdval = (PAGE_N(missing_pg) << 8) | FLASHREAD;
+    
     /* Uso la NSYS5 per dire al controller del device di leggere */
-    if ((dev_stat = SYSCALL(DOIO, (int) DEV_REG_ADDR(FLASHINT, act_proc_sup->sup_asid), FLASHREAD, 0)) != 1) {
+    unsigned int dev_stat;
+    if ((dev_stat = SYSCALL(DOIO, (unsigned int) &dev_reg->command, cmdval, 0)) != READY) {
       LOGi("error reading frame content from dev", dev_stat);
       /* TODO trap */
       return;
     } 
 
-    /* Scrivi il contenuto di data0 sul frame della swap pool scelto */
-    memcpy((memaddr*) SWAP_POOL_BEGIN + (chosen_frame * PAGESIZE), &dev_reg->data0, sizeof(dev_reg->data0));
+    LOG("kishi");
 
     /* Aggiorno la swap pool table con le informaioni nuove */
     /*TODO e' giusto?*/

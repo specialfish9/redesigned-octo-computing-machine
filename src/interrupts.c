@@ -6,6 +6,7 @@
  */
 #include "interrupts.h"
 #include "asl.h"
+#include "listx.h"
 #include "scheduler.h"
 #include "syscalls.h"
 #include "utils.h"
@@ -125,15 +126,30 @@ inline void generic_interrupt_handler(int line, int *semaphores)
   dtpreg_t *reg;
   pcb_t *p;
 
-  bitmap = CDEV_BITMAP_ADDR(line), index = 0;
-  while (bitmap > 1) {
+  /* Prendo la bitmap */
+  bitmap = *((size_tt*) CDEV_BITMAP_ADDR(line));
+
+  /* Scorro la bitmap fino a trovare la posizione dell'uno piu' significativo.
+   * Ad ogni iterazione incremento l'indice avendo cura di riportarlo a zero
+   * ogni 8 incrementi. In questo trovo il numero del device che ha sollevato
+   * l'interrupt e la corrispondente linea. */
+  index = 0;
+  while (bitmap >= 1) {
     ++index;
+    index %= DEVPERINT;
     bitmap >>= 1;
   }
+
+  /* Recupero il device register corrispondente */
   reg = (dtpreg_t *)&((devregarea_t *)RAMBASEADDR)->devreg[line][index].dtp;
+  
+  /* Faccio una V sul semaforo del device */
   p = verhogen(semaphores + index);
+
+  /* Imposto il valore di ritorno della syscall */
   if (p != NULL)
     p->p_s.reg_v0 = reg->status;
-  /* Manda ack */
+
+  /* Mando l'ack al device */
   reg->command = 1;
 }

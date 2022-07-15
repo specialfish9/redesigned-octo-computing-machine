@@ -290,6 +290,7 @@ inline int passup_or_die(size_tt kind)
   if (act_proc->p_supportStruct->sup_exceptContext[kind].stackPtr == 0) {
     PANIC();
   }
+
   LDCXT(act_proc->p_supportStruct->sup_exceptContext[kind].stackPtr,
         act_proc->p_supportStruct->sup_exceptContext[kind].status,
         act_proc->p_supportStruct->sup_exceptContext[kind].pc);
