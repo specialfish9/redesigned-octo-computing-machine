@@ -47,6 +47,7 @@ inline void init_dev_sem(void)
 
 inline enum eh_act handle_interrupts(const int line)
 {
+  LOGi("int", line);
   switch (line) {
   case IL_IPI: {
     break; /* safely ignore */
@@ -74,15 +75,15 @@ inline enum eh_act handle_interrupts(const int line)
     break;
   }
   case IL_FLASH: {
-    generic_interrupt_handler(IL_FLASH - IL_DISK, sem_disk);
+    generic_interrupt_handler(IL_FLASH - IL_DISK, sem_flash);
     break;
   }
   case IL_ETHERNET: {
-    generic_interrupt_handler(IL_ETHERNET - IL_DISK, sem_disk);
+    generic_interrupt_handler(IL_ETHERNET - IL_DISK, sem_net);
     break;
   }
   case IL_PRINTER: {
-    generic_interrupt_handler(IL_PRINTER - IL_DISK, sem_disk);
+    generic_interrupt_handler(IL_PRINTER - IL_DISK, sem_printer);
     break;
   }
   case IL_TERMINAL: {
