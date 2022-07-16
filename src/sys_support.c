@@ -21,21 +21,9 @@ unsigned int retValue = SYSCALL (GETTOD, 0, 0, 0);
 GETTOD=1
 */
 inline unsigned int get_TOD(void){
-    //l'handler dovrà prendere il valore restituito da questa funzione e piazzarlo nel registro v0 di U-proc
     unsigned int ret;
     STCK(ret);
     return ret;
-
-    /*
-    Access to the TOD clock value can be accomplished either of the following
-    ways:
-        • Direct access to the Bus Register memory location: 0x1000.001C
-        • Appendix C contains a listing of the µMPS3 System-wide constants file
-        contst.h. Included in this file is a pre-defined macro STCK(T) which takes
-        an unsigned integer as its input parameter and populates it with the value of
-        the low-order word of the TOD clock divided by the Time Scale. [Section
-        4.1.1]
-    */
 }
 
 /*
@@ -43,7 +31,6 @@ SYSCALL (TERMINATE, 0, 0, 0);
 TERMINATE=2
 */
 inline void terminate(void){
-    //spara al processo utente che l'ha chiamato
     SYSCALL(TERMPROCESS, act_proc->p_pid, 0, 0);
 }
 
@@ -51,18 +38,17 @@ inline void terminate(void){
 int retValue = SYSCALL (WRITEPRINTER, char *virtAddr, int len, 0);
 WRITEPRINTER=3
 */
-inline int write_to_printer(unsigned int virtAddr, int len, unsigned int asid){       //cresta
+inline int write_to_printer(unsigned int virtAddr, int len, unsigned int asid){
+    if(len > 128 || len < 0 || virtAddr < KUSEG){
+        return SYSCALL(TERMINATE,0,0,0);
+    }
     
-    //ogni device di tipo printer ha un campo status (qua devo farlo funzionare solo se lo status è 1, altrimenti restituisco -status)
-    //operazione di stampa avviata caricando il campo command
-    dtpreg_t * dev_reg = (dtpreg_t*)DEV_REG_ADDR(IL_PRINTER,asid-1);         //sup_asid è l'id del processo, associazione 1:1 tra processi e devices
+    dtpreg_t * dev_reg = (dtpreg_t*)DEV_REG_ADDR(IL_PRINTER,asid-1);         //asid è l'id del processo, associazione 1:1 tra processi e devices
     //ciclo che scorre tutta la stringa, inserisce su dev_reg.data0 il carattere attuale, chiama la syscall e poi riesegue
-    //int iostatus = SYSCALL(DOIO,(int *)dev_reg.command, PRINTCHR, 0);
-    //se iostatus != 1 restituire -iostatus
     int i;
     for(i=0; i<len; i++){
-        dev_reg->data0 = virtAddr+i;      //carico il carattere da trasmettere sul campoi data0, data1 non viene usato
-        if(*((char*)(virtAddr+i)) == '\0'){
+        dev_reg->data0 = virtAddr+i;      //carico il carattere da trasmettere sul campo data0, data1 non viene usato
+        if(*((char*)(virtAddr+i)) == '\0'){     //fine stringa
             break;
         }
         SYSCALL(DOIO, (int)&dev_reg->command, PRINTCHR, 0);
@@ -85,8 +71,12 @@ inline int write_to_printer(unsigned int virtAddr, int len, unsigned int asid){ 
 int retValue = SYSCALL (WRITETERMINAL, char *virtAddr, int len, 0);
 WRITETERMINAL=4
 */
-inline int write_to_terminal(unsigned int virtAddr, int len, unsigned int asid){      //cresta
-    termreg_t * dev_reg = (termreg_t*)DEV_REG_ADDR(IL_TERMINAL,asid-1);         //sup_asid è l'id del processo, associazione 1:1 tra processi e devices
+inline int write_to_terminal(unsigned int virtAddr, int len, unsigned int asid){
+    if(len > 128 || len < 0 || virtAddr < KUSEG){
+        return SYSCALL(TERMINATE,0,0,0);
+    }
+
+    termreg_t * dev_reg = (termreg_t*)DEV_REG_ADDR(IL_TERMINAL,asid-1);         //asid è l'id del processo, associazione 1:1 tra processi e devices
     int i;
     for(i=0; i<len; i++){
         dev_reg->transm_command = virtAddr+i;      //carico il carattere da trasmettere sul campo data0, data1 non viene usato
