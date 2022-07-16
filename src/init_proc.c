@@ -4,6 +4,7 @@
 #include "pandos_types.h"
 #include "syscalls.h"
 #include "utils.h"
+#include "sys_support.h"
 #include "vm_support.h"
 #include <umps3/umps/cp0.h>
 #include <umps3/umps/libumps.h>
@@ -12,8 +13,7 @@
 
 extern void tlb_exc_handler(void);
 
-// TODO tmp gabrieele e yonas
-static void exc_handler(void);
+extern void support_exec_handler(void);
 
 static int semaforo_a_cazzo = 0;
 
@@ -47,7 +47,7 @@ inline void instantiator_proc(void)
 
     context_t context[2];
     context[0].pc = (memaddr)tlb_exc_handler;
-    context[1].pc = (memaddr)exc_handler;
+    context[1].pc = (memaddr)support_exec_handler;
     /* Timer enabled, interupts on and kernel mode */
     context[0].status = STATUS_TE | STATUS_IM_MASK | STATUS_KUc | STATUS_IEp;
     context[1].status = STATUS_TE | STATUS_IM_MASK | STATUS_KUc | STATUS_IEp;
@@ -84,10 +84,4 @@ inline void init_page_table(pteEntry_t *tbl, const int asid)
     tbl[i].pte_entryHI |= (asid << ASIDSHIFT);
     tbl[i].pte_entryLO = ENTRYLO_DIRTY | ENTRYLO_GLOBAL;
   }
-}
-
-void exc_handler(void)
-{
-  log("idk", "YYYe");
-  PANIC();
 }

@@ -24,6 +24,8 @@ typedef struct {
   pteEntry_t *pg_tbl_entry;
 } swppl_entry_t;
 
+int swp_pl_sem;
+
 static swppl_entry_t swppl_tbl[SWAP_POOL_SIZE];
 
 /*
@@ -41,6 +43,9 @@ static int update_tlb(unsigned int entryHi, unsigned int entryLo);
 inline void init_supp_structures(void)
 {
   size_tt i;
+
+  /* Inizializza il semaforo di mutua esclusione della swap pool a 1 */
+  swp_pl_sem = 1;
 
   /* Imposta tutti i frame della swap pool come 'liberi' */
   for (i = 0; i < SWAP_POOL_SIZE; i++)

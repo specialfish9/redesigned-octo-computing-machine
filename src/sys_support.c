@@ -14,8 +14,14 @@
 #include "vm_support.h"
 
 
+/* TODO Trovare altrernativa */
 #define PRINTCHR 2
-void support_syscall_handler(support_t* act_proc_sup);
+
+#define LOG(s) log("SS", s)
+#define LOGi(s, i) logi("SS", s, i)
+
+static void support_syscall_handler(support_t* act_proc_sup);
+
 /*
 unsigned int retValue = SYSCALL (GETTOD, 0, 0, 0);
 GETTOD=1
@@ -127,24 +133,14 @@ inline int read_from_terminal(unsigned int virtAddr, unsigned int asid){      //
       return i;
 }
 
-
-
-
-
-
-
-
-void support_handler(void){
+void support_exec_handler(void){
     support_t* act_proc_sup = (support_t*)SYSCALL(GETSUPPORTPTR,0,0,0);
     unsigned int cause = CAUSE_GET_EXCCODE(act_proc_sup->sup_exceptState[GENERALEXCEPT].cause);
     if(cause == EXC_SYS){
         support_syscall_handler(act_proc_sup);
-    }else{      //TODO verificare che questo sia sempre una trap
+    }else {      
         support_trap_handler(act_proc_sup);
     }
-
-
-
 
 
     //se exc è syscall > 0
@@ -156,7 +152,7 @@ void support_handler(void){
 
 
 void support_syscall_handler(support_t* act_proc_sup){
-    unsigned int arg1, arg2, arg3;
+    unsigned int arg1, arg2, arg3; /* FIXEM sicuri che arg3 non venga mai usato ????*/
 
     if(act_proc_sup == NULL){           //TODO forse questo controllo va tolto / va messo nel support_handler() perchè viene già fatto a priori dalla passup or die quindi è ridondante
         //LOG("Error on get support");
@@ -192,7 +188,8 @@ void support_syscall_handler(support_t* act_proc_sup){
             break;
         }
         default:{
-            //PANIC o qualcosa del genere
+          LOGi("Unknow syscall ", number);
+          PANIC();
         }
     }
 

@@ -101,7 +101,6 @@ void exception_handler(void)
 
   cause = CAUSE_GET_EXCCODE(getCAUSE());
 
-  if (cause != 0 && cause != 8)
     LOGi("ex", cause);
 
   if (act_proc != NULL) {
