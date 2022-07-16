@@ -12,11 +12,10 @@
 #include <umps3/umps/const.h>
 #include <umps3/umps/libumps.h>
 #include <umps3/umps/cp0.h>
-
 #include "pandos_const.h"
 
 #define PRINTCHR 2
-
+void support_syscall_handler(support_t* act_proc_sup);
 /*
 unsigned int retValue = SYSCALL (GETTOD, 0, 0, 0);
 GETTOD=1
@@ -44,13 +43,8 @@ SYSCALL (TERMINATE, 0, 0, 0);
 TERMINATE=2
 */
 inline void terminate(void){
-/*
- TODO   usare la funzione di terminate della fase 2 al posto di kill_parent_and_progeny
-*/
-
     //spara al processo utente che l'ha chiamato
     SYSCALL(TERMPROCESS, act_proc->p_pid, 0, 0);
-    //return is_alive(act_proc) ? RENQUEUE : NOTHING;
 }
 
 /*
@@ -69,7 +63,7 @@ inline int write_to_printer(unsigned int virtAddr, int len, unsigned int asid){ 
     int i;
     for(i=0; i<len; i++){
         dev_reg->data0 = virtAddr+i;      //carico il carattere da trasmettere sul campoi data0, data1 non viene usato
-        if((char)(virtAddr+i) == '\0'){
+        if((char*)(virtAddr+i) == '\0'){
             break;
         }
         SYSCALL(DOIO, (int)&dev_reg->command, PRINTCHR, 0);
@@ -93,16 +87,15 @@ int retValue = SYSCALL (WRITETERMINAL, char *virtAddr, int len, 0);
 WRITETERMINAL=4
 */
 inline int write_to_terminal(unsigned int virtAddr, int len, unsigned int asid){      //cresta
-//TODO 
     termreg_t * dev_reg = (termreg_t*)DEV_REG_ADDR(IL_TERMINAL,asid-1);         //sup_asid è l'id del processo, associazione 1:1 tra processi e devices
     int i;
     for(i=0; i<len; i++){
         dev_reg->transm_command = virtAddr+i;      //carico il carattere da trasmettere sul campo data0, data1 non viene usato
-        if((char)(virtAddr+i) == '\0'){
+        if((char*)(virtAddr+i) == '\0'){
             break;
         }
         SYSCALL(DOIO, (int)&dev_reg->transm_command, TRANSMITCHAR, 0);
-        if(dev_reg->transm_status != 5)       //TODO CERCARE LA COSTANTE AL POSTO DI 5
+        if(dev_reg->transm_status != OKCHARTRANS)
             return -dev_reg->transm_status;
     }
     return i;
@@ -137,30 +130,41 @@ inline int read_from_terminal(unsigned int virtAddr){      //yonas
 
 
 void support_handler(void){
+    support_t* act_proc_sup = (support_t*)SYSCALL(GETSUPPORTPTR,0,0,0);
+    unsigned int cause = CAUSE_GET_EXCCODE(act_proc_sup->sup_exceptState[GENERALEXCEPT].cause);
+    if(cause == EXC_SYS){
+        support_syscall_handler(act_proc_sup);
+    }else{      //TODO verificare che questo sia sempre una trap
+        support_trap_handler();
+    }
+
+
+
+
+
     //se exc è syscall > 0
-        //support_syscall_handler() / se è = 0 ci entra lo stesso probabilmente e va nel caso default
+        //support_syscall_handler(act_proc_sup) / se è = 0 ci entra lo stesso probabilmente e va nel caso default
     //altrimenti se exc è trap
         //support_trap_handler()
 }
 
 
 
-void support_syscall_handler(void){
+void support_syscall_handler(support_t* act_proc_sup){
     unsigned int arg1, arg2, arg3;
 
-    support_t* act_proc_sup = (support_t*)SYSCALL(GETSUPPORTPTR,0,0,0);
-    if(act_proc_sup == NULL){
+    if(act_proc_sup == NULL){           //TODO forse questo controllo va tolto / va messo nel support_handler() perchè viene già fatto a priori dalla passup or die quindi è ridondante
         //LOG("Error on get support");
         return;     //TODO gestire l'errore meglio
     }
 
-    int number = CAUSE_GET_EXCODE(act_proc_sup->sup_exceptState[1].cause);      //TODO forse va 0 al posto di 1
+    int number = CAUSE_GET_EXCCODE(act_proc_sup->sup_exceptState[1].cause);      //TODO forse va 0 al posto di 1
     arg1 = act_proc_sup->sup_exceptState[1].reg_a1;
     arg2 = act_proc_sup->sup_exceptState[1].reg_a2;
     arg3 = act_proc_sup->sup_exceptState[1].reg_a3;
 
 
-    int ret=0;
+    int ret=-2147483648;          //uso MININT per evitare conflitti con i valori di ritorno che possono essere numeri negativi, 0 e positivi
     switch(number){
         case GETTOD:{
             ret=get_TOD();
@@ -183,18 +187,23 @@ void support_syscall_handler(void){
         }
     }
 
-    if(ret != 0)
-        act_proc->p_s.reg_v0 = ret;
-    /*
-    TODO:
-        -after successful completion of syscall place any return status in v0 of U-proc and return control to calling process
-        -increment PC by 4
-    */
+    //dopo il completamento con successo della syscall inserisco il valore di ritorno nel registro v0 del processo chiamante
+    if(ret != -2147483648)        //uso MININT per evitare conflitti con i valori di ritorno che possono essere numeri negativi, 0 e positivi
+        act_proc_sup->sup_exceptState[1].reg_v0 = ret;
 
+    act_proc_sup->sup_exceptState[1].pc_epc = act_proc_sup->sup_exceptState[1].reg_t9 = act_proc_sup->sup_exceptState[1].pc_epc + WORDLEN;      //incremento PC di 4
+    
+
+    //TODO after successful completion of syscall place any return status in v0 (fatto) of U-proc and return control to calling process
+    enqueue_proc(act_proc, act_proc->p_prio);
+    scheduler_next();
 }
 
-void support_trap_handler(void){
+void support_trap_handler(support_t* act_proc_sup){
+
+    if(act_proc_sup.)
     //se il processo tiene mutua esclusione su un semaforo mutex del livello supporto (es. swap pool sem)
         //rilascia la risorsa (NSYS4 / verhogen?)
     //ammazza il processo (SYS2)
+    terminate();
 }
