@@ -63,7 +63,7 @@ inline int write_to_printer(unsigned int virtAddr, int len, unsigned int asid){ 
     int i;
     for(i=0; i<len; i++){
         dev_reg->data0 = virtAddr+i;      //carico il carattere da trasmettere sul campoi data0, data1 non viene usato
-        if((char*)(virtAddr+i) == '\0'){
+        if(*((char*)(virtAddr+i)) == '\0'){
             break;
         }
         SYSCALL(DOIO, (int)&dev_reg->command, PRINTCHR, 0);
@@ -91,7 +91,7 @@ inline int write_to_terminal(unsigned int virtAddr, int len, unsigned int asid){
     int i;
     for(i=0; i<len; i++){
         dev_reg->transm_command = virtAddr+i;      //carico il carattere da trasmettere sul campo data0, data1 non viene usato
-        if((char*)(virtAddr+i) == '\0'){
+        if(*((char*)(virtAddr+i)) == '\0'){
             break;
         }
         SYSCALL(DOIO, (int)&dev_reg->transm_command, TRANSMITCHAR, 0);

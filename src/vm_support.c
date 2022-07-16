@@ -23,7 +23,6 @@ typedef struct {
   pteEntry_t *pg_tbl_entry;
 } swppl_entry_t;
 
-extern static int swp_pl_sem = 1;
 static swppl_entry_t swppl_tbl[SWAP_POOL_SIZE];
 
 /*
