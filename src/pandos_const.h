@@ -111,6 +111,7 @@
 #define OKCHARTRANS 5
 #define TRANSMITCHAR 2
 
+
 #define SEEKTOCYL 2
 #define DISKREAD 3
 #define DISKWRITE 4
