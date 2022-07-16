@@ -14,9 +14,6 @@
 #include "vm_support.h"
 
 
-/* TODO Trovare altrernativa */
-#define PRINTCHR 2
-
 #define LOG(s) log("SS", s)
 #define LOGi(s, i) logi("SS", s, i)
 
@@ -57,12 +54,11 @@ inline int write_to_printer(unsigned int virtAddr, int len, unsigned int asid){
         if(*((char*)(virtAddr+i)) == '\0'){     //fine stringa
             break;
         }
-        SYSCALL(DOIO, (int)&dev_reg->command, PRINTCHR, 0);
+        SYSCALL(DOIO, (int)&dev_reg->command, TRANSMITCHAR, 0);
         if(dev_reg->status != READY)
             return -dev_reg->status;
     }
     return i;
-    //TODO bloccare processo chiamante durante la trasmissione
 
 
     //sospende il processo chiamante fino alla fine della trasmissione al printer associato al processo
@@ -94,7 +90,6 @@ inline int write_to_terminal(unsigned int virtAddr, int len, unsigned int asid){
             return -dev_reg->transm_status;
     }
     return i;
-    //TODO bloccare processo chiamante durante la trasmissione
 
     //sospende il processo chiamante fino alla fine della trasmissione al terminale associato al processo
     //PARAMETRI: indirizzo virtuale del primo carattere della stringa da trasmettere + lunghezza della stringa
@@ -135,6 +130,10 @@ inline int read_from_terminal(unsigned int virtAddr, unsigned int asid){      //
 
 void support_exec_handler(void){
     support_t* act_proc_sup = (support_t*)SYSCALL(GETSUPPORTPTR,0,0,0);
+    if(act_proc_sup == NULL){
+        //LOG("Error on get support");
+        return;     //TODO gestire l'errore meglio
+    }
     unsigned int cause = CAUSE_GET_EXCCODE(act_proc_sup->sup_exceptState[GENERALEXCEPT].cause);
     if(cause == EXC_SYS){
         support_syscall_handler(act_proc_sup);
@@ -152,17 +151,11 @@ void support_exec_handler(void){
 
 
 void support_syscall_handler(support_t* act_proc_sup){
-    unsigned int arg1, arg2, arg3; /* FIXEM sicuri che arg3 non venga mai usato ????*/
-
-    if(act_proc_sup == NULL){           //TODO forse questo controllo va tolto / va messo nel support_handler() perchè viene già fatto a priori dalla passup or die quindi è ridondante
-        //LOG("Error on get support");
-        return;     //TODO gestire l'errore meglio
-    }
+    unsigned int arg1, arg2; 
 
     int number = CAUSE_GET_EXCCODE(act_proc_sup->sup_exceptState[GENERALEXCEPT].cause);      
     arg1 = act_proc_sup->sup_exceptState[1].reg_a1;
     arg2 = act_proc_sup->sup_exceptState[1].reg_a2;
-    arg3 = act_proc_sup->sup_exceptState[1].reg_a3;
 
 
     int ret=-2147483648;          //uso MININT per evitare conflitti con i valori di ritorno che possono essere numeri negativi, 0 e positivi
@@ -209,11 +202,11 @@ void support_trap_handler(support_t* act_proc_sup){
     //TODO STA ROBA E' DA CONTROLLARE MOLTO ATTENTAMENTE
     pcb_t *tmp =remove_blocked(&swp_pl_sem);
 
-    if(tmp.p_pid != act_proc.p_pid)
+    if(tmp->p_pid != act_proc->p_pid)
         insert_blocked(&swp_pl_sem, tmp);
 
     //se il processo tiene mutua esclusione su un semaforo mutex del livello supporto (es. swap pool sem)
         //rilascia la risorsa (NSYS4 / verhogen?)
     //ammazza il processo (SYS2)
-    terminate();
+    SYSCALL(TERMINATE,0,0,0);
 }
