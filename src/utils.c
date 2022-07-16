@@ -47,6 +47,15 @@ inline void logi(char *tag, char *mex, int val)
   kprint("\n");
 }
 
+inline void logh(char *tag, char *mex, unsigned int value)
+{
+  kprint(tag);
+  kprint(">");
+  kprint(mex);
+  kprint_hex(value);
+  kprint("\n");
+}
+
 void dbg_var(const char *name, const int var)
 {
   char var_str[100], res[2048];

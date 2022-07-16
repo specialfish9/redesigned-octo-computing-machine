@@ -53,4 +53,13 @@ extern void log(char *tag, char *mex);
  * */
 extern void logi(char *tag, char *mex, int value);
 
+/**
+ * @brief Funzione per loggare un messaggio sul buffer di klog seguito da un
+ * valore esadecimale.
+ * @param tag Log tag.
+ * @param mex Il messaggio.
+ * @param value Il valore esadecimale.
+ * */
+extern void logh(char *tag, char *mex, unsigned int value);
+
 #endif
