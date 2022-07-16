@@ -284,7 +284,6 @@ inline int passup_or_die(size_tt kind)
   /* Pass up */
   memcpy(act_proc->p_supportStruct->sup_exceptState + kind,
          (state_t *)BIOSDATAPAGE, sizeof(state_t));
-  LOGi("Passup", kind);
 
   /* Just to be safe */
   if (act_proc->p_supportStruct->sup_exceptContext[kind].stackPtr == 0) {

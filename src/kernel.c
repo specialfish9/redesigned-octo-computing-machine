@@ -11,6 +11,7 @@
 #include "asl.h"
 #include "init_proc.h"
 #include "interrupts.h"
+#include "pandos_const.h"
 #include "pandos_types.h"
 #include "pcb.h"
 #include "scheduler.h"
@@ -165,23 +166,21 @@ void exception_handler(void)
   scheduler_next();
 }
 
-static unsigned int debugK;
-
 /* TLB-Refill Handler */
 inline void uTLB_RefillHandler(void)
 {
   state_t *exc_state;
   unsigned int pg_n;
+  unsigned int missing_page;
   pteEntry_t missing_entry;
 
   /* 1) Trova l'entry corretta nella page table del processo */
   exc_state = (state_t *)BIOSDATAPAGE;
-  pg_n = ENTRYHI_GET_VPN(exc_state->entry_hi);
-  LOGi("TLBREFILL", pg_n);
+  missing_page = exc_state->entry_hi >> VPNSHIFT;
+  pg_n = PAGE_N(missing_page);
+  LOGi("TLBREFILL", missing_page);
 
   missing_entry = act_proc->p_supportStruct->sup_privatePgTbl[pg_n];
-
-  debugK = missing_entry.pte_entryHI;
 
   /* 2) Scrivi l'entry nel TLB */
   setENTRYHI(missing_entry.pte_entryHI);

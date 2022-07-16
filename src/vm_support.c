@@ -12,8 +12,7 @@
 #define SWAP_POOL_SIZE 2 * UPROCMAX
 #define SWAP_POOL_BEGIN 0x20020000
 
-#define CALC_NEW_PFN(entryLO, pfn) (pfn << ENTRYLO_PFN_BIT) | (entryLO & 2047)
-#define PAGE_N(pgaddr) (pgaddr - 0x80000) / PAGESIZE
+#define CALC_NEW_PFN(entryLO, pfn) (pfn ) | (entryLO & 2047)
 
 #define LOG(s) log("VM", s)
 #define LOGi(s, i) logi("VM", s, i)
@@ -37,6 +36,8 @@ static int chose_frame(void);
 
 static void toggle_int(int on);
 
+static int update_tlb(unsigned int entryHi, unsigned int entryLo);
+
 inline void init_supp_structures(void)
 {
   size_tt i;
@@ -48,6 +49,12 @@ inline void init_supp_structures(void)
   /* TODO init shared device sems */
 }
 
+// TODO 
+static unsigned int debugV;
+static unsigned int debugV2;
+static unsigned int debugV3;
+static unsigned int debugV4;
+
 inline void tlb_exc_handler(void)
 {
   support_t *act_proc_sup = (support_t *)SYSCALL(GETSUPPORTPTR, 0, 0, 0);
@@ -57,9 +64,7 @@ inline void tlb_exc_handler(void)
     /* TODO handle error */
   }
 
-  unsigned int cause =
-      CAUSE_GET_EXCCODE(act_proc_sup->sup_exceptState[PGFAULTEXCEPT].cause);
-  LOGi("tlbeh", cause);
+  unsigned int cause = CAUSE_GET_EXCCODE(act_proc_sup->sup_exceptState[PGFAULTEXCEPT].cause);
 
   if (cause == EXC_MOD) {
     LOG("EXECMOD");
@@ -69,6 +74,11 @@ inline void tlb_exc_handler(void)
 
     /* P sul semaforo della swap pool */
     SYSCALL(PASSEREN, (unsigned int)&swp_pl_sem, 0, 0);
+
+    size_tt missing_pg = act_proc_sup->sup_exceptState[PGFAULTEXCEPT].entry_hi >> VPNSHIFT;
+    size_tt mpg_no = PAGE_N(missing_pg);
+    LOGi("Missing pgno", mpg_no);
+    LOGi("Missing pg", missing_pg);
 
     unsigned int chosen_frame = chose_frame();
     swppl_entry_t *ch_frame_entry = &swppl_tbl[chosen_frame];
@@ -88,8 +98,7 @@ inline void tlb_exc_handler(void)
       proc_pgtbl_entry->pte_entryLO &= 0 << ENTRYLO_VALID_BIT;
 
       /* Aggiorno il TLB */
-      /* TODO il manuale consiglia di iniziare facendo clear completo */
-      TLBCLR();
+      update_tlb(proc_pgtbl_entry->pte_entryHI, proc_pgtbl_entry->pte_entryLO);
 
       /* Riabilito gli interrupt */
       toggle_int(1);
@@ -117,15 +126,13 @@ inline void tlb_exc_handler(void)
       }
     }
 
-    size_tt missing_pg = act_proc_sup->sup_exceptState[PGFAULTEXCEPT].entry_hi >> VPNSHIFT;
-    size_tt mpg_no = PAGE_N(missing_pg);
-
     /* Prendo il device register del dispositivo flash associato al processo */
     dtpreg_t *dev_reg =
         (dtpreg_t *)DEV_REG_ADDR(FLASHINT, act_proc_sup->sup_asid);
 
     /* Scrivi il contenuto di data0 sul frame della swap pool scelto */
-    dev_reg->data0 = (unsigned int)SWAP_POOL_BEGIN + (chosen_frame * PAGESIZE);
+    unsigned int sp_addr =  (unsigned int)SWAP_POOL_BEGIN + (chosen_frame * PAGESIZE);
+    dev_reg->data0 = sp_addr;
 
     /* Imposto il command */
     unsigned int cmdval = (mpg_no << 8) | FLASHREAD;
@@ -152,12 +159,11 @@ inline void tlb_exc_handler(void)
     act_proc_sup->sup_privatePgTbl[mpg_no].pte_entryLO |= ENTRYLO_VALID;
 
     /* e mettendo il nuovo pfn */
-    /* TODO pray and spray */
-    act_proc_sup->sup_privatePgTbl[mpg_no].pte_entryLO = CALC_NEW_PFN(
-        act_proc_sup->sup_privatePgTbl[mpg_no].pte_entryLO, chosen_frame);
+    act_proc_sup->sup_privatePgTbl[mpg_no].pte_entryLO = CALC_NEW_PFN(act_proc_sup->sup_privatePgTbl[mpg_no].pte_entryLO, sp_addr);
 
-    /* TODO update the TLB*/
-    TLBCLR();
+    /* Aggiorno il TLB */
+    update_tlb(act_proc_sup->sup_privatePgTbl[mpg_no].pte_entryHI, act_proc_sup->sup_privatePgTbl[mpg_no].pte_entryLO);
+
     /* riabilito gli interrupt */
     toggle_int(1);
 
@@ -170,7 +176,29 @@ inline void tlb_exc_handler(void)
   }
 }
 
-inline int chose_frame(void) { return frm_ch_ptr++ % SWAP_POOL_SIZE; }
+inline int update_tlb(unsigned int entryHi, unsigned int entryLo)
+{
+  #define P_BIT         0x40000000
+  unsigned int index;
+
+  setENTRYHI(entryHi);
+  TLBP();
+  index = getINDEX();
+
+  if (index & P_BIT) {
+    LOG("TLB probe failed");
+    return 0;
+  }
+  setENTRYLO(entryLo);
+  TLBWI();
+  LOG("TLB updated");
+  return 1;
+}
+
+inline int chose_frame(void) { 
+  frm_ch_ptr %= SWAP_POOL_SIZE;
+  return frm_ch_ptr++;
+}
 
 inline void toggle_int(int on) {
   if (on) {

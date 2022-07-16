@@ -167,4 +167,6 @@
 
 #define IS_TERM_WRITING(cmd) ((int *)cmd - DEVICE_FROM_COMDADDR(cmd)) == 3
 
+#define PAGE_N(pgaddr) (pgaddr - 0x80000) / PAGESIZE
+
 #endif
