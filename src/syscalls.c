@@ -77,14 +77,6 @@ static enum eh_act get_process_pid(const int arg1);
  * */
 static enum eh_act yield(void);
 
-/**
- * @brief Uccide il processo padre e i processi figli del processo passato
- * come puntatore.
- * @param p Il processo di riferimento.
- * @return L'azione che l'excepton handler deve fare una volta gestita la
- * syscall.
- * */
-static void kill_parent_and_progeny(pcb_t *p);
 
 inline enum eh_act handle_syscall(void)
 {
@@ -259,7 +251,7 @@ inline pcb_t *verhogen(int *semaddr)
   }
 }
 
-static void kill_parent_and_progeny(pcb_t *p)
+inline void kill_parent_and_progeny(pcb_t *p)
 {
   pcb_t *c;
   while ((c = remove_child(p)) != NULL)
