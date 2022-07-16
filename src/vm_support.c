@@ -5,6 +5,7 @@
 #include "syscalls.h"
 #include "umps3/umps/cp0.h"
 #include "utils.h"
+#include "scheduler.h"
 #include <umps3/umps/arch.h>
 #include <umps3/umps/const.h>
 #include <umps3/umps/libumps.h>
@@ -44,8 +45,6 @@ inline void init_supp_structures(void)
   /* Imposta tutti i frame della swap pool come 'liberi' */
   for (i = 0; i < SWAP_POOL_SIZE; i++)
     swppl_tbl[i].asid = -1;
-
-  /* TODO init shared device sems */
 }
 
 // TODO 
@@ -60,7 +59,6 @@ inline void tlb_exc_handler(void)
   if (act_proc_sup == NULL) {
     LOG("Error on getsupport");
     return;
-    /* TODO handle error */
   }
 
   unsigned int cause = CAUSE_GET_EXCCODE(act_proc_sup->sup_exceptState[PGFAULTEXCEPT].cause);
@@ -115,7 +113,6 @@ inline void tlb_exc_handler(void)
       if ((dev_stat = SYSCALL(DOIO, (unsigned int)&dev_reg->command, FLASHWRITE,
                               0)) != READY) {
         LOGi("error writing frame to dev", dev_stat);
-        /* TODO trap */
         return;
       }
     }
@@ -136,7 +133,6 @@ inline void tlb_exc_handler(void)
     if ((dev_stat = SYSCALL(DOIO, (unsigned int)&dev_reg->command, cmdval,
                             0)) != READY) {
       LOGi("error reading frame content from dev", dev_stat);
-      /* TODO trap */
       return;
     }
 

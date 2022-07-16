@@ -1,7 +1,5 @@
 
 #include "sys_support.h"
-#include "kernel.h"
-#include "pcb.h"
 #include "syscalls.h"
 #include "asl.h"
 #include "interrupts.h"
@@ -124,20 +122,18 @@ inline int read_from_terminal(unsigned int virtAddr, unsigned int asid){      //
     unsigned int charnstatus;
     unsigned int status;
     int i=0;
-    if(virtAddr>KUSEG){
-        do{
-            //Il return della SYSCALL ha nel primo byte lo status, e nel secondo il carattere ricevuto
-            charnstatus= SYSCALL(DOIO, (unsigned int)&dev_reg->recv_command,TRANSMITCHAR,0) ;
-            status= charnstatus & (0xFF); //maschero il return value per leggere lo status
-            if(status!=5)
-                return -status;
-            *((char*)virtAddr++) = charnstatus>>8; //shifto di 8 bit per trattenere soltanto il carattere letto
-            i++;
-        }while(charnstatus>>8!='\0'); //Da verificare se vogliamo prendere in input anche \0 oppure solo i caratteri effettivi (per ora per sicurezza lo faccio)
-        return i;
-    }else{
-        SYSCALL(TERMINATE,0,0,0);
-    }
+    if(virtAddr<KUSEG)
+      return SYSCALL(TERMINATE,0,0,0);
+     do{
+          //Il return della SYSCALL ha nel primo byte lo status, e nel secondo il carattere ricevuto
+          charnstatus= SYSCALL(DOIO, (unsigned int)&dev_reg->recv_command,TRANSMITCHAR,0) ;
+          status= charnstatus & (0xFF); //maschero il return value per leggere lo status
+          if(status!=OKCHARTRANS)
+              return -status;
+          *((char*)virtAddr++) = charnstatus>>8; //shifto di 8 bit per trattenere soltanto il carattere letto
+          i++;
+      }while(charnstatus>>8!='\0'); //Da verificare se vogliamo prendere in input anche \0 oppure solo i caratteri effettivi (per ora per sicurezza lo faccio)
+      return i;
 }
 
 
@@ -176,7 +172,7 @@ void support_syscall_handler(support_t* act_proc_sup){
         return;     //TODO gestire l'errore meglio
     }
 
-    int number = CAUSE_GET_EXCCODE(act_proc_sup->sup_exceptState[1].cause);      //TODO forse va 0 al posto di 1
+    int number = CAUSE_GET_EXCCODE(act_proc_sup->sup_exceptState[GENERALEXCEPT].cause);      
     arg1 = act_proc_sup->sup_exceptState[1].reg_a1;
     arg2 = act_proc_sup->sup_exceptState[1].reg_a2;
     arg3 = act_proc_sup->sup_exceptState[1].reg_a3;
@@ -198,7 +194,7 @@ void support_syscall_handler(support_t* act_proc_sup){
             ret=write_to_terminal(arg1, arg2, act_proc_sup->sup_asid);
         }
         case READTERMINAL:{
-            ret=read_from_terminal(arg1);
+            ret=read_from_terminal(arg1, act_proc_sup->sup_asid);
         }
         default:{
             //PANIC o qualcosa del genere
