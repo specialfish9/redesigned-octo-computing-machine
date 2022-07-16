@@ -79,7 +79,7 @@ inline void instantiator_proc(void)
 
     memcpy(tp_supps[i - 1].sup_exceptContext, context, sizeof(context_t));
 
-    SYSCALL(CREATEPROCESS, (unsigned int)&tp_states[i - 1], PROCESS_PRIO_HIGH,
+    SYSCALL(CREATEPROCESS, (unsigned int)&tp_states[i - 1], PROCESS_PRIO_LOW,
             (unsigned int)&tp_supps[i - 1]);
     logi(LOG, "created uproc ", i );
   }

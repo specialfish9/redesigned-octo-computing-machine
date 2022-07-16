@@ -18,9 +18,6 @@
 #define LOG(s) log("E", s)
 #define LOGi(s, i) logi("E", s, i)
 
-/*TODO*/
-int debugS;
-
 /**
  * @var Processo Yielded
  * */

@@ -174,11 +174,6 @@ inline pcb_t *dequeue_proc(const unsigned int priority)
 
 inline void load_proc(pcb_t *pcb)
 {
-  load_with_state(pcb, &pcb->p_s);
-}
-
-inline void load_with_state(pcb_t *pcb, state_t *state)
-{
   if (pcb == NULL) {
     LOG("Attempt to load NULL pcb");
     return;
@@ -190,16 +185,20 @@ inline void load_with_state(pcb_t *pcb, state_t *state)
 
   act_proc = pcb;
 
+  /* Carico il timer */
   setTIMER(TIMESLICE * (*(int *)(TIMESCALEADDR)));
+
+  /* Abilito gli interrupt e il timer */
   act_proc->p_s.status |= STATUS_IEp | STATUS_TE;
-  if (act_proc->p_prio == PROCESS_PRIO_LOW) {
-  } else if (act_proc->p_prio == PROCESS_PRIO_HIGH) {
+
+  /* Se il processo e' ha priorita' alta disabilito il timer */
+  if (act_proc->p_prio == PROCESS_PRIO_HIGH) {
     act_proc->p_s.status ^= STATUS_TE;
   }
+
   /* Aggiorno l'ultimo update dell'age del processo */
   STCK(act_proc->p_tm_updt);
 
   /* Lo carico */
   LDST(&act_proc->p_s);
-
 }
