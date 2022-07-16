@@ -1,5 +1,4 @@
 /**
- *
  * @file syscalls.h
  * @brief Gestore delle syscall.
  *
@@ -68,6 +67,7 @@ extern pcb_t *verhogen(int *semaddr);
  * */
 extern void kill_parent_and_progeny(pcb_t *p);
 
+/**
  * @brief Systemcall GET SUPPORT (NSYS8)
  * @return L'azione che l'excepton handler deve fare una volta gestita la
  * syscall.

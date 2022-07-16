@@ -1,7 +1,5 @@
 
 #include "sys_support.h"
-#include "kernel.h"
-#include "pcb.h"
 #include "syscalls.h"
 #include "asl.h"
 #include "interrupts.h"
@@ -127,6 +125,7 @@ inline int read_from_terminal(unsigned int virtAddr){      //yonas
     //l'handler dovrà prendere il valore restituito da questa funzione e piazzarlo nel registro v0 di U-proc
     //NB: i caratteri ricevuti vanno inseriti nel buffer a partire dall'indirizzo ricevuto come parametro in a1
     //ERRORI: se l'indirizzo è fuori dallo spazio logico degli indirizzi del processo: ammazza il processo (SYS2)
+  return 0;
 }
 
 
@@ -154,7 +153,7 @@ void support_syscall_handler(void){
         return;     //TODO gestire l'errore meglio
     }
 
-    int number = CAUSE_GET_EXCODE(act_proc_sup->sup_exceptState[1].cause);      //TODO forse va 0 al posto di 1
+    int number = CAUSE_GET_EXCCODE(act_proc_sup->sup_exceptState[GENERALEXCEPT].cause);      
     arg1 = act_proc_sup->sup_exceptState[1].reg_a1;
     arg2 = act_proc_sup->sup_exceptState[1].reg_a2;
     arg3 = act_proc_sup->sup_exceptState[1].reg_a3;
