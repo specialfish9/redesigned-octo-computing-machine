@@ -11,6 +11,8 @@
 #include <umps3/umps/libumps.h>
 #include <umps3/umps/cp0.h>
 #include "pandos_const.h"
+#include "vm_support.h"
+
 
 #define PRINTCHR 2
 void support_syscall_handler(support_t* act_proc_sup);
@@ -50,7 +52,6 @@ int retValue = SYSCALL (WRITEPRINTER, char *virtAddr, int len, 0);
 WRITEPRINTER=3
 */
 inline int write_to_printer(unsigned int virtAddr, int len, unsigned int asid){       //cresta
-    //USARE REGISTRO COMMAND DA QUALCHE PARTE       
     
     //ogni device di tipo printer ha un campo status (qua devo farlo funzionare solo se lo status è 1, altrimenti restituisco -status)
     //operazione di stampa avviata caricando il campo command
@@ -149,7 +150,7 @@ void support_handler(void){
     if(cause == EXC_SYS){
         support_syscall_handler(act_proc_sup);
     }else{      //TODO verificare che questo sia sempre una trap
-        support_trap_handler();
+        support_trap_handler(act_proc_sup);
     }
 
 
@@ -182,6 +183,7 @@ void support_syscall_handler(support_t* act_proc_sup){
     switch(number){
         case GETTOD:{
             ret=get_TOD();
+            break;
         }
         case TERMINATE:{
             terminate();
@@ -189,12 +191,15 @@ void support_syscall_handler(support_t* act_proc_sup){
         }
         case WRITEPRINTER:{
             ret=write_to_printer(arg1, arg2, act_proc_sup->sup_asid);
+            break;
         }
         case WRITETERMINAL:{
             ret=write_to_terminal(arg1, arg2, act_proc_sup->sup_asid);
+            break;
         }
         case READTERMINAL:{
             ret=read_from_terminal(arg1, act_proc_sup->sup_asid);
+            break;
         }
         default:{
             //PANIC o qualcosa del genere
@@ -214,8 +219,12 @@ void support_syscall_handler(support_t* act_proc_sup){
 }
 
 void support_trap_handler(support_t* act_proc_sup){
+    //TODO STA ROBA E' DA CONTROLLARE MOLTO ATTENTAMENTE
+    pcb_t *tmp =remove_blocked(&swp_pl_sem);
 
-    if(act_proc_sup.)
+    if(tmp.p_pid != act_proc.p_pid)
+        insert_blocked(&swp_pl_sem, tmp);
+
     //se il processo tiene mutua esclusione su un semaforo mutex del livello supporto (es. swap pool sem)
         //rilascia la risorsa (NSYS4 / verhogen?)
     //ammazza il processo (SYS2)

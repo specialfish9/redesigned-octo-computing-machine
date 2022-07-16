@@ -1,5 +1,6 @@
 #ifndef SYSSUPPORT_H
 #define SYSSUPPORT_H
+#include "pandos_types.h"
 
 extern unsigned int get_TOD(void);
 extern void terminate(void);
