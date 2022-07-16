@@ -134,7 +134,7 @@ inline int read_from_terminal(unsigned int virtAddr, unsigned int asid){      //
             //Il return della SYSCALL ha nel primo byte lo status, e nel secondo il carattere ricevuto
             charnstatus= SYSCALL(DOIO, (unsigned int)&dev_reg->recv_command,TRANSMITCHAR,0) ;
             status= charnstatus & (0xFF); //maschero il return value per leggere lo status
-            if(status!=5)
+            if(status!=OKCHARTRANS)
                 return -status;
             *((char*)virtAddr++) = charnstatus>>8; //shifto di 8 bit per trattenere soltanto il carattere letto
             i++;
