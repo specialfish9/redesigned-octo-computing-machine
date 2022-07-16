@@ -143,6 +143,8 @@ inline int read_from_terminal(unsigned int virtAddr, unsigned int asid){      //
     }else{
         SYSCALL(TERMINATE,0,0,0);
     }
+
+  return 42;
 }
 
 
@@ -192,7 +194,7 @@ void support_syscall_handler(void){
             ret=write_to_terminal(arg1, arg2, act_proc_sup->sup_asid);
         }
         case READTERMINAL:{
-            ret=read_from_terminal(arg1);
+            ret=read_from_terminal(arg1, act_proc_sup->sup_asid);
         }
         default:{
             //PANIC o qualcosa del genere
