@@ -1,3 +1,8 @@
+/**
+ * @file vm_support.c
+ * @brief Implementazione delle funzioni necessarie per la gestione della 
+ * memoria virtuale.
+ * */
 #include "vm_support.h"
 #include "listx.h"
 #include "pandos_const.h"
@@ -10,23 +15,49 @@
 #include <umps3/umps/const.h>
 #include <umps3/umps/libumps.h>
 
+/**
+ * @brief Dimensione della Swap Pool
+ * */
 #define SWAP_POOL_SIZE 2 * UPROCMAX
+
+/**
+ * @brief Indirizzo di inizio della Swap Pool
+ * */
 #define SWAP_POOL_BEGIN 0x20020000
 
-#define CALC_NEW_PFN(entryLO, pfn) (pfn ) | (entryLO & 2047)
+/**
+ * @brief Macro per l'aggiornamento del campo PFN di un entry lo
+ * */
+#define CALC_NEW_PFN(entryLO, pfn) pfn | (entryLO & 2047)
 
+/* Macro per il log */
 #define LOG(s) log("VM", s)
 #define LOGi(s, i) logi("VM", s, i)
 
+/**
+ * @struct swppl_entry_t
+ * @brief Rappresenta una entry della swap table.
+ * @var asid Indica l'ASID del processo propretario della pagina salvata 
+ * nella entry
+ * @var vpn Indica il numero della pagina salvata nella entry
+ * @ pg_tbl_entry Puntatore alla entry dentro la tabella delle pagine privata
+ * del processo
+ * */
 typedef struct {
   int asid;
   int vpn;
   pteEntry_t *pg_tbl_entry;
 } swppl_entry_t;
 
-int swp_pl_sem;
-
+/**
+ * @var Array con le entry della swap pool
+ * */
 static swppl_entry_t swppl_tbl[SWAP_POOL_SIZE];
+
+/*
+ * @var Semaforo mutex per la swap pool
+ * */
+int swp_pl_sem;
 
 /*
  * @var Putatore al frame da scegliere quando si esegue l'algoritmo di
@@ -34,11 +65,27 @@ static swppl_entry_t swppl_tbl[SWAP_POOL_SIZE];
  * */
 static size_tt frm_ch_ptr = 0;
 
-static int chose_frame(void);
+/**
+ * @brief Implementa l'algoritmo di rimpiazzamento per i frame nella swap pool 
+ * @return Il numero del frame da rimpiazzare
+ * */
+static inline int chose_frame(void);
 
-static void toggle_int(int on);
+/**
+ * @brief Utility per abilitare/disabilitare gli interrupt. Usata per poter 
+ * eseguire istruzioni in modo 'atomico'.
+ * @param on Un intero booleano - 1 se si vogliono abilitare gli interrupt, 0 
+ * se si vogliono disabilitare.
+ * */
+static inline void toggle_int(int on);
 
-static int update_tlb(unsigned int entryHi, unsigned int entryLo);
+/**
+ * @brief Aggiorna il TLB con le entryHI e entryLO passate. Esegue prima una
+ * probe per controllare e' gia' presente un'entry con entryHi corrispondente
+ * e successivamente una TLBWRI per aggiornarne i valori.
+ * @return 1 se ha successo, 0 altrimenti
+ * */
+static inline int update_tlb(unsigned int entryHi, unsigned int entryLo);
 
 inline void init_supp_structures(void)
 {
@@ -52,15 +99,8 @@ inline void init_supp_structures(void)
     swppl_tbl[i].asid = -1;
 }
 
-// TODO 
-static unsigned int debugV;
-static unsigned int debugV2;
-static unsigned int debugV3;
-static unsigned int debugV4;
-
 inline void tlb_exc_handler(void)
 {
-  LOG("Qua arriva");
   support_t *act_proc_sup = (support_t *)SYSCALL(GETSUPPORTPTR, 0, 0, 0);
   if (act_proc_sup == NULL) {
     LOG("Error on getsupport");
@@ -107,7 +147,7 @@ inline void tlb_exc_handler(void)
       toggle_int(TRUE);
 
       /* Prendo i registri del device */
-      dtpreg_t *dev_reg = (dtpreg_t *)DEV_REG_ADDR(FLASHINT, act_proc_sup->sup_asid);
+      dtpreg_t *dev_reg = (dtpreg_t *)DEV_REG_ADDR(FLASHINT, act_proc_sup->sup_asid - 1);
 
       /* Metto in data0 il pfn che voglio scrivere */
       dev_reg->data0 = ENTRYLO_GET_PFN(proc_pgtbl_entry->pte_entryLO);
@@ -125,7 +165,7 @@ inline void tlb_exc_handler(void)
 
     /* Prendo il device register del dispositivo flash associato al processo */
     dtpreg_t *dev_reg =
-        (dtpreg_t *)DEV_REG_ADDR(FLASHINT, act_proc_sup->sup_asid);
+        (dtpreg_t *)DEV_REG_ADDR(FLASHINT, act_proc_sup->sup_asid - 1);
 
     /* Scrivi il contenuto di data0 sul frame della swap pool scelto */
     unsigned int sp_addr =  (unsigned int)SWAP_POOL_BEGIN + (chosen_frame * PAGESIZE);
@@ -166,13 +206,11 @@ inline void tlb_exc_handler(void)
     /* V nel semaforo della swap table per rilasciare la mutua esclusione */
     SYSCALL(VERHOGEN, (unsigned int)&swp_pl_sem, 0, 0);
 
-    /* SUPER-TODO capire come fare un ldst in modo safe per non mandare a
-     * puttane lo scheduler */
     LDST(&act_proc_sup->sup_exceptState[0]);
   }
 }
 
-inline int update_tlb(unsigned int entryHi, unsigned int entryLo)
+int update_tlb(unsigned int entryHi, unsigned int entryLo)
 {
   #define P_BIT         0x40000000
   unsigned int index;
@@ -191,12 +229,12 @@ inline int update_tlb(unsigned int entryHi, unsigned int entryLo)
   return 1;
 }
 
-inline int chose_frame(void) { 
+int chose_frame(void) { 
   frm_ch_ptr %= SWAP_POOL_SIZE;
   return frm_ch_ptr++;
 }
 
-inline void toggle_int(int on) {
+void toggle_int(int on) {
   if (on) {
     setSTATUS(getSTATUS() | 1);
   } else {

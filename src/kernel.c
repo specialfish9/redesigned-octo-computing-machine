@@ -43,6 +43,11 @@ inline static void init_passup_vector(void);
 inline static void exception_handler(void);
 
 /**
+ * @brief Gestore delle eccezioni del tipo TLB-refill
+ * */
+inline static void uTLB_RefillHandler(void);
+
+/**
  * @brief Inizializzazione del sistema operativo. Inizializza le strutture dati
  * necessarie, crea il processo di init e lascia il controllo allo scheduler.
  * */
@@ -101,6 +106,7 @@ void exception_handler(void)
 
   cause = CAUSE_GET_EXCCODE(getCAUSE());
 
+  if (cause != 8 && cause != 0)
     LOGi("ex", cause);
 
   if (act_proc != NULL) {
@@ -165,8 +171,7 @@ void exception_handler(void)
   scheduler_next();
 }
 
-/* TLB-Refill Handler */
-inline void uTLB_RefillHandler(void)
+void uTLB_RefillHandler(void)
 {
   state_t *exc_state;
   unsigned int pg_n;

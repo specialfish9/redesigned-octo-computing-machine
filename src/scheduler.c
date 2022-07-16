@@ -174,6 +174,11 @@ inline pcb_t *dequeue_proc(const unsigned int priority)
 
 inline void load_proc(pcb_t *pcb)
 {
+  load_with_state(pcb, &pcb->p_s);
+}
+
+inline void load_with_state(pcb_t *pcb, state_t *state)
+{
   if (pcb == NULL) {
     LOG("Attempt to load NULL pcb");
     return;
@@ -196,4 +201,5 @@ inline void load_proc(pcb_t *pcb)
 
   /* Lo carico */
   LDST(&act_proc->p_s);
+
 }

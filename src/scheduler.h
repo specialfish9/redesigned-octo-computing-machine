@@ -71,4 +71,5 @@ extern pcb_t *dequeue_proc(const unsigned int priority);
  * */
 extern void load_proc(pcb_t *pcb);
 
+extern void load_with_state(pcb_t *pcb, state_t *state);
 #endif
