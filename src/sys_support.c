@@ -129,22 +129,18 @@ inline int read_from_terminal(unsigned int virtAddr, unsigned int asid){      //
     unsigned int charnstatus;
     unsigned int status;
     int i=0;
-    if(virtAddr>KUSEG){
-        do{
-            //Il return della SYSCALL ha nel primo byte lo status, e nel secondo il carattere ricevuto
-            charnstatus= SYSCALL(DOIO, (unsigned int)&dev_reg->recv_command,TRANSMITCHAR,0) ;
-            status= charnstatus & (0xFF); //maschero il return value per leggere lo status
-            if(status!=OKCHARTRANS)
-                return -status;
-            *((char*)virtAddr++) = charnstatus>>8; //shifto di 8 bit per trattenere soltanto il carattere letto
-            i++;
-        }while(charnstatus>>8!='\0'); //Da verificare se vogliamo prendere in input anche \0 oppure solo i caratteri effettivi (per ora per sicurezza lo faccio)
-        return i;
-    }else{
-        SYSCALL(TERMINATE,0,0,0);
-    }
-
-  return 42; // FIXME
+    if(virtAddr<KUSEG)
+      return SYSCALL(TERMINATE,0,0,0);
+     do{
+          //Il return della SYSCALL ha nel primo byte lo status, e nel secondo il carattere ricevuto
+          charnstatus= SYSCALL(DOIO, (unsigned int)&dev_reg->recv_command,TRANSMITCHAR,0) ;
+          status= charnstatus & (0xFF); //maschero il return value per leggere lo status
+          if(status!=OKCHARTRANS)
+              return -status;
+          *((char*)virtAddr++) = charnstatus>>8; //shifto di 8 bit per trattenere soltanto il carattere letto
+          i++;
+      }while(charnstatus>>8!='\0'); //Da verificare se vogliamo prendere in input anche \0 oppure solo i caratteri effettivi (per ora per sicurezza lo faccio)
+      return i;
 }
 
 
