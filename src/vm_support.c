@@ -92,24 +92,19 @@ inline void tlb_exc_handler(void)
       pteEntry_t *proc_pgtbl_entry = ch_frame_entry->pg_tbl_entry;
 
       /* Disabilito gli interrupt per eseguire in modo atomico */
-      toggle_int(0);
+      toggle_int(FALSE);
 
       /* Marco la pagina come invalida */
-      proc_pgtbl_entry->pte_entryLO &= 0 << ENTRYLO_VALID_BIT;
+      proc_pgtbl_entry->pte_entryLO ^= ENTRYLO_VALID;
 
       /* Aggiorno il TLB */
       update_tlb(proc_pgtbl_entry->pte_entryHI, proc_pgtbl_entry->pte_entryLO);
 
       /* Riabilito gli interrupt */
-      toggle_int(1);
-
-      /* SUPER- TODO:
-       * Se questa cosa funziona ricordarsi di accendere un cero per ogni riga
-       * di codice scritta in questo progetto. */
+      toggle_int(TRUE);
 
       /* Prendo i registri del device */
-      dtpreg_t *dev_reg =
-          (dtpreg_t *)DEV_REG_ADDR(FLASHINT, act_proc_sup->sup_asid);
+      dtpreg_t *dev_reg = (dtpreg_t *)DEV_REG_ADDR(FLASHINT, act_proc_sup->sup_asid);
 
       /* Metto in data0 il pfn che voglio scrivere */
       dev_reg->data0 = ENTRYLO_GET_PFN(proc_pgtbl_entry->pte_entryLO);
@@ -153,7 +148,7 @@ inline void tlb_exc_handler(void)
         &act_proc_sup->sup_privatePgTbl[mpg_no];
 
     /* Disabilito gli interrupt per eseguire in modo atomico */
-    toggle_int(0);
+    toggle_int(FALSE);
 
     /* Aggiorno la page table del processo segnando la pagina valida */
     act_proc_sup->sup_privatePgTbl[mpg_no].pte_entryLO |= ENTRYLO_VALID;
@@ -165,7 +160,7 @@ inline void tlb_exc_handler(void)
     update_tlb(act_proc_sup->sup_privatePgTbl[mpg_no].pte_entryHI, act_proc_sup->sup_privatePgTbl[mpg_no].pte_entryLO);
 
     /* riabilito gli interrupt */
-    toggle_int(1);
+    toggle_int(TRUE);
 
     /* V nel semaforo della swap table per rilasciare la mutua esclusione */
     SYSCALL(VERHOGEN, (unsigned int)&swp_pl_sem, 0, 0);
