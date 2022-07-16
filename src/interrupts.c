@@ -6,6 +6,7 @@
  */
 #include "interrupts.h"
 #include "asl.h"
+#include "listx.h"
 #include "scheduler.h"
 #include "syscalls.h"
 #include "utils.h"
@@ -47,6 +48,7 @@ inline void init_dev_sem(void)
 
 inline enum eh_act handle_interrupts(const int line)
 {
+  LOGi("int", line);
   switch (line) {
   case IL_IPI: {
     break; /* safely ignore */
@@ -74,15 +76,15 @@ inline enum eh_act handle_interrupts(const int line)
     break;
   }
   case IL_FLASH: {
-    generic_interrupt_handler(IL_FLASH - IL_DISK, sem_disk);
+    generic_interrupt_handler(IL_FLASH - IL_DISK, sem_flash);
     break;
   }
   case IL_ETHERNET: {
-    generic_interrupt_handler(IL_ETHERNET - IL_DISK, sem_disk);
+    generic_interrupt_handler(IL_ETHERNET - IL_DISK, sem_net);
     break;
   }
   case IL_PRINTER: {
-    generic_interrupt_handler(IL_PRINTER - IL_DISK, sem_disk);
+    generic_interrupt_handler(IL_PRINTER - IL_DISK, sem_printer);
     break;
   }
   case IL_TERMINAL: {
@@ -124,15 +126,30 @@ inline void generic_interrupt_handler(int line, int *semaphores)
   dtpreg_t *reg;
   pcb_t *p;
 
-  bitmap = CDEV_BITMAP_ADDR(line), index = 0;
-  while (bitmap > 1) {
+  /* Prendo la bitmap */
+  bitmap = *((size_tt *)CDEV_BITMAP_ADDR(line));
+
+  /* Scorro la bitmap fino a trovare la posizione dell'uno piu' significativo.
+   * Ad ogni iterazione incremento l'indice avendo cura di riportarlo a zero
+   * ogni 8 incrementi. In questo trovo il numero del device che ha sollevato
+   * l'interrupt e la corrispondente linea. */
+  index = 0;
+  while (bitmap >= 1) {
     ++index;
+    index %= DEVPERINT;
     bitmap >>= 1;
   }
+
+  /* Recupero il device register corrispondente */
   reg = (dtpreg_t *)&((devregarea_t *)RAMBASEADDR)->devreg[line][index].dtp;
+
+  /* Faccio una V sul semaforo del device */
   p = verhogen(semaphores + index);
+
+  /* Imposto il valore di ritorno della syscall */
   if (p != NULL)
     p->p_s.reg_v0 = reg->status;
-  /* Manda ack */
+
+  /* Mando l'ack al device */
   reg->command = 1;
 }

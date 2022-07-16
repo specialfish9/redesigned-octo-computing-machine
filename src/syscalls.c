@@ -18,6 +18,9 @@
 #define LOG(s) log("E", s)
 #define LOGi(s, i) logi("E", s, i)
 
+/*TODO*/
+int debugS;
+
 /**
  * @var Processo Yielded
  * */
@@ -58,13 +61,6 @@ static enum eh_act get_time(void);
 static enum eh_act wait_for_clock(void);
 
 /**
- * @brief Systemcall GET SUPPORT (NSYS8)
- * @return L'azione che l'excepton handler deve fare una volta gestita la
- * syscall.
- * */
-static enum eh_act get_support(void);
-
-/**
  * @brief Systemcall GET PROCESS PID (NSYS9).Inserisce in v0 il PID del processo
  * chiamante o del suo processo padre
  * @param arg1 (parent): Se è uguale a 0 si scrive il pid del chiamante in v0,
@@ -91,6 +87,8 @@ inline enum eh_act handle_syscall(void)
   arg1 = act_proc->p_s.reg_a1;
   arg2 = act_proc->p_s.reg_a2;
   arg3 = act_proc->p_s.reg_a3;
+
+  LOGi("nsys", number);
 
   if (!is_alive(act_proc)) {
     LOG("Syscall called by a zombie");
@@ -265,16 +263,25 @@ inline void kill_parent_and_progeny(pcb_t *p)
 inline int passup_or_die(size_tt kind)
 {
   /* Die */
-  if (act_proc == NULL)
+  if (act_proc == NULL) {
+    LOG("Dying");
     return NOTHING;
+  }
   if (act_proc->p_supportStruct == NULL) {
     kill_parent_and_progeny(act_proc);
+    LOG("Dying");
     return NOTHING;
   }
 
   /* Pass up */
   memcpy(act_proc->p_supportStruct->sup_exceptState + kind,
          (state_t *)BIOSDATAPAGE, sizeof(state_t));
+
+  /* Just to be safe */
+  if (act_proc->p_supportStruct->sup_exceptContext[kind].stackPtr == 0) {
+    PANIC();
+  }
+
   LDCXT(act_proc->p_supportStruct->sup_exceptContext[kind].stackPtr,
         act_proc->p_supportStruct->sup_exceptContext[kind].status,
         act_proc->p_supportStruct->sup_exceptContext[kind].pc);
@@ -289,6 +296,11 @@ inline enum eh_act do_io(int *cmdaddr, int cmdval)
   int line = -1, index = -1;
   int *sem;
   int *dev = (int *)DEVICE_FROM_COMDADDR(cmdaddr);
+
+  if (cmdaddr == 0 || cmdaddr == NULL) {
+    LOG("DOIO with null or zero command addr");
+    PANIC();
+  }
 
   /* Cerco la linea di interrupt e l'indice del device */
   for (i = 0; i < N_EXT_IL; ++i) {
