@@ -49,9 +49,7 @@ inline void terminate(void){
 */
 
     //spara al processo utente che l'ha chiamato
-    pcb_t *proc = act_proc;  //NON SO SE SIA GIUSTO, DEVO CAPIRE SE U-PROC E IL PROCESSO ATTIVO SIANO DUE COSE EQUIVALENTI
-
-    SYSCALL(TERMPROCESS, proc->p_pid, 0, 0);
+    SYSCALL(TERMPROCESS, act_proc->p_pid, 0, 0);
     //return is_alive(act_proc) ? RENQUEUE : NOTHING;
 }
 
