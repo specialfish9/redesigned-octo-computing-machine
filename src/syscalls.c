@@ -273,14 +273,11 @@ inline int passup_or_die(size_tt kind)
     return NOTHING;
   }
 
+  LOGi("Passing up", kind);
+
   /* Pass up */
   memcpy(act_proc->p_supportStruct->sup_exceptState + kind,
          (state_t *)BIOSDATAPAGE, sizeof(state_t));
-
-  /* Just to be safe */
-  if (act_proc->p_supportStruct->sup_exceptContext[kind].stackPtr == 0) {
-    PANIC();
-  }
 
   LDCXT(act_proc->p_supportStruct->sup_exceptContext[kind].stackPtr,
         act_proc->p_supportStruct->sup_exceptContext[kind].status,

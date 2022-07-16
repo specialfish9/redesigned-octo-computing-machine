@@ -11,6 +11,9 @@
 
 #define LOG "IP"
 
+void test(){ log(LOG, "test"); }
+void test1(){ log(LOG, "test1"); }
+
 extern void tlb_exc_handler(void);
 
 extern void support_exec_handler(void);
@@ -39,6 +42,9 @@ inline void instantiator_proc(void)
 
     /* Timer enabled, interrupts enabled and usermode */
     tp_states[i].status = STATUS_TE | STATUS_IEc | STATUS_IEp | STATUS_KUc;
+    for (int j = 0; j < 8; j ++) {
+      tp_states[i].status |= STATUS_IM_BIT(j);
+    }
     tp_states[i].entry_hi = 0 & (i << ENTRYHI_ASID_BIT);
 
     /* support */
@@ -46,11 +52,14 @@ inline void instantiator_proc(void)
     init_page_table(tp_supps[i].sup_privatePgTbl, i);
 
     context_t context[2];
-    context[0].pc = (memaddr)tlb_exc_handler;
-    context[1].pc = (memaddr)support_exec_handler;
+    context[0].pc = (memaddr)test;
+    context[1].pc = (memaddr)test1;
     /* Timer enabled, interupts on and kernel mode */
-    context[0].status = STATUS_TE | STATUS_IM_MASK | STATUS_KUc | STATUS_IEp;
-    context[1].status = STATUS_TE | STATUS_IM_MASK | STATUS_KUc | STATUS_IEp;
+    context[0].status = STATUS_TE | STATUS_IM_MASK | STATUS_KUc | STATUS_IEc;
+    context[1].status = STATUS_TE | STATUS_IM_MASK | STATUS_KUc | STATUS_IEc;
+    for (int j = 0; j < 8; j ++) {
+      context[i].status |= STATUS_IM_BIT(j);
+    }
     /* Set stack ptr to the end of the stack minus 1 */
     context[0].stackPtr = (memaddr)&tp_supps[i].sup_stackTLB[500 - 1];
     context[1].stackPtr = (memaddr)&tp_supps[i].sup_stackGen[500 - 1];

@@ -60,6 +60,7 @@ static unsigned int debugV4;
 
 inline void tlb_exc_handler(void)
 {
+  LOG("Qua arriva");
   support_t *act_proc_sup = (support_t *)SYSCALL(GETSUPPORTPTR, 0, 0, 0);
   if (act_proc_sup == NULL) {
     LOG("Error on getsupport");

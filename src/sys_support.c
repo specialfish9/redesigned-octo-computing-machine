@@ -143,8 +143,13 @@ inline int read_from_terminal(unsigned int virtAddr, unsigned int asid){      //
 }
 
 void support_exec_handler(void){
+    LOG("seh");
+
     support_t* act_proc_sup = (support_t*)SYSCALL(GETSUPPORTPTR,0,0,0);
     unsigned int cause = CAUSE_GET_EXCCODE(act_proc_sup->sup_exceptState[GENERALEXCEPT].cause);
+
+    LOGi("ex", cause);
+  
     if(cause == EXC_SYS){
         support_syscall_handler(act_proc_sup);
     }else {      
