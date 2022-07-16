@@ -144,7 +144,7 @@ inline int read_from_terminal(unsigned int virtAddr, unsigned int asid){      //
         SYSCALL(TERMINATE,0,0,0);
     }
 
-  return 42;
+  return 42; // FIXME
 }
 
 
