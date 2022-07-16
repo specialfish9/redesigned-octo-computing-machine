@@ -118,14 +118,31 @@ inline int write_to_terminal(unsigned int virtAddr, int len, unsigned int asid){
 int retValue = SYSCALL (READTERMINAL, char *virtAddr, 0, 0);
 READTERMINAL=5
 */
-inline int read_from_terminal(unsigned int virtAddr){      //yonas
+inline int read_from_terminal(unsigned int virtAddr, unsigned int asid){      //yonas
     //sospende il processo chiamante fino a che una linea di input (stringa) è stata trasmessa dal terminale associato al processo
     //PARAMETRI: indirizzo virtuale di un buffer stringa dove devono essere inseriti i caratteri ricevuti
     //RETURN: restituisce il numero di caratteri trasmessi (se ha avuto successo), altrimenti (status diverso da 5, chatacter received) return dello status del device con segno cambiato
     //l'handler dovrà prendere il valore restituito da questa funzione e piazzarlo nel registro v0 di U-proc
     //NB: i caratteri ricevuti vanno inseriti nel buffer a partire dall'indirizzo ricevuto come parametro in a1
     //ERRORI: se l'indirizzo è fuori dallo spazio logico degli indirizzi del processo: ammazza il processo (SYS2)
-  return 0;
+    termreg_t * dev_reg = (termreg_t*) DEV_REG_ADDR(IL_TERMINAL, asid-1);
+    unsigned int charnstatus;
+    unsigned int status;
+    int i=0;
+    if(virtAddr>KUSEG){
+        do{
+            //Il return della SYSCALL ha nel primo byte lo status, e nel secondo il carattere ricevuto
+            charnstatus= SYSCALL(DOIO, (unsigned int)&dev_reg->recv_command,TRANSMITCHAR,0) ;
+            status= charnstatus & (0xFF); //maschero il return value per leggere lo status
+            if(status!=5)
+                return -status;
+            *((char*)virtAddr++) = charnstatus>>8; //shifto di 8 bit per trattenere soltanto il carattere letto
+            i++;
+        }while(charnstatus>>8!='\0'); //Da verificare se vogliamo prendere in input anche \0 oppure solo i caratteri effettivi (per ora per sicurezza lo faccio)
+        return i;
+    }else{
+        SYSCALL(TERMINATE,0,0,0);
+    }
 }
 
 
