@@ -61,6 +61,7 @@ documentazione generata del codice.
 * FASE 3
      * __sys_support:__ handler di livello supporto per syscall e trap.
      * __vm_support:__ gestore della memoria virtuale a livello supporto.
+     * __init_proc:__ inizializzatore processi utente di test di fase 3.
 * ALTRO
      * __utils:__ funzioni di utility.
      * __klog:__ funzioni per il logging su un buffer in memoria.
@@ -83,7 +84,7 @@ creare ed uccidere processi. Infine il _core_ di questo modulo è la funzione
 ```scheduler_next``` che decide quale sarà il prossimo processo da caricare e 
 lo carica. 
 
-### Syscalls
+### Syscalls Negative
 In questo modulo è contenuto il gestore per le chiamate di sistema: 
 ```handle_syscall```. Questo si basa sul valore del registro A0 (ed eventualmente 
 anche dei registri A1, A2 e A3) e restituisce l'azione che l'exception handler 
@@ -103,6 +104,34 @@ corrispondente alla linea di interrupt attiva e restituisce l'azione che
 l'exception handler deve svolgere una volta gestito l'interrupt. Per la gestione 
 delle linee associate ai vari device è presente la funzione 
 ```generic_interrupt_handler```.
+
+### Syscalls positive e gestore trap
+Questo modulo racchiude un gestore generico (```support_exec_handler```, 
+richiamato dal livello sottostante tramite Pass Up or Die) con lo scopo
+di scindere le syscall del livello supporto dalle trap. 
+A seguito della divisione, sono presenti altri due handler: 
+```support_syscall_handler``` e ```support_trap_handler```.
+Il primo gestore ha lo scopo di determinare quale chiamata si sia verificata, 
+eseguire le azioni corrispondenti
+e, se l'esecuzione ha successo, inserire il valore di ritorno nel registro v0.
+Alcuni dei servizi forniti sono la scrittura su stampante (SYS3) e la 
+lettura/scrittura su terminale (SYS4 e SYS5).
+Il gestore delle trap verifica se il processo corrente mantiene una mutua 
+esclusione su un semaforo del livello supporto, la rilsacia e lo termina
+tramite la SYS2 (```terminate```).
+
+### TLB e memoria virtuale
+Le eccezioni del TLB sono gestiti da due handler: ```uTLB_refill_handler``` 
+per le ecceioni di tipo _TBL refill_, e ```tlb_exec_handler``` per tutte le 
+altre. Il primo si trova nel modulo ```kernel``` e si occupa semplicemente
+di andare a mettere nel TLB la pagina richiesta, andando a recuperarla dalla
+tabella delle pagine privata del processo. Il secondo invece si trova nel 
+modulo ```vm_support``` ed è il cuore della gestione della memoria virtuale.
+Si occupa di andare a caricare la pagina richiesta all'interno della swap pool,
+interagendo con essa e con i dispositivi flash che fungono da backing store
+per i processi utente di test di fase 3. Gestisce anche, tramite un apposito 
+algoritmo di rimpiazzamento, l'eventualità in cui la swap pool sia occupata
+per intero.
 
 ## Scelte implementative
 
@@ -137,3 +166,20 @@ nella lista dei bloccati assegnati al semaforo passato come parametro (diventa
 soft blocked); per quanto riguarda lo sblocco invece si rimuove dalla lista dei 
 processi soft blocked sul semaforo e lo si riassegna alla lista di processi attivi 
 nella coda di priorità corretta. 
+
+### L'algoritmo di rimpiazzamento
+Per scegliere su quale frame della swap pool andare a caricare la pagina è stata 
+sviluppata una variante del semplice algoritmo di rimpiazzamento suggerito
+dal manuale di PandOS+. Questo, partendo dall'ultimo frame sostituito, prevede 
+di andare a scorrere in modo circolare tutti i frame della swap pool finchè non
+se ne trova uno libero da ritornare. Nel caso in cui tutti i frame dovessero
+risultare occupati, si fa affidamento all'algoritmo suggerito dal manuale, e si
+ritorna il frame succesivo all'ultimo rimpiazzato. Anche se di complessità maggiore
+(```O(n)``` invece che ``` O(1)```) questo algoritmo migliora le performance del 
+sistema. Infatti limita di parecchio i casi in cui si va a rimpiazzare un frame 
+occupato, limitando drasticamente le operazioni di IO.
+
+### Accesso ai device in mutua esclusione 
+Anche se non strettamente necessario per far funzionare gli 8 processi di test di
+fase 3, è stato ritenuto opportuno mediare gli accessi a ciascun device mediante
+semafori, per garantirne la mutua esclusione.
