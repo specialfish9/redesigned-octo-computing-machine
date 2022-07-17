@@ -39,20 +39,26 @@ extern int dev_sems[DEVINTNUM][DEVPERINT];
  * @brief Gestore delle systemcall a livello supporto
  * @param act_proc_sup struttura di supporto del processo attivo
  * */
-static void support_syscall_handler(support_t *act_proc_sup);
+static inline void support_syscall_handler(support_t *act_proc_sup);
+
+/**
+ * @brief Gestore per le trap a livello supporto
+ * @param act_proc_sup struttura di supporto del processo attivo
+ * */
+static inline void support_trap_handler(support_t *act_proc_sup);
 
 /**
  * @brief Systemcall GET TOD (SYS1). Restituisce il valore di microsecondi
  * dall'avvio del sistema
  * @return valore in microsecondi dall'avvio del sistema
  * */
-static unsigned int get_TOD(void);
+static inline unsigned int get_TOD(void);
 
 /**
  * @brief Systemcall TERMINATE (SYS2). Termina il processo chiamante attraverso
  * la NSYS2
  * */
-static void terminate(void);
+static inline void terminate(void);
 
 /**
  * @brief Systemcall WRITE TO PRINTER (SYS3). Scrive sulla stampante
@@ -63,7 +69,7 @@ static void terminate(void);
  * @return Numero di caratteri stampati se ha successo, altrimenti status con
  * segno negativo.
  * */
-static int write_to_printer(unsigned int virtAddr, int len, unsigned int asid);
+static inline int write_to_printer(unsigned int virtAddr, int len, unsigned int asid);
 
 /**
  * @brief Systemcall WRITE TO TERMINAL (SYS4). Scrive sul terminale
@@ -74,7 +80,7 @@ static int write_to_printer(unsigned int virtAddr, int len, unsigned int asid);
  * @return Numero di caratteri stampati se ha successo, altrimenti status con
  * segno negativo.
  * */
-static int write_to_terminal(unsigned int virtAddr, int len, unsigned int asid);
+static inline int write_to_terminal(unsigned int virtAddr, int len, unsigned int asid);
 
 /**
  * @brief Systemcall READ FROM TERMINAL (SYS5). Legge un input dal terminale e
@@ -85,18 +91,18 @@ static int write_to_terminal(unsigned int virtAddr, int len, unsigned int asid);
  * @return Numero di caratteri ricevuti se ha successo, altrimenti status con
  * segno negativo.
  * */
-static int read_from_terminal(unsigned int virtAddr, unsigned int asid);
+static inline int read_from_terminal(unsigned int virtAddr, unsigned int asid);
 
-inline unsigned int get_TOD(void)
+unsigned int get_TOD(void)
 {
   unsigned int ret;
   STCK(ret);
   return ret;
 }
 
-inline void terminate(void) { SYSCALL(TERMPROCESS, act_proc->p_pid, 0, 0); }
+void terminate(void) { SYSCALL(TERMPROCESS, act_proc->p_pid, 0, 0); }
 
-inline int write_to_printer(unsigned int virtAddr, int len, unsigned int asid)
+int write_to_printer(unsigned int virtAddr, int len, unsigned int asid)
 {
   dtpreg_t *dev_reg;
   size_tt i;
@@ -129,7 +135,7 @@ inline int write_to_printer(unsigned int virtAddr, int len, unsigned int asid)
   return i;
 }
 
-inline int write_to_terminal(unsigned int virtAddr, int len, unsigned int asid)
+int write_to_terminal(unsigned int virtAddr, int len, unsigned int asid)
 {
   termreg_t *dev_reg;
   int i;
@@ -165,7 +171,7 @@ inline int write_to_terminal(unsigned int virtAddr, int len, unsigned int asid)
   return i;
 }
 
-inline int read_from_terminal(unsigned int virtAddr, unsigned int asid)
+int read_from_terminal(unsigned int virtAddr, unsigned int asid)
 {
   termreg_t *dev_reg;
   unsigned int charnstatus;
@@ -173,7 +179,7 @@ inline int read_from_terminal(unsigned int virtAddr, unsigned int asid)
   int i = 0;
 
   if (virtAddr < KUSEG)
-    return SYSCALL(TERMINATE, 0, 0, 0);
+    safe_kill();
 
   /* Richiedo la mutua esclusione */
   SYSCALL(PASSEREN, (unsigned int)&dev_sems[TERMIN_SEMS][asid - 1], 0, 0);
@@ -219,6 +225,7 @@ void support_exec_handler(void)
     LOG("Error on get support");
     return;
   }
+  /*TODO*/
 
   cause = CAUSE_GET_EXCCODE(act_proc_sup->sup_exceptState[GENERALEXCEPT].cause);
 
@@ -269,8 +276,8 @@ void support_syscall_handler(support_t *act_proc_sup)
     break;
   }
   default: {
-    LOGi("Unknow syscall ", number);
-    PANIC();
+    LOG("Attempt to do a syscall >5");
+      safe_kill();
   }
   }
 
@@ -290,6 +297,12 @@ void support_syscall_handler(support_t *act_proc_sup)
 }
 
 void support_trap_handler(support_t *act_proc_sup)
+{
+  /*TODO*/
+  safe_kill();
+}
+
+inline void safe_kill(void)
 {
   // TODO STA ROBA E' DA CONTROLLARE MOLTO ATTENTAMENTE
   pcb_t *tmp = remove_blocked(&swp_pl_sem);

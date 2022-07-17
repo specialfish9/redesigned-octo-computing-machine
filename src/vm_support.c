@@ -8,6 +8,7 @@
 #include "pandos_const.h"
 #include "pandos_types.h"
 #include "scheduler.h"
+#include "sys_support.h"
 #include "syscalls.h"
 #include "umps3/umps/cp0.h"
 #include "utils.h"
@@ -122,8 +123,7 @@ inline void tlb_exc_handler(void)
 
   if (cause == EXC_MOD) {
     LOG("EXECMOD");
-    /* Tentativo di accesso ad una pagina read-only - trap */
-    /* TODO trap */
+    safe_kill();
   } else {
 
     /* P sul semaforo della swap pool */

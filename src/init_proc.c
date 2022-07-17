@@ -102,6 +102,6 @@ inline void init_page_table(pteEntry_t *tbl, const int asid)
     }
 
     tbl[i].pte_entryHI |= (asid << ASIDSHIFT);
-    tbl[i].pte_entryLO = ENTRYLO_DIRTY | ENTRYLO_GLOBAL;
+    tbl[i].pte_entryLO = ENTRYLO_DIRTY;
   }
 }
