@@ -58,6 +58,9 @@ documentazione generata del codice.
      * __scheduler:__ gestore dei processi attivi.
      * __syscalls:__ chiamate di sistema.
      * __interrupts:__ interrupts associati ai dispositivi connessi e al clock di sistema.
+* FASE 3
+     * __sys_support:__ handler di livello supporto per syscall e trap.
+     * __vm_support:__ gestore della memoria virtuale a livello supporto.
 * ALTRO
      * __utils:__ funzioni di utility.
      * __klog:__ funzioni per il logging su un buffer in memoria.
