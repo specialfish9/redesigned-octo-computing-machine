@@ -1,5 +1,6 @@
 #include "sys_support.h"
 #include "asl.h"
+#include "pcb.h"
 #include "pandos_const.h"
 #include "scheduler.h"
 #include "utils.h"
@@ -100,7 +101,15 @@ unsigned int get_TOD(void)
   return ret;
 }
 
-void terminate(void) { SYSCALL(TERMPROCESS, act_proc->p_pid, 0, 0); }
+void terminate(void) {
+  int pid;
+
+  /* Get the pid using NSYS9 */
+  pid = SYSCALL(GETPROCESSID, 0, 0, 0);
+
+  /* Kill the process using NSYS2 */
+  SYSCALL(TERMPROCESS, pid, 0, 0);
+}
 
 int write_to_printer(unsigned int virtAddr, int len, unsigned int asid)
 {
@@ -225,7 +234,6 @@ void support_exec_handler(void)
     LOG("Error on get support");
     return;
   }
-  /*TODO*/
 
   cause = CAUSE_GET_EXCCODE(act_proc_sup->sup_exceptState[GENERALEXCEPT].cause);
 
@@ -298,21 +306,29 @@ void support_syscall_handler(support_t *act_proc_sup)
 
 void support_trap_handler(support_t *act_proc_sup)
 {
-  /*TODO*/
   safe_kill();
 }
 
 inline void safe_kill(void)
 {
-  // TODO STA ROBA E' DA CONTROLLARE MOLTO ATTENTAMENTE
-  pcb_t *tmp = remove_blocked(&swp_pl_sem);
+  int pid;
+  pcb_t *pcb;
+  size_tt i, j;
 
-  if (tmp->p_pid != act_proc->p_pid)
-    insert_blocked(&swp_pl_sem, tmp);
+  /* Recuperiamo il pid */
+  pid = SYSCALL(GETPROCESSID, 0, 0, 0);
 
-  // se il processo tiene mutua esclusione su un semaforo mutex del livello
-  // supporto (es. swap pool sem) rilascia la risorsa (NSYS4 / verhogen?)
-  // SYSCALL(VERHOGEN,&swp_pl_sem);
-  // termina il processo (SYS2)
-  SYSCALL(TERMINATE, 0, 0, 0);
+  /* Recuperiamo il pcb */
+  pcb = search_by_pid(pid);
+  
+  if (pcb == NULL) {
+    /* Non dovrebbe mai succedere */
+    LOGi("Tried to kill", pid);
+    return;
+  }
+
+  /* Rimuoviamo il pcb da qualsiasi semaforo */
+  out_blocked(pcb);
+
+  SYSCALL(TERMPROCESS, 0, 0, 0);
 }

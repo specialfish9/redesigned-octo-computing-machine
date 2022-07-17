@@ -9,7 +9,10 @@
  */
 extern void support_exec_handler(void);
 
-/* TODO desc */
+/**
+ * @brief Termina il processo dopo aver rilasciato un eventuale semaforo su 
+ * cui era fermo
+ * */
 extern void safe_kill(void);
 
 #endif
