@@ -1,6 +1,6 @@
 /**
  * @file vm_support.h
- * @brief Modulo contenente le funzioni per la gestione della memoria virtuale 
+ * @brief Modulo contenente le funzioni per la gestione della memoria virtuale
  * */
 #ifndef VM_SUPPORT
 #define VM_SUPPORT

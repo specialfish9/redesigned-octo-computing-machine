@@ -1,16 +1,16 @@
 /**
  * @file vm_support.c
- * @brief Implementazione delle funzioni necessarie per la gestione della 
+ * @brief Implementazione delle funzioni necessarie per la gestione della
  * memoria virtuale.
  * */
 #include "vm_support.h"
 #include "listx.h"
 #include "pandos_const.h"
 #include "pandos_types.h"
+#include "scheduler.h"
 #include "syscalls.h"
 #include "umps3/umps/cp0.h"
 #include "utils.h"
-#include "scheduler.h"
 #include <umps3/umps/arch.h>
 #include <umps3/umps/const.h>
 #include <umps3/umps/libumps.h>
@@ -37,7 +37,7 @@
 /**
  * @struct swppl_entry_t
  * @brief Rappresenta una entry della swap table.
- * @var asid Indica l'ASID del processo propretario della pagina salvata 
+ * @var asid Indica l'ASID del processo propretario della pagina salvata
  * nella entry
  * @var vpn Indica il numero della pagina salvata nella entry
  * @ pg_tbl_entry Puntatore alla entry dentro la tabella delle pagine privata
@@ -66,15 +66,15 @@ int swp_pl_sem;
 static size_tt frm_ch_ptr = 0;
 
 /**
- * @brief Implementa l'algoritmo di rimpiazzamento per i frame nella swap pool 
+ * @brief Implementa l'algoritmo di rimpiazzamento per i frame nella swap pool
  * @return Il numero del frame da rimpiazzare
  * */
 static inline int chose_frame(void);
 
 /**
- * @brief Utility per abilitare/disabilitare gli interrupt. Usata per poter 
+ * @brief Utility per abilitare/disabilitare gli interrupt. Usata per poter
  * eseguire istruzioni in modo 'atomico'.
- * @param on Un intero booleano - 1 se si vogliono abilitare gli interrupt, 0 
+ * @param on Un intero booleano - 1 se si vogliono abilitare gli interrupt, 0
  * se si vogliono disabilitare.
  * */
 static inline void toggle_int(int on);
@@ -107,7 +107,8 @@ inline void tlb_exc_handler(void)
     return;
   }
 
-  unsigned int cause = CAUSE_GET_EXCCODE(act_proc_sup->sup_exceptState[PGFAULTEXCEPT].cause);
+  unsigned int cause =
+      CAUSE_GET_EXCCODE(act_proc_sup->sup_exceptState[PGFAULTEXCEPT].cause);
 
   if (cause == EXC_MOD) {
     LOG("EXECMOD");
@@ -118,7 +119,8 @@ inline void tlb_exc_handler(void)
     /* P sul semaforo della swap pool */
     SYSCALL(PASSEREN, (unsigned int)&swp_pl_sem, 0, 0);
 
-    size_tt missing_pg = act_proc_sup->sup_exceptState[PGFAULTEXCEPT].entry_hi >> VPNSHIFT;
+    size_tt missing_pg =
+        act_proc_sup->sup_exceptState[PGFAULTEXCEPT].entry_hi >> VPNSHIFT;
     size_tt mpg_no = PAGE_N(missing_pg);
     LOGi("Missing pgno", mpg_no);
     LOGi("Missing pg", missing_pg);
@@ -147,7 +149,8 @@ inline void tlb_exc_handler(void)
       toggle_int(TRUE);
 
       /* Prendo i registri del device */
-      dtpreg_t *dev_reg = (dtpreg_t *)DEV_REG_ADDR(FLASHINT, act_proc_sup->sup_asid - 1);
+      dtpreg_t *dev_reg =
+          (dtpreg_t *)DEV_REG_ADDR(FLASHINT, act_proc_sup->sup_asid - 1);
 
       /* Metto in data0 il pfn che voglio scrivere */
       dev_reg->data0 = ENTRYLO_GET_PFN(proc_pgtbl_entry->pte_entryLO);
@@ -168,7 +171,8 @@ inline void tlb_exc_handler(void)
         (dtpreg_t *)DEV_REG_ADDR(FLASHINT, act_proc_sup->sup_asid - 1);
 
     /* Scrivi il contenuto di data0 sul frame della swap pool scelto */
-    unsigned int sp_addr =  (unsigned int)SWAP_POOL_BEGIN + (chosen_frame * PAGESIZE);
+    unsigned int sp_addr =
+        (unsigned int)SWAP_POOL_BEGIN + (chosen_frame * PAGESIZE);
     dev_reg->data0 = sp_addr;
 
     /* Imposto il command */
@@ -195,10 +199,12 @@ inline void tlb_exc_handler(void)
     act_proc_sup->sup_privatePgTbl[mpg_no].pte_entryLO |= ENTRYLO_VALID;
 
     /* e mettendo il nuovo pfn */
-    act_proc_sup->sup_privatePgTbl[mpg_no].pte_entryLO = CALC_NEW_PFN(act_proc_sup->sup_privatePgTbl[mpg_no].pte_entryLO, sp_addr);
+    act_proc_sup->sup_privatePgTbl[mpg_no].pte_entryLO = CALC_NEW_PFN(
+        act_proc_sup->sup_privatePgTbl[mpg_no].pte_entryLO, sp_addr);
 
     /* Aggiorno il TLB */
-    update_tlb(act_proc_sup->sup_privatePgTbl[mpg_no].pte_entryHI, act_proc_sup->sup_privatePgTbl[mpg_no].pte_entryLO);
+    update_tlb(act_proc_sup->sup_privatePgTbl[mpg_no].pte_entryHI,
+               act_proc_sup->sup_privatePgTbl[mpg_no].pte_entryLO);
 
     /* riabilito gli interrupt */
     toggle_int(TRUE);
@@ -212,7 +218,7 @@ inline void tlb_exc_handler(void)
 
 int update_tlb(unsigned int entryHi, unsigned int entryLo)
 {
-  #define P_BIT         0x40000000
+#define P_BIT 0x40000000
   unsigned int index;
 
   setENTRYHI(entryHi);
@@ -229,12 +235,14 @@ int update_tlb(unsigned int entryHi, unsigned int entryLo)
   return 1;
 }
 
-int chose_frame(void) { 
+int chose_frame(void)
+{
   frm_ch_ptr %= SWAP_POOL_SIZE;
   return frm_ch_ptr++;
 }
 
-void toggle_int(int on) {
+void toggle_int(int on)
+{
   if (on) {
     setSTATUS(getSTATUS() | 1);
   } else {

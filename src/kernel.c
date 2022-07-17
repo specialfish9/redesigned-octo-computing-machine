@@ -190,7 +190,7 @@ void uTLB_RefillHandler(void)
   setENTRYHI(missing_entry.pte_entryHI);
   setENTRYLO(missing_entry.pte_entryLO);
   TLBWR();
-  
+
   /* 3) Ritorna il controllo al processo corrente per riprovare il processo
    * di traduzione dell'indirizzo */
   enqueue_proc(act_proc, act_proc->p_prio);

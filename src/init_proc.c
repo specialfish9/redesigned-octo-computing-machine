@@ -7,9 +7,9 @@
 #include "init_proc.h"
 #include "pandos_const.h"
 #include "pandos_types.h"
+#include "sys_support.h"
 #include "syscalls.h"
 #include "utils.h"
-#include "sys_support.h"
 #include "vm_support.h"
 #include <umps3/umps/cp0.h>
 #include <umps3/umps/libumps.h>
@@ -31,12 +31,11 @@ extern void support_exec_handler(void);
 static int semaforo_a_cazzo = 0;
 
 /**
- * @brief Inizializza una tabella delle pagine privata 
+ * @brief Inizializza una tabella delle pagine privata
  * @param tbl la tabella da inizializzare
  * @param asid l'ASID del processo proprietario della tabella
  * */
 static void init_page_table(pteEntry_t *tbl, const int asid);
-
 
 inline void instantiator_proc(void)
 {
@@ -57,7 +56,8 @@ inline void instantiator_proc(void)
     tp_states[i - 1].reg_sp = USERSTACKTOP;
 
     /* Timer enabled, interrupts enabled and usermode */
-    tp_states[i - 1].status = STATUS_TE | STATUS_IEc | STATUS_KUc | STATUS_IM_MASK ;
+    tp_states[i - 1].status =
+        STATUS_TE | STATUS_IEc | STATUS_KUc | STATUS_IM_MASK;
     /*for (int j = 0; j < 8; j ++) {
       tp_states[i].status |= STATUS_IM_BIT(j);
     }*/
@@ -81,10 +81,10 @@ inline void instantiator_proc(void)
 
     SYSCALL(CREATEPROCESS, (unsigned int)&tp_states[i - 1], PROCESS_PRIO_LOW,
             (unsigned int)&tp_supps[i - 1]);
-    logi(LOG, "created uproc ", i );
+    logi(LOG, "created uproc ", i);
   }
 
-  for (i = 0; i < 1/*UPROCMAX*/; i++)
+  for (i = 0; i < 1 /*UPROCMAX*/; i++)
     SYSCALL(PASSEREN, (unsigned int)&semaforo_a_cazzo, 0, 0);
 }
 

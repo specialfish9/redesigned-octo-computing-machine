@@ -74,7 +74,6 @@ static enum eh_act get_process_pid(const int arg1);
  * */
 static enum eh_act yield(void);
 
-
 inline enum eh_act handle_syscall(void)
 {
   int number;
