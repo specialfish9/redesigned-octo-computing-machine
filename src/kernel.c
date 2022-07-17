@@ -171,6 +171,8 @@ void exception_handler(void)
   scheduler_next();
 }
 
+static unsigned int debugK;
+static unsigned int debugK2;
 
 void uTLB_RefillHandler(void)
 {
@@ -184,6 +186,9 @@ void uTLB_RefillHandler(void)
   missing_page = exc_state->entry_hi >> VPNSHIFT;
   pg_n = PAGE_N(missing_page);
   LOGi("TLBREFILL", missing_page);
+
+  debugK = missing_page = exc_state->entry_hi >> VPNSHIFT;
+  debugK2 = ENTRYHI_GET_VPN(missing_page = exc_state->entry_hi);
 
   missing_entry = act_proc->p_supportStruct->sup_privatePgTbl[pg_n];
 

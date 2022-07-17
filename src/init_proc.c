@@ -66,9 +66,11 @@ inline void instantiator_proc(void)
     context_t context[2];
     context[0].pc = (memaddr)tlb_exc_handler;
     context[1].pc = (memaddr)support_exec_handler;
+
     /* Timer enabled, interupts on and kernel mode */
     context[0].status = (STATUS_TE | STATUS_IM_MASK | STATUS_KUp | STATUS_IEc) ^ STATUS_KUp;
     context[1].status = (STATUS_TE | STATUS_IM_MASK | STATUS_KUp | STATUS_IEc) ^ STATUS_KUp;
+
     /* Set stack ptr to the end of the stack minus 1 */
     context[0].stackPtr = (memaddr) &tp_supps[i].sup_stackTLB[500 - 1];
     context[1].stackPtr = (memaddr) &tp_supps[i].sup_stackGen[500 - 1];

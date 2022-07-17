@@ -313,7 +313,6 @@ inline void safe_kill(void)
 {
   int pid;
   pcb_t *pcb;
-  size_tt i, j;
 
   /* Recuperiamo il pid */
   pid = SYSCALL(GETPROCESSID, 0, 0, 0);
