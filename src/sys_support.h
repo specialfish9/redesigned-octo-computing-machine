@@ -1,6 +1,5 @@
 #ifndef SYSSUPPORT_H
 #define SYSSUPPORT_H
-#include "pandos_types.h"
 
 #include "pandos_types.h"
 

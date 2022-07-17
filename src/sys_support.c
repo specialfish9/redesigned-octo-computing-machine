@@ -1,10 +1,7 @@
-
 #include "sys_support.h"
 #include "asl.h"
-#include "interrupts.h"
 #include "pandos_const.h"
 #include "scheduler.h"
-#include "syscalls.h"
 #include "utils.h"
 #include "vm_support.h"
 #include <umps3/umps/arch.h>
@@ -13,25 +10,50 @@
 #include <umps3/umps/libumps.h>
 #include <umps3/umps/types.h>
 
+/* Macro per il log */
 #define LOG(s) log("SS", s)
 #define LOGi(s, i) logi("SS", s, i)
+
+#define INTMIN -2147483648
+
+/**
+ * @brief Indicatore dei semafori per il printer device nella matrice dei
+ * semafori dei device
+ * */
+#define PRINTER_SEMS IL_PRINTER - IL_DISK
+
+/**
+ * @brief Indicatore dei semafori per il terminale nella matrice dei semafori
+ * dei device
+ * */
+#define TERMIN_SEMS IL_TERMINAL - IL_DISK
+#define TERMOUT_SEMS IL_TERMINAL - IL_DISK + 1
+
+/**
+ * @var Semafori per l'accesso in mutua esclusione ai device. Usati dal livello
+ * supporto. Vengono inizializzati con @ref init_supp_structure.
+ * */
+extern int dev_sems[DEVINTNUM][DEVPERINT];
 
 /**
  * @brief Gestore delle systemcall a livello supporto
  * @param act_proc_sup struttura di supporto del processo attivo
  * */
 static void support_syscall_handler(support_t *act_proc_sup);
+
 /**
  * @brief Systemcall GET TOD (SYS1). Restituisce il valore di microsecondi
  * dall'avvio del sistema
  * @return valore in microsecondi dall'avvio del sistema
  * */
 static unsigned int get_TOD(void);
+
 /**
  * @brief Systemcall TERMINATE (SYS2). Termina il processo chiamante attraverso
  * la NSYS2
  * */
 static void terminate(void);
+
 /**
  * @brief Systemcall WRITE TO PRINTER (SYS3). Scrive sulla stampante
  * corrispettiva una stringa passata come parametro
@@ -42,6 +64,7 @@ static void terminate(void);
  * segno negativo.
  * */
 static int write_to_printer(unsigned int virtAddr, int len, unsigned int asid);
+
 /**
  * @brief Systemcall WRITE TO TERMINAL (SYS4). Scrive sul terminale
  * corrispettivo una stringa passata come parametro
@@ -52,6 +75,7 @@ static int write_to_printer(unsigned int virtAddr, int len, unsigned int asid);
  * segno negativo.
  * */
 static int write_to_terminal(unsigned int virtAddr, int len, unsigned int asid);
+
 /**
  * @brief Systemcall READ FROM TERMINAL (SYS5). Legge un input dal terminale e
  * lo salva in memoria
@@ -74,16 +98,21 @@ inline void terminate(void) { SYSCALL(TERMPROCESS, act_proc->p_pid, 0, 0); }
 
 inline int write_to_printer(unsigned int virtAddr, int len, unsigned int asid)
 {
+  dtpreg_t *dev_reg;
+  size_tt i;
+
   if (len > 128 || len < 0 || virtAddr < KUSEG) {
     return SYSCALL(TERMINATE, 0, 0, 0);
   }
 
-  dtpreg_t *dev_reg = (dtpreg_t *)DEV_REG_ADDR(
-      IL_PRINTER, asid - 1); // asid è l'id del processo, associazione 1:1 tra
-                             // processi e devices
-  // ciclo che scorre tutta la stringa, inserisce su dev_reg.data0 il carattere
-  // attuale, chiama la syscall e poi riesegue
-  int i;
+  /* Richiedo la mutua esclusione */
+  SYSCALL(PASSEREN, (unsigned int)&dev_sems[PRINTER_SEMS][asid - 1], 0, 0);
+
+  /* asid è l'id del processo, associazione 1:1 tra processi e devices */
+  dev_reg = (dtpreg_t *)DEV_REG_ADDR(IL_PRINTER, asid - 1);
+
+  /* ciclo che scorre tutta la stringa, inserisce su dev_reg.data0 il carattere
+   attuale, chiama la syscall e poi riesegue */
   for (i = 0; i < len; i++) {
     dev_reg->data0 = virtAddr + i; // carico il carattere da trasmettere sul
                                    // campo data0, data1 non viene usato
@@ -94,99 +123,130 @@ inline int write_to_printer(unsigned int virtAddr, int len, unsigned int asid)
     if (dev_reg->status != READY)
       return -dev_reg->status;
   }
+
+  /* Rilascio la mutua esclusione */
+  SYSCALL(VERHOGEN, (unsigned int)&dev_sems[PRINTER_SEMS][asid - 1], 0, 0);
   return i;
 }
 
 inline int write_to_terminal(unsigned int virtAddr, int len, unsigned int asid)
 {
+  termreg_t *dev_reg;
+  int i;
+
   if (len > 128 || len < 0 || virtAddr < KUSEG) {
     return SYSCALL(TERMINATE, 0, 0, 0);
   }
 
-  termreg_t *dev_reg = (termreg_t *)DEV_REG_ADDR(
-      IL_TERMINAL, asid - 1); // asid è l'id del processo, associazione 1:1 tra
-                              // processi e devices
-  int i;
+  /* Richiedo la mutua esclusione */
+  SYSCALL(PASSEREN, (unsigned int)&dev_sems[TERMOUT_SEMS][asid - 1], 0, 0);
+
+  /* asid è l'id del processo, associazione 1:1 tra processi e devices */
+  dev_reg = (termreg_t *)DEV_REG_ADDR(IL_TERMINAL, asid - 1);
+
   for (i = 0; i < len; i++) {
-    dev_reg->transm_command =
-        virtAddr + i; // carico il carattere da trasmettere sul campo data0,
-                      // data1 non viene usato
+    /* carico il carattere da trasmettere sul campo data0, data1 non viene usato
+     */
+    dev_reg->transm_command = virtAddr + i;
+
     if (*((char *)(virtAddr + i)) == '\0') {
       break;
     }
+
     SYSCALL(DOIO, (int)&dev_reg->transm_command, TRANSMITCHAR, 0);
+
     if (dev_reg->transm_status != OKCHARTRANS)
       return -dev_reg->transm_status;
   }
+
+  /* Rilascio la mutua esclusione */
+  SYSCALL(VERHOGEN, (unsigned int)&dev_sems[TERMOUT_SEMS][asid - 1], 0, 0);
+
   return i;
 }
 
 inline int read_from_terminal(unsigned int virtAddr, unsigned int asid)
 {
-  termreg_t *dev_reg = (termreg_t *)DEV_REG_ADDR(IL_TERMINAL, asid - 1);
+  termreg_t *dev_reg;
   unsigned int charnstatus;
   unsigned int status;
   int i = 0;
+
   if (virtAddr < KUSEG)
     return SYSCALL(TERMINATE, 0, 0, 0);
+
+  /* Richiedo la mutua esclusione */
+  SYSCALL(PASSEREN, (unsigned int)&dev_sems[TERMIN_SEMS][asid - 1], 0, 0);
+
+  dev_reg = (termreg_t *)DEV_REG_ADDR(IL_TERMINAL, asid - 1);
+
   do {
-    // Il return della SYSCALL ha nel primo byte lo status, e nel secondo il
-    // carattere ricevuto
+    /* Il return della SYSCALL ha nel primo byte lo status, e nel secondo il
+     carattere ricevuto */
     charnstatus =
         SYSCALL(DOIO, (unsigned int)&dev_reg->recv_command, TRANSMITCHAR, 0);
-    status =
-        charnstatus & (0xFF); // maschero il return value per leggere lo status
+
+    /* maschero il return value per leggere lo status */
+    status = charnstatus & (0xFF);
+
     if (status != OKCHARTRANS)
       return -status;
-    *((char *)virtAddr++) =
-        charnstatus >>
-        8; // shifto di 8 bit per trattenere soltanto il carattere letto
+
+    /* shifto di 8 bit per trattenere soltanto il carattere letto */
+    *((char *)virtAddr++) = charnstatus >> 8;
     i++;
-  } while (
-      charnstatus >> 8 !=
-      '\0'); // Da verificare se vogliamo prendere in input anche \0 oppure solo
-             // i caratteri effettivi (per ora per sicurezza lo faccio)
+
+    /* TODO Da verificare se vogliamo prendere in input anche \0 oppure solo i
+     * caratteri effettivi (per ora per sicurezza lo faccio) */
+  } while (charnstatus >> 8 != '\0');
+
+  /* Rilascio la mutua esclusione */
+  SYSCALL(VERHOGEN, (unsigned int)&dev_sems[TERMIN_SEMS][asid - 1], 0, 0);
+
   return i;
 }
 
 void support_exec_handler(void)
 {
+  support_t *act_proc_sup;
+  unsigned int cause;
+
   LOG("seh");
 
-  support_t *act_proc_sup = (support_t *)SYSCALL(GETSUPPORTPTR, 0, 0, 0);
+  act_proc_sup = (support_t *)SYSCALL(GETSUPPORTPTR, 0, 0, 0);
+
   if (act_proc_sup == NULL) {
     LOG("Error on get support");
     return;
   }
-  unsigned int cause =
-      CAUSE_GET_EXCCODE(act_proc_sup->sup_exceptState[GENERALEXCEPT].cause);
+
+  cause = CAUSE_GET_EXCCODE(act_proc_sup->sup_exceptState[GENERALEXCEPT].cause);
 
   LOGi("ex", cause);
 
+  /* Se e' una syscall */
   if (cause == EXC_SYS) {
     support_syscall_handler(act_proc_sup);
   } else {
+    /* Altrimenti la gestiamo come trap */
     support_trap_handler(act_proc_sup);
   }
-
-  // se exc è syscall
-  // support_syscall_handler(act_proc_sup)
-  // altrimenti se exc è trap
-  // support_trap_handler()
 }
 
 void support_syscall_handler(support_t *act_proc_sup)
 {
   unsigned int arg1, arg2;
+  int number, ret;
 
-  int number =
+  number =
       CAUSE_GET_EXCCODE(act_proc_sup->sup_exceptState[GENERALEXCEPT].cause);
   arg1 = act_proc_sup->sup_exceptState[1].reg_a1;
   arg2 = act_proc_sup->sup_exceptState[1].reg_a2;
 
-  int ret =
-      -2147483648; // uso INTMIN per evitare conflitti con i valori di ritorno
-                   // che possono essere numeri negativi, 0 e positivi
+  /* uso INTMIN per evitare conflitti con i valori di ritorno che possono
+   * essere numeri negativi, 0 e positivi */
+  ret = INTMIN;
+
   switch (number) {
   case GETTOD: {
     ret = get_TOD();
@@ -214,18 +274,18 @@ void support_syscall_handler(support_t *act_proc_sup)
   }
   }
 
-  // dopo il completamento con successo della syscall inserisco il valore di
-  // ritorno nel registro v0 del processo chiamante
-  if (ret !=
-      -2147483648) // uso INTMIN per evitare conflitti con i valori di ritorno
-                   // che possono essere numeri negativi, 0 e positivi
+  /* Dopo il completamento con successo della syscall inserisco il valore di
+     ritorno nel registro v0 del processo chiamante */
+  if (ret != INTMIN) {
     act_proc_sup->sup_exceptState[1].reg_v0 = ret;
+  }
 
+  /* Incremento PC di 4 */
   act_proc_sup->sup_exceptState[1].pc_epc =
       act_proc_sup->sup_exceptState[1].reg_t9 =
-          act_proc_sup->sup_exceptState[1].pc_epc +
-          WORDLEN; // incremento PC di 4
+          act_proc_sup->sup_exceptState[1].pc_epc + WORDLEN;
 
+  /* Lascio il controllo al processo corrente caricando lo stato salvato */
   LDST(&act_proc_sup->sup_exceptState[1]);
 }
 

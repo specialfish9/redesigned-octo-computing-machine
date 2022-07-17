@@ -12,13 +12,18 @@
 #include "umps3/umps/cp0.h"
 #include "utils.h"
 #include <umps3/umps/arch.h>
-#include <umps3/umps/const.h>
 #include <umps3/umps/libumps.h>
 
 /**
  * @brief Dimensione della Swap Pool
  * */
 #define SWAP_POOL_SIZE 2 * UPROCMAX
+
+/**
+ * @brief Indicatore dei semafori per i flash device nella matrice dei semafori
+ * dei device
+ * */
+#define FLASH_SEMS IL_FLASH - IL_DISK
 
 /**
  * @brief Indirizzo di inizio della Swap Pool
@@ -54,10 +59,16 @@ typedef struct {
  * */
 static swppl_entry_t swppl_tbl[SWAP_POOL_SIZE];
 
-/*
+/**
  * @var Semaforo mutex per la swap pool
  * */
 int swp_pl_sem;
+
+/**
+ * @var Semafori per l'accesso in mutua esclusione ai device. Usati dal livello
+ * supporto. Vengono inizializzati con @ref init_supp_structure.
+ * */
+int dev_sems[DEVINTNUM][DEVPERINT];
 
 /*
  * @var Putatore al frame da scegliere quando si esegue l'algoritmo di
@@ -89,7 +100,7 @@ static inline int update_tlb(unsigned int entryHi, unsigned int entryLo);
 
 inline void init_supp_structures(void)
 {
-  size_tt i;
+  size_tt i, j;
 
   /* Inizializza il semaforo di mutua esclusione della swap pool a 1 */
   swp_pl_sem = 1;
@@ -97,6 +108,11 @@ inline void init_supp_structures(void)
   /* Imposta tutti i frame della swap pool come 'liberi' */
   for (i = 0; i < SWAP_POOL_SIZE; i++)
     swppl_tbl[i].asid = -1;
+
+  /* Inizializza tutti i semafori dei device a 1 */
+  for (i = 0; i < DEVINTNUM; i++)
+    for (j = 0; j < DEVPERINT; j++)
+      dev_sems[i][j] = 1;
 }
 
 inline void tlb_exc_handler(void)
@@ -148,6 +164,11 @@ inline void tlb_exc_handler(void)
       /* Riabilito gli interrupt */
       toggle_int(TRUE);
 
+      /* Guadagno l'accesso al device in mutua esclusione */
+      SYSCALL(PASSEREN,
+              (unsigned int)&dev_sems[FLASH_SEMS][act_proc_sup->sup_asid - 1],
+              0, 0);
+
       /* Prendo i registri del device */
       dtpreg_t *dev_reg =
           (dtpreg_t *)DEV_REG_ADDR(FLASHINT, act_proc_sup->sup_asid - 1);
@@ -156,15 +177,28 @@ inline void tlb_exc_handler(void)
       dev_reg->data0 = ENTRYLO_GET_PFN(proc_pgtbl_entry->pte_entryLO);
 
       /* Scrivo su command il comando per scrivere (lol)*/
-      unsigned int dev_stat;
+      unsigned int dev_stat =
+          SYSCALL(DOIO, (unsigned int)&dev_reg->command, FLASHWRITE, 0);
+
+      /* Rilascio la mutua esclusione */
+      SYSCALL(VERHOGEN,
+              (unsigned int)&dev_sems[FLASH_SEMS][act_proc_sup->sup_asid - 1],
+              0, 0);
+
       /* TODO controlalre che effettivamente il command register venga impostato
        * correttamente */
-      if ((dev_stat = SYSCALL(DOIO, (unsigned int)&dev_reg->command, FLASHWRITE,
-                              0)) != READY) {
+
+      /* Controllo che la DO IO sia andata a buon fine */
+      if (dev_stat != READY) {
         LOGi("error writing frame to dev", dev_stat);
         return;
       }
     }
+
+    /* Guadagno l'accesso al device in mutua esclusione */
+    SYSCALL(PASSEREN,
+            (unsigned int)&dev_sems[FLASH_SEMS][act_proc_sup->sup_asid - 1], 0,
+            0);
 
     /* Prendo il device register del dispositivo flash associato al processo */
     dtpreg_t *dev_reg =
@@ -179,9 +213,16 @@ inline void tlb_exc_handler(void)
     unsigned int cmdval = (mpg_no << 8) | FLASHREAD;
 
     /* Uso la NSYS5 per dire al controller del device di leggere */
-    unsigned int dev_stat;
-    if ((dev_stat = SYSCALL(DOIO, (unsigned int)&dev_reg->command, cmdval,
-                            0)) != READY) {
+    unsigned int dev_stat =
+        SYSCALL(DOIO, (unsigned int)&dev_reg->command, cmdval, 0);
+
+    /* Rilascio la mutua esclusione */
+    SYSCALL(VERHOGEN,
+            (unsigned int)&dev_sems[FLASH_SEMS][act_proc_sup->sup_asid - 1], 0,
+            0);
+
+    /* Controllo che la DO IO sia andata a buon fine */
+    if (dev_stat != READY) {
       LOGi("error reading frame content from dev", dev_stat);
       return;
     }

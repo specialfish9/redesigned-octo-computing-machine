@@ -27,9 +27,6 @@ extern void tlb_exc_handler(void);
  * */
 extern void support_exec_handler(void);
 
-/* TODO */
-static int semaforo_a_cazzo = 0;
-
 /**
  * @brief Inizializza una tabella delle pagine privata
  * @param tbl la tabella da inizializzare
@@ -42,8 +39,10 @@ inline void instantiator_proc(void)
   state_t tp_states[UPROCMAX];
   static support_t tp_supps[UPROCMAX];
   size_tt i;
+  int init_sem;
 
   init_supp_structures();
+  init_sem = 0;
 
   for (i = 1; i <= 1 /*UPROCMAX*/; i++) {
     logi(LOG, "creating uproc", i);
@@ -84,8 +83,7 @@ inline void instantiator_proc(void)
     logi(LOG, "created uproc ", i);
   }
 
-  for (i = 0; i < 1 /*UPROCMAX*/; i++)
-    SYSCALL(PASSEREN, (unsigned int)&semaforo_a_cazzo, 0, 0);
+  SYSCALL(PASSEREN, (unsigned int)&init_sem, 0, 0);
 }
 
 inline void init_page_table(pteEntry_t *tbl, const int asid)
