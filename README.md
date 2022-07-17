@@ -67,6 +67,8 @@ documentazione generata del codice.
      * __pandos_types:__ tipi predefiniti di PandOS.
      * __pandos_const:__ costanti predefinite di PandOS. 
 
+## Fase 2
+
 ### Kernel
 Nel modulo kernel si trovano due funzioni molto importanti: ```main``` e
 ```exception_handler```. La prima si occupa dell'inizializzazione del kernel. 
@@ -103,6 +105,21 @@ corrispondente alla linea di interrupt attiva e restituisce l'azione che
 l'exception handler deve svolgere una volta gestito l'interrupt. Per la gestione 
 delle linee associate ai vari device è presente la funzione 
 ```generic_interrupt_handler```.
+
+## Fase 3
+
+### Syscalls di supporto e gestore trap
+Questo modulo racchiude un gestore generico (```support_exec_handler```, richiamato dal livello sottostante 
+tramite Pass Up or Die) con lo scopo di scindere le syscall del livello supporto dalle trap. 
+A seguito della divisione, sono presenti altri due handler: ```support_syscall_handler``` e ```support_trap_handler```.
+Il primo gestore ha lo scopo di determinare quale chiamata si sia verificata, eseguire le azioni corrispondenti
+e, se l'esecuzione ha successo, inserire il valore di ritorno nel registro v0. Alcuni dei servizi forniti sono la scrittura
+su stampante (SYS3) e la lettura/scrittura su terminale (SYS4 e SYS5).
+Il gestore delle trap verifica se il processo corrente mantiene una mutua esclusione su un semaforo del
+livello supporto, la rilsacia e lo termina tramite la SYS2 (```terminate```).
+
+### Gestore memoria virtuale
+TODO
 
 ## Scelte implementative
 
