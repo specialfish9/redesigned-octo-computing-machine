@@ -17,7 +17,7 @@
 /**
  * @brief Dimensione della Swap Pool
  * */
-#define SWAP_POOL_SIZE 2 * UPROCMAX
+#define SWAP_POOL_SIZE (2 * UPROCMAX)
 
 /**
  * @brief Indicatore dei semafori per i flash device nella matrice dei semafori
@@ -69,12 +69,6 @@ int swp_pl_sem;
  * supporto. Vengono inizializzati con @ref init_supp_structure.
  * */
 int dev_sems[DEVINTNUM][DEVPERINT];
-
-/*
- * @var Putatore al frame da scegliere quando si esegue l'algoritmo di
- * rimpiazzamento
- * */
-static size_tt frm_ch_ptr = 0;
 
 /**
  * @brief Implementa l'algoritmo di rimpiazzamento per i frame nella swap pool
@@ -278,8 +272,16 @@ int update_tlb(unsigned int entryHi, unsigned int entryLo)
 
 int chose_frame(void)
 {
-  frm_ch_ptr %= SWAP_POOL_SIZE;
-  return frm_ch_ptr++;
+  static size_tt frame_top = 0;
+  size_tt i;
+
+  for (i = 0; i < SWAP_POOL_SIZE; i++) {
+    if (swppl_tbl[(frame_top + i ) % SWAP_POOL_SIZE].asid == -1) {
+      return frame_top = (frame_top + i) % SWAP_POOL_SIZE;
+    }
+  }
+
+  return frame_top = (frame_top + 1) % SWAP_POOL_SIZE;
 }
 
 void toggle_int(int on)

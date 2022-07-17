@@ -56,7 +56,7 @@ inline void instantiator_proc(void)
 
     /* Timer enabled, interrupts enabled and usermode */
     tp_states[i - 1].status =
-        STATUS_TE | STATUS_IEc | STATUS_KUc | STATUS_IM_MASK;
+        (STATUS_TE | STATUS_IEc | STATUS_KUp | STATUS_IM_MASK | STATUS_CU0);
     /*for (int j = 0; j < 8; j ++) {
       tp_states[i].status |= STATUS_IM_BIT(j);
     }*/
@@ -70,8 +70,8 @@ inline void instantiator_proc(void)
     context[0].pc = (memaddr)tlb_exc_handler;
     context[1].pc = (memaddr)support_exec_handler;
     /* Timer enabled, interupts on and kernel mode */
-    context[0].status = STATUS_TE | STATUS_IM_MASK | STATUS_KUc | STATUS_IEc;
-    context[1].status = STATUS_TE | STATUS_IM_MASK | STATUS_KUc | STATUS_IEc;
+    context[0].status = (STATUS_TE | STATUS_IM_MASK | STATUS_KUp | STATUS_IEc) ^ STATUS_KUp;
+    context[1].status = (STATUS_TE | STATUS_IM_MASK | STATUS_KUp | STATUS_IEc) ^ STATUS_KUp;
     /* Set stack ptr to the end of the stack minus 1 */
     context[0].stackPtr = (memaddr)&tp_supps[i].sup_stackTLB[500 - 1];
     context[1].stackPtr = (memaddr)&tp_supps[i].sup_stackGen[500 - 1];
