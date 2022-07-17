@@ -274,13 +274,16 @@ int chose_frame(void)
 {
   static size_tt frame_top = 0;
   size_tt i;
-
+  
+  /* Partendo dall'ultimo frame scelto scorriamo la tabella della swap pool 
+   * in modo circolare finchè non ne troviamo uno libero.*/
   for (i = 0; i < SWAP_POOL_SIZE; i++) {
     if (swppl_tbl[(frame_top + i ) % SWAP_POOL_SIZE].asid == -1) {
       return frame_top = (frame_top + i) % SWAP_POOL_SIZE;
     }
   }
 
+  /* Se sono tutti occupati ritorniamo il frame successivo all'ultimo scelto */
   return frame_top = (frame_top + 1) % SWAP_POOL_SIZE;
 }
 

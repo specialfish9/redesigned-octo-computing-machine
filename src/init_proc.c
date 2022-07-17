@@ -55,12 +55,9 @@ inline void instantiator_proc(void)
     tp_states[i - 1].reg_sp = USERSTACKTOP;
 
     /* Timer enabled, interrupts enabled and usermode */
-    tp_states[i - 1].status =
-        (STATUS_TE | STATUS_IEc | STATUS_KUp | STATUS_IM_MASK | STATUS_CU0);
-    /*for (int j = 0; j < 8; j ++) {
-      tp_states[i].status |= STATUS_IM_BIT(j);
-    }*/
-    tp_states[i - 1].entry_hi = 0 & (i << ENTRYHI_ASID_BIT);
+    tp_states[i - 1].status = STATUS_TE | STATUS_IEc | STATUS_KUp | STATUS_IM_MASK | STATUS_CU0;
+
+    tp_states[i - 1].entry_hi = i << ENTRYHI_ASID_BIT;
 
     /* support */
     tp_supps[i - 1].sup_asid = i;
@@ -73,8 +70,8 @@ inline void instantiator_proc(void)
     context[0].status = (STATUS_TE | STATUS_IM_MASK | STATUS_KUp | STATUS_IEc) ^ STATUS_KUp;
     context[1].status = (STATUS_TE | STATUS_IM_MASK | STATUS_KUp | STATUS_IEc) ^ STATUS_KUp;
     /* Set stack ptr to the end of the stack minus 1 */
-    context[0].stackPtr = (memaddr)&tp_supps[i].sup_stackTLB[500 - 1];
-    context[1].stackPtr = (memaddr)&tp_supps[i].sup_stackGen[500 - 1];
+    context[0].stackPtr = (memaddr) &tp_supps[i].sup_stackTLB[500 - 1];
+    context[1].stackPtr = (memaddr) &tp_supps[i].sup_stackGen[500 - 1];
 
     memcpy(tp_supps[i - 1].sup_exceptContext, context, sizeof(context_t));
 
@@ -93,7 +90,7 @@ inline void init_page_table(pteEntry_t *tbl, const int asid)
   for (i = 0; i < USERPGTBLSIZE; i++) {
     if (i < USERPGTBLSIZE - 1) {
       /* Se non è l'ultima entry impostiamo il virtual page number */
-      tbl[i].pte_entryHI = (0x80000) << VPNSHIFT;
+      tbl[i].pte_entryHI = (0x80000 + i) << VPNSHIFT;
     } else {
       /* Se è l'ultima entry (quella associata alla pagina contenente la stack
        * del uproc) settiamo l'indirizzo 0xBFFFFF000, ovvero il bottom della
