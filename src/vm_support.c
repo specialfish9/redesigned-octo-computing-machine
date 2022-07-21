@@ -31,11 +31,6 @@
  * */
 #define SWAP_POOL_BEGIN 0x20020000
 
-/**
- * @brief Macro per l'aggiornamento del campo PFN di un entry lo
- * */
-#define CALC_NEW_PFN(entryLO, pfn) pfn | (entryLO & 2047)
-
 /* Macro per il log */
 #define LOG(s) log("VM", s)
 #define LOGi(s, i) logi("VM", s, i)
@@ -110,6 +105,8 @@ inline void init_supp_structures(void)
       dev_sems[i][j] = 1;
 }
 
+void f2() {}
+
 inline void tlb_exc_handler(void)
 {
   support_t *act_proc_sup = (support_t *)SYSCALL(GETSUPPORTPTR, 0, 0, 0);
@@ -129,9 +126,8 @@ inline void tlb_exc_handler(void)
     /* P sul semaforo della swap pool */
     SYSCALL(PASSEREN, (unsigned int)&swp_pl_sem, 0, 0);
 
-    size_tt missing_pg =
-        act_proc_sup->sup_exceptState[PGFAULTEXCEPT].entry_hi >> VPNSHIFT;
-    size_tt mpg_no = PAGE_N(missing_pg);
+    size_tt missing_pg = ENTRYHI_GET_VPN(act_proc_sup->sup_exceptState[PGFAULTEXCEPT].entry_hi);
+    size_tt mpg_no = missing_pg;
     LOGi("Missing pgno", mpg_no);
     LOGi("Missing pg", missing_pg);
 
@@ -230,12 +226,10 @@ inline void tlb_exc_handler(void)
     /* Disabilito gli interrupt per eseguire in modo atomico */
     toggle_int(FALSE);
 
-    /* Aggiorno la page table del processo segnando la pagina valida */
-    act_proc_sup->sup_privatePgTbl[mpg_no].pte_entryLO |= ENTRYLO_VALID;
-
-    /* e mettendo il nuovo pfn */
-    act_proc_sup->sup_privatePgTbl[mpg_no].pte_entryLO = CALC_NEW_PFN(
-        act_proc_sup->sup_privatePgTbl[mpg_no].pte_entryLO, sp_addr);
+    unsigned int sp_addr2=
+        (unsigned int)0x20020+ (chosen_frame * PAGESIZE);
+    /* Aggiorno la page table del processo segnando la pagina valida e mettendo il nuovo pfn */
+    act_proc_sup->sup_privatePgTbl[mpg_no].pte_entryLO = (sp_addr2 << ENTRYLO_PFN_BIT) | ENTRYLO_VALID | ENTRYLO_DIRTY;
 
     /* Aggiorno il TLB */
     update_tlb(act_proc_sup->sup_privatePgTbl[mpg_no].pte_entryHI,
@@ -247,13 +241,14 @@ inline void tlb_exc_handler(void)
     /* V nel semaforo della swap table per rilasciare la mutua esclusione */
     SYSCALL(VERHOGEN, (unsigned int)&swp_pl_sem, 0, 0);
 
+    f2();
     LDST(&act_proc_sup->sup_exceptState[0]);
   }
 }
 
 int update_tlb(unsigned int entryHi, unsigned int entryLo)
 {
-#define P_BIT 0x40000000
+  #define P_BIT 0x40000000
   unsigned int index;
 
   setENTRYHI(entryHi);
@@ -264,6 +259,7 @@ int update_tlb(unsigned int entryHi, unsigned int entryLo)
     LOG("TLB probe failed");
     return 0;
   }
+
   setENTRYLO(entryLo);
   TLBWI();
   LOG("TLB updated");
@@ -276,7 +272,7 @@ int chose_frame(void)
   size_tt i;
   
   /* Partendo dall'ultimo frame scelto scorriamo la tabella della swap pool 
-   * in modo circolare finchè non ne troviamo uno libero.*/
+     * in modo circolare finchè non ne troviamo uno libero.*/
   for (i = 0; i < SWAP_POOL_SIZE; i++) {
     if (swppl_tbl[(frame_top + i ) % SWAP_POOL_SIZE].asid == -1) {
       return frame_top = (frame_top + i) % SWAP_POOL_SIZE;
@@ -292,6 +288,6 @@ void toggle_int(int on)
   if (on) {
     setSTATUS(getSTATUS() | 1);
   } else {
-    setSTATUS((getSTATUS() >> 1) << 1);
+    setSTATUS((getSTATUS() | 1) ^ 1);
   }
 }

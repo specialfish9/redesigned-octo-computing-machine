@@ -103,16 +103,19 @@ void exception_handler(void)
   cpu_t now;
   int reenqueue = RENQUEUE;
   size_tt i;
+  state_t *saved_state;
 
-  cause = CAUSE_GET_EXCCODE(getCAUSE());
+  saved_state = (state_t *)BIOSDATAPAGE;
+  cause = CAUSE_GET_EXCCODE(saved_state->cause);
+
+  if (act_proc != NULL) {
+    memcpy(&act_proc->p_s, saved_state, sizeof(state_t));
+  } else {
+    // TODO
+  }
 
   if (cause != 8 && cause != 0)
     LOGi("ex", cause);
-
-  if (act_proc != NULL) {
-    state_t *saved_state = (state_t *)BIOSDATAPAGE;
-    memcpy(&act_proc->p_s, saved_state, sizeof(state_t));
-  }
 
   if (cause == EXC_INT) {
     /* Interrupts */
@@ -171,9 +174,11 @@ void exception_handler(void)
   scheduler_next();
 }
 
-static unsigned int debugK;
-static unsigned int debugK2;
 
+void f() {}
+
+static  unsigned int debug;
+static  unsigned int debug2;
 void uTLB_RefillHandler(void)
 {
   state_t *exc_state;
@@ -183,22 +188,26 @@ void uTLB_RefillHandler(void)
 
   /* 1) Trova l'entry corretta nella page table del processo */
   exc_state = (state_t *)BIOSDATAPAGE;
-  missing_page = exc_state->entry_hi >> VPNSHIFT;
-  pg_n = PAGE_N(missing_page);
+  missing_page = ENTRYHI_GET_VPN(exc_state->entry_hi);
+  
+  if (missing_page == 0x3ffff) {
+    pg_n = 31;
+  }
+  else pg_n = missing_page; //PAGE_N(missing_page);
   LOGi("TLBREFILL", missing_page);
 
-  debugK = missing_page = exc_state->entry_hi >> VPNSHIFT;
-  debugK2 = ENTRYHI_GET_VPN(missing_page = exc_state->entry_hi);
+  debug = exc_state->entry_hi;
+  debug2 = exc_state->cause;
 
   missing_entry = act_proc->p_supportStruct->sup_privatePgTbl[pg_n];
 
-  /* 2) Scrivi l'entry nel TLB */
   setENTRYHI(missing_entry.pte_entryHI);
   setENTRYLO(missing_entry.pte_entryLO);
   TLBWR();
 
+  f();
+
   /* 3) Ritorna il controllo al processo corrente per riprovare il processo
    * di traduzione dell'indirizzo */
-  enqueue_proc(act_proc, act_proc->p_prio);
-  scheduler_next();
+  LDST(exc_state);
 }
