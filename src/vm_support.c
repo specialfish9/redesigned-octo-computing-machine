@@ -21,12 +21,6 @@
 #define SWAP_POOL_SIZE (2 * UPROCMAX)
 
 /**
- * @brief Indicatore dei semafori per i flash device nella matrice dei semafori
- * dei device
- * */
-#define FLASH_SEMS IL_FLASH - IL_DISK
-
-/**
  * @brief Indirizzo di inizio della Swap Pool
  * */
 #define SWAP_POOL_BEGIN 0x20020000
@@ -105,10 +99,13 @@ inline void init_supp_structures(void)
       dev_sems[i][j] = 1;
 }
 
-void f2() {}
+void f2(){}
+void f3(){}
+unsigned int var3;
 
 inline void tlb_exc_handler(void)
 {
+
   support_t *act_proc_sup = (support_t *)SYSCALL(GETSUPPORTPTR, 0, 0, 0);
   if (act_proc_sup == NULL) {
     LOG("Error on getsupport");
@@ -117,6 +114,9 @@ inline void tlb_exc_handler(void)
 
   unsigned int cause =
       CAUSE_GET_EXCCODE(act_proc_sup->sup_exceptState[PGFAULTEXCEPT].cause);
+
+  var3 = cause;
+  f3();
 
   if (cause == EXC_MOD) {
     LOG("EXECMOD");
@@ -127,7 +127,11 @@ inline void tlb_exc_handler(void)
     SYSCALL(PASSEREN, (unsigned int)&swp_pl_sem, 0, 0);
 
     size_tt missing_pg = ENTRYHI_GET_VPN(act_proc_sup->sup_exceptState[PGFAULTEXCEPT].entry_hi);
-    size_tt mpg_no = missing_pg;
+
+    /* Controllo se la pagina mancante è quella della stack */
+    int is_stk = missing_pg == STK_PG;
+    size_tt mpg_no = is_stk? USERPGTBLSIZE - 1 : missing_pg;
+
     LOGi("Missing pgno", mpg_no);
     LOGi("Missing pg", missing_pg);
 
@@ -139,6 +143,7 @@ inline void tlb_exc_handler(void)
     /* Guardo se il frame selezionato e' occupato */
     if (ch_frame_entry->asid != -1) {
       LOG("occupato");
+
       /* Recupero la tabella delle pagine del processo */
       pteEntry_t *proc_pgtbl_entry = ch_frame_entry->pg_tbl_entry;
 
@@ -195,8 +200,7 @@ inline void tlb_exc_handler(void)
         (dtpreg_t *)DEV_REG_ADDR(FLASHINT, act_proc_sup->sup_asid - 1);
 
     /* Scrivi il contenuto di data0 sul frame della swap pool scelto */
-    unsigned int sp_addr =
-        (unsigned int)SWAP_POOL_BEGIN + (chosen_frame * PAGESIZE);
+    unsigned int sp_addr = (unsigned int)SWAP_POOL_BEGIN + (chosen_frame * PAGESIZE);
     dev_reg->data0 = sp_addr;
 
     /* Imposto il command */
@@ -226,8 +230,8 @@ inline void tlb_exc_handler(void)
     /* Disabilito gli interrupt per eseguire in modo atomico */
     toggle_int(FALSE);
 
-    unsigned int sp_addr2=
-        (unsigned int)0x20020+ (chosen_frame * PAGESIZE);
+    /* TODO rename */
+    unsigned int sp_addr2 = (unsigned int)0x20020 + (chosen_frame * PAGESIZE);
     /* Aggiorno la page table del processo segnando la pagina valida e mettendo il nuovo pfn */
     act_proc_sup->sup_privatePgTbl[mpg_no].pte_entryLO = (sp_addr2 << ENTRYLO_PFN_BIT) | ENTRYLO_VALID | ENTRYLO_DIRTY;
 
@@ -235,13 +239,12 @@ inline void tlb_exc_handler(void)
     update_tlb(act_proc_sup->sup_privatePgTbl[mpg_no].pte_entryHI,
                act_proc_sup->sup_privatePgTbl[mpg_no].pte_entryLO);
 
-    /* riabilito gli interrupt */
+    /* Riabilito gli interrupt */
     toggle_int(TRUE);
 
     /* V nel semaforo della swap table per rilasciare la mutua esclusione */
     SYSCALL(VERHOGEN, (unsigned int)&swp_pl_sem, 0, 0);
 
-    f2();
     LDST(&act_proc_sup->sup_exceptState[0]);
   }
 }

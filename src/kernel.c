@@ -13,6 +13,7 @@
 #include "interrupts.h"
 #include "pandos_const.h"
 #include "pandos_types.h"
+#include "vm_support.h"
 #include "pcb.h"
 #include "scheduler.h"
 #include "syscalls.h"
@@ -174,11 +175,9 @@ void exception_handler(void)
   scheduler_next();
 }
 
+void bp() {}
+unsigned int var1, var2;
 
-void f() {}
-
-static  unsigned int debug;
-static  unsigned int debug2;
 void uTLB_RefillHandler(void)
 {
   state_t *exc_state;
@@ -186,28 +185,25 @@ void uTLB_RefillHandler(void)
   unsigned int missing_page;
   pteEntry_t missing_entry;
 
-  /* 1) Trova l'entry corretta nella page table del processo */
+  /* Trova l'entry corretta nella page table del processo */
   exc_state = (state_t *)BIOSDATAPAGE;
   missing_page = ENTRYHI_GET_VPN(exc_state->entry_hi);
   
-  if (missing_page == 0x3ffff) {
-    pg_n = 31;
-  }
-  else pg_n = missing_page; //PAGE_N(missing_page);
-  LOGi("TLBREFILL", missing_page);
+  pg_n = missing_page == STK_PG? USERPGTBLSIZE - 1 :  missing_page;
 
-  debug = exc_state->entry_hi;
-  debug2 = exc_state->cause;
+  LOGi("TLBREFILL-np", pg_n);
 
   missing_entry = act_proc->p_supportStruct->sup_privatePgTbl[pg_n];
 
+  var1 = exc_state->status;
+  var2 = exc_state->entry_hi;
+
+  bp();
   setENTRYHI(missing_entry.pte_entryHI);
   setENTRYLO(missing_entry.pte_entryLO);
   TLBWR();
 
-  f();
-
-  /* 3) Ritorna il controllo al processo corrente per riprovare il processo
+  /* Ritorna il controllo al processo corrente per riprovare il processo
    * di traduzione dell'indirizzo */
   LDST(exc_state);
 }

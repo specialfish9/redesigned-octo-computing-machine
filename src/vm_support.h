@@ -7,6 +7,30 @@
 
 #include <umps3/umps/const.h>
 
+/*TODO doc*/
+#define STK_PG 0x3FFFF
+#define FIRST_PG_ADDR 0x80000
+#define STK_PG_ADDR 0xBFFFF
+
+/**
+ * @brief Indicatore dei semafori per i flash device nella matrice dei semafori
+ * dei device
+ * */
+#define FLASH_SEMS IL_FLASH - IL_DISK
+
+/**
+ * @brief Indicatore dei semafori per il printer device nella matrice dei
+ * semafori dei device
+ * */
+#define PRINTER_SEMS IL_PRINTER - IL_DISK
+
+/**
+ * @brief Indicatore dei semafori per il terminale nella matrice dei semafori
+ * dei device
+ * */
+#define TERMIN_SEMS IL_TERMINAL - IL_DISK
+#define TERMOUT_SEMS IL_TERMINAL - IL_DISK + 1
+
 /**
  * @var Semaforo mutex per la Swap Pool
  * */

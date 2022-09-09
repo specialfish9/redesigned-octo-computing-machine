@@ -55,7 +55,7 @@ inline void instantiator_proc(void)
     tp_states[i - 1].reg_sp = USERSTACKTOP;
 
     /* Timer enabled, interrupts enabled and usermode */
-    tp_states[i - 1].status = STATUS_TE | STATUS_IEc | STATUS_KUp | STATUS_IM_MASK | STATUS_CU0;
+    tp_states[i - 1].status = STATUS_TE | STATUS_IEc | STATUS_KUp | STATUS_IM_MASK;
 
     tp_states[i - 1].entry_hi = i << ENTRYHI_ASID_BIT;
 
@@ -92,12 +92,12 @@ inline void init_page_table(pteEntry_t *tbl, const int asid)
   for (i = 0; i < USERPGTBLSIZE; i++) {
     if (i < USERPGTBLSIZE - 1) {
       /* Se non è l'ultima entry impostiamo il virtual page number */
-      tbl[i].pte_entryHI = (0x80000 + i)  << VPNSHIFT;
+      tbl[i].pte_entryHI = (FIRST_PG_ADDR + i)  << VPNSHIFT;
     } else {
       /* Se è l'ultima entry (quella associata alla pagina contenente la stack
        * del uproc) settiamo l'indirizzo 0xBFFFF, ovvero il bottom della
        * stack */
-      tbl[i].pte_entryHI = 0xBFFFF << VPNSHIFT;
+      tbl[i].pte_entryHI = STK_PG_ADDR << VPNSHIFT;
     }
 
     tbl[i].pte_entryHI |= (asid << ASIDSHIFT);
