@@ -102,6 +102,8 @@ inline void init_supp_structures(void)
 void f2(){}
 void f3(){}
 unsigned int var3;
+unsigned int var4;
+unsigned int var5;
 
 inline void tlb_exc_handler(void)
 {
@@ -114,9 +116,6 @@ inline void tlb_exc_handler(void)
 
   unsigned int cause =
       CAUSE_GET_EXCCODE(act_proc_sup->sup_exceptState[PGFAULTEXCEPT].cause);
-
-  var3 = cause;
-  f3();
 
   if (cause == EXC_MOD) {
     LOG("EXECMOD");
@@ -230,10 +229,12 @@ inline void tlb_exc_handler(void)
     /* Disabilito gli interrupt per eseguire in modo atomico */
     toggle_int(FALSE);
 
-    /* TODO rename */
-    unsigned int sp_addr2 = (unsigned int)0x20020 + (chosen_frame * PAGESIZE);
     /* Aggiorno la page table del processo segnando la pagina valida e mettendo il nuovo pfn */
-    act_proc_sup->sup_privatePgTbl[mpg_no].pte_entryLO = (sp_addr2 << ENTRYLO_PFN_BIT) | ENTRYLO_VALID | ENTRYLO_DIRTY;
+    act_proc_sup->sup_privatePgTbl[mpg_no].pte_entryLO = sp_addr | ENTRYLO_VALID | ENTRYLO_DIRTY;
+
+    var4 = sp_addr;
+    var3 = act_proc_sup->sup_privatePgTbl[mpg_no].pte_entryLO; 
+    f3();
 
     /* Aggiorno il TLB */
     update_tlb(act_proc_sup->sup_privatePgTbl[mpg_no].pte_entryHI,
