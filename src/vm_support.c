@@ -60,6 +60,9 @@ int swp_pl_sem;
  * */
 int dev_sems[DEVINTNUM][DEVPERINT];
 
+/** TODO docs */
+static inline void free_frame(swppl_entry_t *frame, const int asid);
+
 /**
  * @brief Implementa l'algoritmo di rimpiazzamento per i frame nella swap pool
  * @return Il numero del frame da rimpiazzare
@@ -113,108 +116,79 @@ unsigned int var5;
 
 inline void tlb_exc_handler(void)
 {
+  support_t *const act_proc_sup = (support_t *const)SYSCALL(GETSUPPORTPTR, 0, 0, 0);
 
-  support_t *act_proc_sup = (support_t *)SYSCALL(GETSUPPORTPTR, 0, 0, 0);
   if (act_proc_sup == NULL) {
     LOG("Error on getsupport");
     return;
   }
 
-  unsigned int cause =
+  const unsigned int cause =
       CAUSE_GET_EXCCODE(act_proc_sup->sup_exceptState[PGFAULTEXCEPT].cause);
 
   if (cause == EXC_MOD) {
     LOG("EXECMOD");
     safe_kill();
-  } else {
+    return;
+  } 
 
-    /* P sul semaforo della swap pool */
-    SYSCALL(PASSEREN, (unsigned int)&swp_pl_sem, 0, 0);
+  /* P sul semaforo della swap pool */
+  SYSCALL(PASSEREN, (unsigned int)&swp_pl_sem, 0, 0);
 
-    size_tt missing_pg = ENTRYHI_GET_VPN(act_proc_sup->sup_exceptState[PGFAULTEXCEPT].entry_hi);
+  size_tt mpg_no;
 
-    /* Controllo se la pagina mancante è quella della stack */
-    int is_stk = missing_pg == STK_PG;
-    size_tt mpg_no = is_stk? USERPGTBLSIZE - 1 : missing_pg;
-
-    LOGi("Missing pgno", mpg_no);
-    LOGi("Missing pg", missing_pg);
-
-    unsigned int chosen_frame = chose_frame();
-    swppl_entry_t *ch_frame_entry = &swppl_tbl[chosen_frame];
-
-    LOGi("Chosen frame", chosen_frame);
-
-    /* Guardo se il frame selezionato e' occupato */
-    if (ch_frame_entry->asid != -1) {
-      LOG("occupato");
-
-      /* Recupero la tabella delle pagine del processo */
-      pteEntry_t *proc_pgtbl_entry = ch_frame_entry->pg_tbl_entry;
-
-      /* Disabilito gli interrupt per eseguire in modo atomico */
-      toggle_int(FALSE);
-
-      /* Marco la pagina come invalida */
-      if (proc_pgtbl_entry->pte_entryLO & ENTRYLO_VALID)
-        proc_pgtbl_entry->pte_entryLO ^= ENTRYLO_VALID;
-
-      /* Aggiorno il TLB */
-      update_tlb(proc_pgtbl_entry->pte_entryHI, proc_pgtbl_entry->pte_entryLO);
-
-      /* Riabilito gli interrupt */
-      toggle_int(TRUE);
-
-      /* Scrivo nel dispostivio flash i dati presenti al pfn */
-      unsigned int dev_stat = write_to_flash(act_proc_sup->sup_asid, ENTRYLO_GET_PFN(proc_pgtbl_entry->pte_entryLO));
-
-      /* Controllo che la DO IO sia andata a buon fine */
-      if (dev_stat != READY) {
-        LOGi("error writing frame to dev", dev_stat);
-        return;
-      }
-    }
-
-    /* Calcolo l'indirizzo di destinazione della swap pool */
-    unsigned int sp_addr = (unsigned int)SWAP_POOL_BEGIN + (chosen_frame * PAGESIZE);
-
-    /* Leggo dal flash device */
-    unsigned int dev_stat = read_from_flash(act_proc_sup->sup_asid, mpg_no, sp_addr);
-
-    /* Controllo che la lettura sia andata a buon fine */
-    if (dev_stat != READY) {
-      LOGi("error reading frame content from dev", dev_stat);
-      return;
-    }
-
-    /* Aggiorno la swap pool table con le informaioni nuove */
-    swppl_tbl[chosen_frame].asid = act_proc_sup->sup_asid;
-    swppl_tbl[chosen_frame].vpn = missing_pg;
-    swppl_tbl[chosen_frame].pg_tbl_entry =
-        &act_proc_sup->sup_privatePgTbl[mpg_no];
-
-    /* Disabilito gli interrupt per eseguire in modo atomico */
-    toggle_int(FALSE);
-
-    /* Aggiorno la page table del processo segnando la pagina valida e mettendo il nuovo pfn */
-    act_proc_sup->sup_privatePgTbl[mpg_no].pte_entryLO = sp_addr | ENTRYLO_VALID | ENTRYLO_DIRTY;
-
-    var4 = sp_addr;
-    var3 = act_proc_sup->sup_privatePgTbl[mpg_no].pte_entryLO; 
-    f3();
-
-    /* Aggiorno il TLB */
-    update_tlb(act_proc_sup->sup_privatePgTbl[mpg_no].pte_entryHI,
-               act_proc_sup->sup_privatePgTbl[mpg_no].pte_entryLO);
-
-    /* Riabilito gli interrupt */
-    toggle_int(TRUE);
-
-    /* V nel semaforo della swap table per rilasciare la mutua esclusione */
-    SYSCALL(VERHOGEN, (unsigned int)&swp_pl_sem, 0, 0);
-
-    LDST(&act_proc_sup->sup_exceptState[0]);
+  /* Controllo se la pagina mancante è quella della stack */
+  if ((mpg_no = ENTRYHI_GET_VPN(act_proc_sup->sup_exceptState[PGFAULTEXCEPT].entry_hi)) == STK_PG) {
+    mpg_no = USERPGTBLSIZE - 1; 
   }
+
+  LOGi("Missing pgno", mpg_no);
+
+  const unsigned int chosen_frame = chose_frame();
+  swppl_entry_t *const ch_frame_entry = &swppl_tbl[chosen_frame];
+
+  LOGi("Chosen frame", chosen_frame);
+
+  /* Guardo se il frame selezionato e' occupato */
+  if (ch_frame_entry->asid != -1) {
+    LOG("occupato");
+    free_frame(ch_frame_entry, act_proc_sup->sup_asid);
+  }
+
+  /* Calcolo l'indirizzo di destinazione della swap pool */
+  const unsigned int sp_addr = (unsigned int)SWAP_POOL_BEGIN + (chosen_frame * PAGESIZE);
+
+  /* Leggo dal flash device */
+  const unsigned int dev_stat = read_from_flash(act_proc_sup->sup_asid, mpg_no, sp_addr);
+
+  /* Controllo che la lettura sia andata a buon fine */
+  if (dev_stat != READY) {
+    LOGi("error reading frame content from dev", dev_stat);
+    return;
+  }
+
+  /* Disabilito gli interrupt per eseguire in modo atomico */
+  toggle_int(FALSE);
+
+  /* Aggiorno la swap pool table con le informaioni nuove */
+  swppl_tbl[chosen_frame].asid = act_proc_sup->sup_asid;
+  swppl_tbl[chosen_frame].vpn = KUSEG + (mpg_no << VPNSHIFT) ; // TODO capire se mettere 0x80.... come è adesso o solo 1,2,3 ecc...
+  swppl_tbl[chosen_frame].pg_tbl_entry = &act_proc_sup->sup_privatePgTbl[mpg_no];
+
+  /* Aggiorno la page table del processo segnando la pagina valida e mettendo il nuovo pfn */
+  act_proc_sup->sup_privatePgTbl[mpg_no].pte_entryLO = sp_addr | ENTRYLO_VALID | ENTRYLO_DIRTY;
+
+  /* Aggiorno il TLB */
+  update_tlb(act_proc_sup->sup_privatePgTbl[mpg_no].pte_entryHI,
+             act_proc_sup->sup_privatePgTbl[mpg_no].pte_entryLO);
+
+  /* Riabilito gli interrupt */
+  toggle_int(TRUE);
+
+  /* V nel semaforo della swap table per rilasciare la mutua esclusione */
+  SYSCALL(VERHOGEN, (unsigned int)&swp_pl_sem, 0, 0);
+
+  LDST(&act_proc_sup->sup_exceptState[0]);
 }
 
 int update_tlb(unsigned int entryHi, unsigned int entryLo)
@@ -252,6 +226,37 @@ int chose_frame(void)
 
   /* Se sono tutti occupati ritorniamo il frame successivo all'ultimo scelto */
   return frame_top = (frame_top + 1) % SWAP_POOL_SIZE;
+}
+
+void free_frame(swppl_entry_t *frame, const int asid)
+{
+  pteEntry_t *proc_pgtbl_entry;
+  unsigned int dev_stat;
+
+  /* Recupero la tabella delle pagine del processo */
+  proc_pgtbl_entry = frame->pg_tbl_entry;
+
+  /* Disabilito gli interrupt per eseguire in modo atomico */
+  toggle_int(FALSE);
+
+  /* Marco la pagina come invalida */
+  if (proc_pgtbl_entry->pte_entryLO & ENTRYLO_VALID)
+    proc_pgtbl_entry->pte_entryLO ^= ENTRYLO_VALID;
+
+  /* Aggiorno il TLB */
+  update_tlb(proc_pgtbl_entry->pte_entryHI, proc_pgtbl_entry->pte_entryLO);
+
+  /* Riabilito gli interrupt */
+  toggle_int(TRUE);
+
+  /* Scrivo nel dispostivio flash i dati presenti al pfn */
+  dev_stat = write_to_flash(asid, ENTRYLO_GET_PFN(proc_pgtbl_entry->pte_entryLO));
+
+  /* Controllo che la DO IO sia andata a buon fine */
+  if (dev_stat != READY) {
+    LOGi("error writing frame to dev", dev_stat);
+    return;
+  }
 }
 
 void toggle_int(int on)
