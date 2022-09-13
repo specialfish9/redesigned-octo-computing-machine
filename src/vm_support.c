@@ -179,9 +179,6 @@ inline void tlb_exc_handler(void)
               (unsigned int)&dev_sems[FLASH_SEMS][act_proc_sup->sup_asid - 1],
               0, 0);
 
-      /* TODO controlalre che effettivamente il command register venga impostato
-       * correttamente */
-
       /* Controllo che la DO IO sia andata a buon fine */
       if (dev_stat != READY) {
         LOGi("error writing frame to dev", dev_stat);
@@ -203,7 +200,7 @@ inline void tlb_exc_handler(void)
     dev_reg->data0 = sp_addr;
 
     /* Imposto il command */
-    unsigned int cmdval = (mpg_no << 8) | FLASHREAD;
+    unsigned int cmdval = (/*TODO mpg_no*/0 << 8) | FLASHREAD;
 
     /* Uso la NSYS5 per dire al controller del device di leggere */
     unsigned int dev_stat =

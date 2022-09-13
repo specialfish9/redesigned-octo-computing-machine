@@ -85,22 +85,27 @@ inline void instantiator_proc(void)
   SYSCALL(PASSEREN, (unsigned int)&init_sem, 0, 0);
 }
 
+unsigned int var6;
+void f4(){}
+
 inline void init_page_table(pteEntry_t *tbl, const int asid)
 {
   size_tt i = 0;
-
-  for (i = 0; i < USERPGTBLSIZE; i++) {
-    if (i < USERPGTBLSIZE - 1) {
-      /* Se non è l'ultima entry impostiamo il virtual page number */
-      tbl[i].pte_entryHI = (FIRST_PG_ADDR + i)  << VPNSHIFT;
-    } else {
-      /* Se è l'ultima entry (quella associata alla pagina contenente la stack
-       * del uproc) settiamo l'indirizzo 0xBFFFF, ovvero il bottom della
-       * stack */
-      tbl[i].pte_entryHI = STK_PG_ADDR << VPNSHIFT;
-    }
-
-    tbl[i].pte_entryHI |= (asid << ASIDSHIFT);
-    tbl[i].pte_entryLO = ENTRYLO_DIRTY;
+  
+  /* Just in case */
+  if (tbl == NULL || asid <= 0 || asid > UPROCMAX) {
+    log(LOG, "Invalid page table ref or asid");
+    PANIC();
   }
+
+  for (i = 0; i < USERPGTBLSIZE - 1; i++) {
+      /* Impostiamo il virtual page number e l'asid */
+      tbl[i].pte_entryHI = KUSEG + (i << VPNSHIFT) + (asid << ASIDSHIFT);
+      tbl[i].pte_entryLO = ENTRYLO_DIRTY;
+  }
+
+  /* Se è l'ultima entry (quella associata alla pagina contenente la stack
+   * del uproc) settiamo l'indirizzo 0xBFFFF, ovvero il bottom della stack */
+  tbl[i].pte_entryHI = KUSEG + GETPAGENO + (asid << ASIDSHIFT);
+  tbl[i].pte_entryLO = ENTRYLO_DIRTY;
 }

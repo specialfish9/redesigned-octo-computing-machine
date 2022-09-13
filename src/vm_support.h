@@ -9,7 +9,6 @@
 
 /*TODO doc*/
 #define STK_PG 0x3FFFF
-#define FIRST_PG_ADDR 0x80000
 #define STK_PG_ADDR 0xBFFFF
 
 /**
