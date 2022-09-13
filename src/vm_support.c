@@ -74,6 +74,12 @@ static inline int chose_frame(void);
  * */
 static inline void toggle_int(int on);
 
+/*TODO doc*/
+static inline unsigned int read_from_flash(const int asid, const unsigned int pg_no, const unsigned int dest);
+
+/*TODO doc*/
+static inline unsigned int write_to_flash(const int asid, const unsigned int data);
+
 /**
  * @brief Aggiorna il TLB con le entryHI e entryLO passate. Esegue prima una
  * probe per controllare e' gia' presente un'entry con entryHi corrispondente
@@ -150,7 +156,8 @@ inline void tlb_exc_handler(void)
       toggle_int(FALSE);
 
       /* Marco la pagina come invalida */
-      proc_pgtbl_entry->pte_entryLO ^= ENTRYLO_VALID;
+      if (proc_pgtbl_entry->pte_entryLO & ENTRYLO_VALID)
+        proc_pgtbl_entry->pte_entryLO ^= ENTRYLO_VALID;
 
       /* Aggiorno il TLB */
       update_tlb(proc_pgtbl_entry->pte_entryHI, proc_pgtbl_entry->pte_entryLO);
@@ -158,26 +165,8 @@ inline void tlb_exc_handler(void)
       /* Riabilito gli interrupt */
       toggle_int(TRUE);
 
-      /* Guadagno l'accesso al device in mutua esclusione */
-      SYSCALL(PASSEREN,
-              (unsigned int)&dev_sems[FLASH_SEMS][act_proc_sup->sup_asid - 1],
-              0, 0);
-
-      /* Prendo i registri del device */
-      dtpreg_t *dev_reg =
-          (dtpreg_t *)DEV_REG_ADDR(FLASHINT, act_proc_sup->sup_asid - 1);
-
-      /* Metto in data0 il pfn che voglio scrivere */
-      dev_reg->data0 = ENTRYLO_GET_PFN(proc_pgtbl_entry->pte_entryLO);
-
-      /* Scrivo su command il comando per scrivere (lol)*/
-      unsigned int dev_stat =
-          SYSCALL(DOIO, (unsigned int)&dev_reg->command, FLASHWRITE, 0);
-
-      /* Rilascio la mutua esclusione */
-      SYSCALL(VERHOGEN,
-              (unsigned int)&dev_sems[FLASH_SEMS][act_proc_sup->sup_asid - 1],
-              0, 0);
+      /* Scrivo nel dispostivio flash i dati presenti al pfn */
+      unsigned int dev_stat = write_to_flash(act_proc_sup->sup_asid, ENTRYLO_GET_PFN(proc_pgtbl_entry->pte_entryLO));
 
       /* Controllo che la DO IO sia andata a buon fine */
       if (dev_stat != READY) {
@@ -186,32 +175,13 @@ inline void tlb_exc_handler(void)
       }
     }
 
-    /* Guadagno l'accesso al device in mutua esclusione */
-    SYSCALL(PASSEREN,
-            (unsigned int)&dev_sems[FLASH_SEMS][act_proc_sup->sup_asid - 1], 0,
-            0);
-
-    /* Prendo il device register del dispositivo flash associato al processo */
-    dtpreg_t *dev_reg =
-        (dtpreg_t *)DEV_REG_ADDR(FLASHINT, act_proc_sup->sup_asid - 1);
-
-    /* Scrivi il contenuto di data0 sul frame della swap pool scelto */
+    /* Calcolo l'indirizzo di destinazione della swap pool */
     unsigned int sp_addr = (unsigned int)SWAP_POOL_BEGIN + (chosen_frame * PAGESIZE);
-    dev_reg->data0 = sp_addr;
 
-    /* Imposto il command */
-    unsigned int cmdval = (/*TODO mpg_no*/0 << 8) | FLASHREAD;
+    /* Leggo dal flash device */
+    unsigned int dev_stat = read_from_flash(act_proc_sup->sup_asid, mpg_no, sp_addr);
 
-    /* Uso la NSYS5 per dire al controller del device di leggere */
-    unsigned int dev_stat =
-        SYSCALL(DOIO, (unsigned int)&dev_reg->command, cmdval, 0);
-
-    /* Rilascio la mutua esclusione */
-    SYSCALL(VERHOGEN,
-            (unsigned int)&dev_sems[FLASH_SEMS][act_proc_sup->sup_asid - 1], 0,
-            0);
-
-    /* Controllo che la DO IO sia andata a buon fine */
+    /* Controllo che la lettura sia andata a buon fine */
     if (dev_stat != READY) {
       LOGi("error reading frame content from dev", dev_stat);
       return;
@@ -291,4 +261,54 @@ void toggle_int(int on)
   } else {
     setSTATUS((getSTATUS() | 1) ^ 1);
   }
+}
+
+unsigned int read_from_flash(const int asid, const unsigned int pg_no, const unsigned int dest) 
+{
+    dtpreg_t *dev_reg;
+    unsigned int cmdval;
+    unsigned int dev_stat;
+
+    /* Guadagno l'accesso al device in mutua esclusione */
+    SYSCALL(PASSEREN, (unsigned int)&dev_sems[FLASH_SEMS][asid - 1], 0, 0);
+
+    /* Prendo il device register del dispositivo flash associato all'asid */
+    dev_reg = (dtpreg_t *)DEV_REG_ADDR(FLASHINT, asid - 1);
+
+    /* Scrivi il contenuto di data0 nella destinazione scelta */
+    dev_reg->data0 = dest;
+
+    /* Imposto il command */
+    cmdval = (pg_no << 8) | FLASHREAD;
+
+    /* Uso la NSYS5 per dire al controller del device di leggere */
+    dev_stat = SYSCALL(DOIO, (unsigned int)&dev_reg->command, cmdval, 0);
+
+    /* Rilascio la mutua esclusione */
+    SYSCALL(VERHOGEN, (unsigned int)&dev_sems[FLASH_SEMS][asid - 1], 0, 0);
+
+    return dev_stat;
+}
+
+unsigned int write_to_flash(const int asid, const unsigned int data)
+{
+  unsigned int dev_stat;
+  dtpreg_t *dev_reg;
+
+  /* Guadagno l'accesso al device in mutua esclusione */
+  SYSCALL(PASSEREN, (unsigned int)&dev_sems[FLASH_SEMS][asid], 0, 0);
+
+  /* Prendo i registri del device */
+  dev_reg = (dtpreg_t *)DEV_REG_ADDR(FLASHINT, asid);
+
+  /* Metto in data0 ciò che voglio scrivere */
+  dev_reg->data0 = data;
+
+  /* Scrivo su command il comando per scrivere (lol)*/
+  dev_stat = SYSCALL(DOIO, (unsigned int)&dev_reg->command, FLASHWRITE, 0);
+
+  /* Rilascio la mutua esclusione */
+  SYSCALL(VERHOGEN, (unsigned int)&dev_sems[FLASH_SEMS][asid], 0, 0);
+
+  return dev_stat;
 }
