@@ -7,7 +7,7 @@ else
 	UMPS3_DIR_PREFIX = /usr/local
 endif
 
-LIBDIR = $(UMPS3_DIR_PREFIX)/lib/umps3
+LIBDIR = $(UMPS3_DIR_PREFIX)/lib/x86_64-linux-gnu/umps3
 INCDIR = $(UMPS3_DIR_PREFIX)/include/
 SUPDIR = $(UMPS3_DIR_PREFIX)/share/umps3
 
