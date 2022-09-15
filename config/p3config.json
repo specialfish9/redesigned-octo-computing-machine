@@ -8,7 +8,7 @@
     "devices": {
         "flash0": {
             "enabled": true,
-            "file": "../test/strConcat.umps"
+            "file": "/home/mattia/redesigned-octo-computing-machine/test/printerTest.umps"
         },
         "flash1": {
             "enabled": true,

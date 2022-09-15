@@ -1,9 +1,9 @@
 /**
- * @file vm_support.h
+ * @file pager.h
  * @brief Modulo contenente le funzioni per la gestione della memoria virtuale
  * */
-#ifndef VM_SUPPORT
-#define VM_SUPPORT
+#ifndef PAGER
+#define PAGER
 
 #include <umps3/umps/const.h>
 

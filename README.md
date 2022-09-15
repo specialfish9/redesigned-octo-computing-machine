@@ -60,7 +60,7 @@ documentazione generata del codice.
      * __interrupts:__ interrupts associati ai dispositivi connessi e al clock di sistema.
 * FASE 3
      * __sys_support:__ handler di livello supporto per syscall e trap.
-     * __vm_support:__ gestore della memoria virtuale a livello supporto.
+     * __pager:__ gestore della memoria virtuale a livello supporto.
      * __init_proc:__ inizializzatore processi utente di test di fase 3.
 * ALTRO
      * __utils:__ funzioni di utility.
@@ -126,7 +126,7 @@ per le ecceioni di tipo _TBL refill_, e ```tlb_exec_handler``` per tutte le
 altre. Il primo si trova nel modulo ```kernel``` e si occupa semplicemente
 di andare a mettere nel TLB la pagina richiesta, andando a recuperarla dalla
 tabella delle pagine privata del processo. Il secondo invece si trova nel 
-modulo ```vm_support``` ed è il cuore della gestione della memoria virtuale.
+modulo ```pager``` ed è il cuore della gestione della memoria virtuale.
 Si occupa di andare a caricare la pagina richiesta all'interno della swap pool,
 interagendo con essa e con i dispositivi flash che fungono da backing store
 per i processi utente di test di fase 3. Gestisce anche, tramite un apposito 

@@ -13,7 +13,7 @@
 #include "interrupts.h"
 #include "pandos_const.h"
 #include "pandos_types.h"
-#include "vm_support.h"
+#include "pager.h"
 #include "pcb.h"
 #include "scheduler.h"
 #include "syscalls.h"

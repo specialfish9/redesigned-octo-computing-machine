@@ -10,7 +10,7 @@
 #include "sys_support.h"
 #include "syscalls.h"
 #include "utils.h"
-#include "vm_support.h"
+#include "pager.h"
 #include <umps3/umps/cp0.h>
 #include <umps3/umps/libumps.h>
 

@@ -1,9 +1,9 @@
 /**
- * @file vm_support.c
+ * @file pager.c
  * @brief Implementazione delle funzioni necessarie per la gestione della
  * memoria virtuale.
  * */
-#include "vm_support.h"
+#include "pager.h"
 #include "listx.h"
 #include "pandos_const.h"
 #include "pandos_types.h"

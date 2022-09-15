@@ -4,7 +4,7 @@
 #include "pcb.h"
 #include "utils.h"
 #include "interrupts.h"
-#include "vm_support.h"
+#include "pager.h"
 #include <umps3/umps/arch.h>
 #include <umps3/umps/const.h>
 #include <umps3/umps/cp0.h>
