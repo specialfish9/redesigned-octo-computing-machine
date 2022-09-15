@@ -142,7 +142,8 @@ inline void tlb_exc_handler(void)
     mpg_no = USERPGTBLSIZE - 1; 
   }
 
-  LOGi("Missing pgno", mpg_no);
+  LOGi("Process", act_proc_sup->sup_asid);
+  LOGi("is missing pgno", mpg_no);
 
   const unsigned int chosen_frame = chose_frame();
   swppl_entry_t *const ch_frame_entry = &swppl_tbl[chosen_frame];

@@ -44,7 +44,7 @@ inline void instantiator_proc(void)
   init_supp_structures();
   init_sem = 0;
 
-  for (i = 1; i <= 1 /*UPROCMAX*/; i++) {
+  for (i = 6; i <= UPROCMAX; i++) {
     logi(LOG, "creating uproc", i);
 
     /* Create state_t and support_t structures for test processes */

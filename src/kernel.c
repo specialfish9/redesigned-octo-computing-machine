@@ -189,6 +189,7 @@ void uTLB_RefillHandler(void)
   pg_n = missing_page == STK_PG? USERPGTBLSIZE - 1 :  missing_page;
 
   LOGi("TLBREFILL-np", pg_n);
+  LOGi("By ",ENTRYHI_GET_ASID(exc_state->entry_hi));
 
   missing_entry = act_proc->p_supportStruct->sup_privatePgTbl[pg_n];
 

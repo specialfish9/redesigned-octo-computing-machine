@@ -46,6 +46,7 @@ inline void init_dev_sem(void)
 inline enum eh_act handle_interrupts(const int line)
 {
   LOGi("int", line);
+
   switch (line) {
   case IL_IPI: {
     break; /* safely ignore */
@@ -86,10 +87,19 @@ inline enum eh_act handle_interrupts(const int line)
   }
   case IL_TERMINAL: {
     int *sem[] = {sem_term_out, sem_term_in};
-    size_tt *bitmap = (size_tt *)CDEV_BITMAP_ADDR(line), index = 0;
-    while (*bitmap > 1) {
+    size_tt bitmap, index;
+
+    bitmap = *((size_tt *)CDEV_BITMAP_ADDR(line));
+
+    index = 0;
+    while (bitmap > 1) {
       ++index;
-      *bitmap >>= 1;
+      bitmap >>= 1;
+    }
+
+    if (index >= DEVPERINT) {
+      LOGi("invalid interrupt index", index);
+      PANIC();
     }
 
     termreg_t *reg = (termreg_t *)&((devregarea_t *)RAMBASEADDR)
@@ -117,6 +127,11 @@ inline enum eh_act handle_interrupts(const int line)
   return CONTINUE;
 }
 
+void f4(){}
+unsigned int var8;
+unsigned int var9;
+unsigned int var10;
+
 inline void generic_interrupt_handler(int line, int *semaphores)
 {
   size_tt bitmap, index;
@@ -124,17 +139,20 @@ inline void generic_interrupt_handler(int line, int *semaphores)
   pcb_t *p;
 
   /* Prendo la bitmap */
-  bitmap = *((size_tt *)CDEV_BITMAP_ADDR(line));
+  bitmap = *((size_tt *)CDEV_BITMAP_ADDR(IL_DISK + line));
 
   /* Scorro la bitmap fino a trovare la posizione dell'uno piu' significativo.
-   * Ad ogni iterazione incremento l'indice avendo cura di riportarlo a zero
-   * ogni 8 incrementi. In questo trovo il numero del device che ha sollevato
+   * Ad ogni iterazione incremento l'indice. In questo trovo il numero del device che ha sollevato
    * l'interrupt e la corrispondente linea. */
   index = 0;
-  while (bitmap >= 1) {
+  while (bitmap > 1) {
     ++index;
-    index %= DEVPERINT;
     bitmap >>= 1;
+  }
+
+  if (index >= DEVPERINT) {
+    LOGi("invalid interrupt index", index);
+    PANIC();
   }
 
   /* Recupero il device register corrispondente */
