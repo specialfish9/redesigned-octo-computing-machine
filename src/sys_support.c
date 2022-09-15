@@ -134,11 +134,8 @@ int write_to_printer(unsigned int virtAddr, int len, unsigned int asid)
   return i;
 }
 
-unsigned int var7; 
 int write_to_terminal(unsigned int virtAddr, int len, unsigned int asid)
 {
-  var7 = virtAddr;
-
   termreg_t *dev_reg;
   unsigned int status;
   size_tt i;
@@ -180,9 +177,8 @@ int write_to_terminal(unsigned int virtAddr, int len, unsigned int asid)
 int read_from_terminal(unsigned int virtAddr, unsigned int asid)
 {
   termreg_t *dev_reg;
-  unsigned int charnstatus;
   unsigned int status;
-  int i = 0;
+  size_tt i = 0;
 
   if (virtAddr < KUSEG)
     safe_kill();
@@ -195,23 +191,26 @@ int read_from_terminal(unsigned int virtAddr, unsigned int asid)
   do {
     /* Il return della SYSCALL ha nel primo byte lo status, e nel secondo il
      carattere ricevuto */
-    charnstatus =
+    status =
         SYSCALL(DOIO, (unsigned int)&dev_reg->recv_command, TRANSMITCHAR, 0);
 
     /* maschero il return value per leggere lo status */
-    status = charnstatus & (0xFF);
-
-    if (status != OKCHARTRANS)
+    if ((status & TERMSTATMASK) != OKCHARTRANS) {
+      /* Rilascio la mutua esclusione */
+      LOG("UScita forzata");
+      SYSCALL(VERHOGEN, (unsigned int)&dev_sems[TERMIN_SEMS][asid - 1], 0, 0);
       return -status;
+    }
 
     /* shifto di 8 bit per trattenere soltanto il carattere letto */
-    *((char *)virtAddr++) = charnstatus >> 8;
+    *((char *)virtAddr++) = status >> 8;
     i++;
 
     /* TODO Da verificare se vogliamo prendere in input anche \0 oppure solo i
      * caratteri effettivi (per ora per sicurezza lo faccio) */
-  } while (charnstatus >> 8 != '\0');
+  } while (status >> 8 != '\n');
 
+      LOG("UScita ok");
   /* Rilascio la mutua esclusione */
   SYSCALL(VERHOGEN, (unsigned int)&dev_sems[TERMIN_SEMS][asid - 1], 0, 0);
 
