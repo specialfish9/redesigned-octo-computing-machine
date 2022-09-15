@@ -1,9 +1,9 @@
 #include "sys_support.h"
 #include "asl.h"
-#include "pcb.h"
 #include "pandos_const.h"
-#include "scheduler.h"
+#include "pcb.h"
 #include "utils.h"
+#include "interrupts.h"
 #include "vm_support.h"
 #include <umps3/umps/arch.h>
 #include <umps3/umps/const.h>
@@ -18,23 +18,10 @@
 #define INTMIN -2147483648
 
 /**
- * @brief Indicatore dei semafori per il printer device nella matrice dei
- * semafori dei device
- * */
-#define PRINTER_SEMS IL_PRINTER - IL_DISK
-
-/**
- * @brief Indicatore dei semafori per il terminale nella matrice dei semafori
- * dei device
- * */
-#define TERMIN_SEMS IL_TERMINAL - IL_DISK
-#define TERMOUT_SEMS IL_TERMINAL - IL_DISK + 1
-
-/**
  * @var Semafori per l'accesso in mutua esclusione ai device. Usati dal livello
  * supporto. Vengono inizializzati con @ref init_supp_structure.
  * */
-extern int dev_sems[DEVINTNUM][DEVPERINT];
+extern int dev_sems[DEVINTNUM + 1][DEVPERINT];
 
 /**
  * @brief Gestore delle systemcall a livello supporto
@@ -70,7 +57,8 @@ static inline void terminate(void);
  * @return Numero di caratteri stampati se ha successo, altrimenti status con
  * segno negativo.
  * */
-static inline int write_to_printer(unsigned int virtAddr, int len, unsigned int asid);
+static inline int write_to_printer(unsigned int virtAddr, int len,
+                                   unsigned int asid);
 
 /**
  * @brief Systemcall WRITE TO TERMINAL (SYS4). Scrive sul terminale
@@ -81,7 +69,8 @@ static inline int write_to_printer(unsigned int virtAddr, int len, unsigned int 
  * @return Numero di caratteri stampati se ha successo, altrimenti status con
  * segno negativo.
  * */
-static inline int write_to_terminal(unsigned int virtAddr, int len, unsigned int asid);
+static inline int write_to_terminal(unsigned int virtAddr, int len,
+                                    unsigned int asid);
 
 /**
  * @brief Systemcall READ FROM TERMINAL (SYS5). Legge un input dal terminale e
@@ -101,7 +90,8 @@ unsigned int get_TOD(void)
   return ret;
 }
 
-void terminate(void) {
+void terminate(void)
+{
   int pid;
 
   /* Get the pid using NSYS9 */
@@ -147,7 +137,9 @@ int write_to_printer(unsigned int virtAddr, int len, unsigned int asid)
 int write_to_terminal(unsigned int virtAddr, int len, unsigned int asid)
 {
   termreg_t *dev_reg;
-  int i;
+  unsigned int status;
+  size_tt i;
+  unsigned int cmdval;
 
   if (len > 128 || len < 0 || virtAddr < KUSEG) {
     return SYSCALL(TERMINATE, 0, 0, 0);
@@ -160,20 +152,24 @@ int write_to_terminal(unsigned int virtAddr, int len, unsigned int asid)
   dev_reg = (termreg_t *)DEV_REG_ADDR(IL_TERMINAL, asid - 1);
 
   for (i = 0; i < len; i++) {
-    /* carico il carattere da trasmettere sul campo data0, data1 non viene usato
-     */
-    dev_reg->transm_command = virtAddr + i;
+    /* carico il carattere da trasmettere sul campo data0, data1 non viene usato */
+    cmdval = ((virtAddr + i) << 8) | TRANSMITCHAR;
 
     if (*((char *)(virtAddr + i)) == '\0') {
       break;
     }
 
-    SYSCALL(DOIO, (int)&dev_reg->transm_command, TRANSMITCHAR, 0);
+    status = SYSCALL(DOIO, (int)&dev_reg->transm_command, cmdval, 0);
 
-    if (dev_reg->transm_status != OKCHARTRANS)
+    if ((status & TERMSTATMASK) != OKCHARTRANS) {
+      /* Rilascio la mutua esclusione */
+      SYSCALL(VERHOGEN, (unsigned int)&dev_sems[TERMOUT_SEMS][asid - 1], 0, 0);
+      LOG("QUAU");
       return -dev_reg->transm_status;
+    }
   }
 
+      LOG("YTYYYYY");
   /* Rilascio la mutua esclusione */
   SYSCALL(VERHOGEN, (unsigned int)&dev_sems[TERMOUT_SEMS][asid - 1], 0, 0);
 
@@ -226,8 +222,6 @@ void support_exec_handler(void)
   support_t *act_proc_sup;
   unsigned int cause;
 
-  LOG("seh");
-
   act_proc_sup = (support_t *)SYSCALL(GETSUPPORTPTR, 0, 0, 0);
 
   if (act_proc_sup == NULL) {
@@ -236,8 +230,6 @@ void support_exec_handler(void)
   }
 
   cause = CAUSE_GET_EXCCODE(act_proc_sup->sup_exceptState[GENERALEXCEPT].cause);
-
-  LOGi("ex", cause);
 
   /* Se e' una syscall */
   if (cause == EXC_SYS) {
@@ -253,14 +245,15 @@ void support_syscall_handler(support_t *act_proc_sup)
   unsigned int arg1, arg2;
   int number, ret;
 
-  number =
-      CAUSE_GET_EXCCODE(act_proc_sup->sup_exceptState[GENERALEXCEPT].cause);
+  number = act_proc_sup->sup_exceptState[1].reg_a0;
   arg1 = act_proc_sup->sup_exceptState[1].reg_a1;
   arg2 = act_proc_sup->sup_exceptState[1].reg_a2;
 
   /* uso INTMIN per evitare conflitti con i valori di ritorno che possono
    * essere numeri negativi, 0 e positivi */
   ret = INTMIN;
+
+  LOGi("SYS", number);
 
   switch (number) {
   case GETTOD: {
@@ -285,7 +278,7 @@ void support_syscall_handler(support_t *act_proc_sup)
   }
   default: {
     LOG("Attempt to do a syscall >5");
-      safe_kill();
+    safe_kill();
   }
   }
 
@@ -304,10 +297,7 @@ void support_syscall_handler(support_t *act_proc_sup)
   LDST(&act_proc_sup->sup_exceptState[1]);
 }
 
-void support_trap_handler(support_t *act_proc_sup)
-{
-  safe_kill();
-}
+void support_trap_handler(support_t *act_proc_sup) { safe_kill(); }
 
 inline void safe_kill(void)
 {
@@ -319,7 +309,7 @@ inline void safe_kill(void)
 
   /* Recuperiamo il pcb */
   pcb = search_by_pid(pid);
-  
+
   if (pcb == NULL) {
     /* Non dovrebbe mai succedere */
     LOGi("Tried to kill", pid);

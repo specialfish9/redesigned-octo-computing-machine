@@ -11,6 +11,8 @@
 #include "kernel.h"
 #include <umps3/umps/const.h>
 
+#define TERMSTATMASK 0xFF
+
 /**
  * @var Semaforo Interval Timer
  * */

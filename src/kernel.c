@@ -175,9 +175,6 @@ void exception_handler(void)
   scheduler_next();
 }
 
-void bp() {}
-unsigned int var1, var2;
-
 void uTLB_RefillHandler(void)
 {
   state_t *exc_state;
@@ -195,10 +192,6 @@ void uTLB_RefillHandler(void)
 
   missing_entry = act_proc->p_supportStruct->sup_privatePgTbl[pg_n];
 
-  var1 = exc_state->status;
-  var2 = exc_state->entry_hi;
-
-  bp();
   setENTRYHI(missing_entry.pte_entryHI);
   setENTRYLO(missing_entry.pte_entryLO);
   TLBWR();

@@ -21,14 +21,14 @@
  * @brief Indicatore dei semafori per il printer device nella matrice dei
  * semafori dei device
  * */
-#define PRINTER_SEMS IL_PRINTER - IL_DISK
+#define PRINTER_SEMS (IL_PRINTER - IL_DISK - 1)
 
 /**
  * @brief Indicatore dei semafori per il terminale nella matrice dei semafori
  * dei device
  * */
-#define TERMIN_SEMS IL_TERMINAL - IL_DISK
-#define TERMOUT_SEMS IL_TERMINAL - IL_DISK + 1
+#define TERMIN_SEMS (IL_TERMINAL - IL_DISK - 1)
+#define TERMOUT_SEMS (IL_TERMINAL - IL_DISK)
 
 /**
  * @var Semaforo mutex per la Swap Pool
@@ -39,7 +39,7 @@ extern int swp_pl_sem;
  * @var Semafori per l'accesso in mutua esclusione ai device. Usati dal livello
  * supporto. Vengono inizializzati con @ref init_supp_structures.
  * */
-extern int dev_sems[DEVINTNUM][DEVPERINT];
+extern int dev_sems[DEVINTNUM + 1][DEVPERINT];
 
 /**
  * @brief Inizializza tutte le strutture dati necessarie per la gestione

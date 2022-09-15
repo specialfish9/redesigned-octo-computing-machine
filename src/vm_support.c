@@ -58,7 +58,7 @@ int swp_pl_sem;
  * @var Semafori per l'accesso in mutua esclusione ai device. Usati dal livello
  * supporto. Vengono inizializzati con @ref init_supp_structure.
  * */
-int dev_sems[DEVINTNUM][DEVPERINT];
+int dev_sems[DEVINTNUM + 1][DEVPERINT];
 
 /** TODO docs */
 static inline void free_frame(swppl_entry_t *frame, const int asid);
@@ -103,7 +103,7 @@ inline void init_supp_structures(void)
     swppl_tbl[i].asid = -1;
 
   /* Inizializza tutti i semafori dei device a 1 */
-  for (i = 0; i < DEVINTNUM; i++)
+  for (i = 0; i < DEVINTNUM + 1; i++)
     for (j = 0; j < DEVPERINT; j++)
       dev_sems[i][j] = 1;
 }
@@ -301,10 +301,10 @@ unsigned int write_to_flash(const int asid, const unsigned int data)
   dtpreg_t *dev_reg;
 
   /* Guadagno l'accesso al device in mutua esclusione */
-  SYSCALL(PASSEREN, (unsigned int)&dev_sems[FLASH_SEMS][asid], 0, 0);
+  SYSCALL(PASSEREN, (unsigned int)&dev_sems[FLASH_SEMS][asid - 1], 0, 0);
 
   /* Prendo i registri del device */
-  dev_reg = (dtpreg_t *)DEV_REG_ADDR(FLASHINT, asid);
+  dev_reg = (dtpreg_t *)DEV_REG_ADDR(FLASHINT, asid - 1);
 
   /* Metto in data0 ciò che voglio scrivere */
   dev_reg->data0 = data;
@@ -313,7 +313,7 @@ unsigned int write_to_flash(const int asid, const unsigned int data)
   dev_stat = SYSCALL(DOIO, (unsigned int)&dev_reg->command, FLASHWRITE, 0);
 
   /* Rilascio la mutua esclusione */
-  SYSCALL(VERHOGEN, (unsigned int)&dev_sems[FLASH_SEMS][asid], 0, 0);
+  SYSCALL(VERHOGEN, (unsigned int)&dev_sems[FLASH_SEMS][asid - 1], 0, 0);
 
   return dev_stat;
 }

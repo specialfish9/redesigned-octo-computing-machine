@@ -17,9 +17,6 @@
 #define LOG(s) log("I", s)
 #define LOGi(s, i) logi("I", s, i)
 
-#define TERMSTATMASK 0xFF
-#define RECVD 5
-
 int sem_it;
 int sem_disk[DEVPERINT];
 int sem_flash[DEVPERINT];
@@ -102,7 +99,7 @@ inline enum eh_act handle_interrupts(const int line)
     size_tt status[2] = {reg->transm_status, reg->recv_status};
     size_tt *command[2] = {&reg->transm_command, &reg->recv_command};
     for (int i = 0; i < 2; ++i) {
-      if ((status[i] & TERMSTATMASK) == 5) {
+      if ((status[i] & TERMSTATMASK) == OKCHARTRANS) {
         pcb_t *p = verhogen(&sem[i][index]);
         if (p != NULL) {
           p->p_s.reg_v0 = status[i];

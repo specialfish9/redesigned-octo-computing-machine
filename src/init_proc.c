@@ -63,19 +63,16 @@ inline void instantiator_proc(void)
     tp_supps[i - 1].sup_asid = i;
     init_page_table(tp_supps[i - 1].sup_privatePgTbl, i);
 
-    context_t context[2];
-    context[0].pc = (memaddr)tlb_exc_handler;
-    context[1].pc = (memaddr)support_exec_handler;
+    tp_supps[i-1].sup_exceptContext[0].pc = (memaddr)tlb_exc_handler;
+    tp_supps[i-1].sup_exceptContext[1].pc = (memaddr)support_exec_handler;
 
     /* Timer enabled, interupts on and kernel mode */
-    context[0].status = (STATUS_TE | STATUS_IM_MASK | STATUS_KUp | STATUS_IEc) ^ STATUS_KUp;
-    context[1].status = (STATUS_TE | STATUS_IM_MASK | STATUS_KUp | STATUS_IEc) ^ STATUS_KUp;
+    tp_supps[i-1].sup_exceptContext[0].status = (STATUS_TE | STATUS_IM_MASK | STATUS_KUp | STATUS_IEc) ^ STATUS_KUp;
+    tp_supps[i-1].sup_exceptContext[1].status = (STATUS_TE | STATUS_IM_MASK | STATUS_KUp | STATUS_IEc) ^ STATUS_KUp;
 
     /* Set stack ptr to the end of the stack minus 1 */
-    context[0].stackPtr = (memaddr) &tp_supps[i].sup_stackTLB[500 - 1];
-    context[1].stackPtr = (memaddr) &tp_supps[i].sup_stackGen[500 - 1];
-
-    memcpy(tp_supps[i - 1].sup_exceptContext, context, sizeof(context_t));
+    tp_supps[i-1].sup_exceptContext[0].stackPtr = (memaddr) &tp_supps[i].sup_stackTLB[500 - 1];
+    tp_supps[i-1].sup_exceptContext[1].stackPtr = (memaddr) &tp_supps[i].sup_stackGen[500 - 1];
 
     SYSCALL(CREATEPROCESS, (unsigned int)&tp_states[i - 1], PROCESS_PRIO_LOW,
             (unsigned int)&tp_supps[i - 1]);
