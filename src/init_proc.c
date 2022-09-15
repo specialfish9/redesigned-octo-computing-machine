@@ -82,9 +82,6 @@ inline void instantiator_proc(void)
   SYSCALL(PASSEREN, (unsigned int)&init_sem, 0, 0);
 }
 
-unsigned int var6;
-void f4(){}
-
 inline void init_page_table(pteEntry_t *tbl, const int asid)
 {
   size_tt i = 0;

@@ -105,6 +105,7 @@ int write_to_printer(unsigned int virtAddr, int len, unsigned int asid)
 {
   dtpreg_t *dev_reg;
   size_tt i;
+  unsigned int status;
 
   if (len > 128 || len < 0 || virtAddr < KUSEG) {
     return SYSCALL(TERMINATE, 0, 0, 0);
@@ -119,14 +120,20 @@ int write_to_printer(unsigned int virtAddr, int len, unsigned int asid)
   /* ciclo che scorre tutta la stringa, inserisce su dev_reg.data0 il carattere
    attuale, chiama la syscall e poi riesegue */
   for (i = 0; i < len; i++) {
-    dev_reg->data0 = virtAddr + i; // carico il carattere da trasmettere sul
-                                   // campo data0, data1 non viene usato
+    /* carico il carattere da trasmettere sul campo data0, data1 non viene usato */
+    dev_reg->data0 = *((char *)(virtAddr + i));
+
     if (*((char *)(virtAddr + i)) == '\0') { // fine stringa
       break;
     }
-    SYSCALL(DOIO, (int)&dev_reg->command, TRANSMITCHAR, 0);
-    if (dev_reg->status != READY)
+
+    status = SYSCALL(DOIO, (int)&dev_reg->command, TRANSMITCHAR, 0);
+
+    if (status != READY) {
+      /* Rilascio la mutua esclusione */
+      SYSCALL(VERHOGEN, (unsigned int)&dev_sems[PRINTER_SEMS][asid - 1], 0, 0);
       return -dev_reg->status;
+    }
   }
 
   /* Rilascio la mutua esclusione */
@@ -301,23 +308,5 @@ void support_trap_handler(support_t *act_proc_sup) { safe_kill(); }
 
 inline void safe_kill(void)
 {
-  int pid;
-  pcb_t *pcb;
-
-  /* Recuperiamo il pid */
-  pid = SYSCALL(GETPROCESSID, 0, 0, 0);
-
-  /* Recuperiamo il pcb */
-  pcb = search_by_pid(pid);
-
-  if (pcb == NULL) {
-    /* Non dovrebbe mai succedere */
-    LOGi("Tried to kill", pid);
-    return;
-  }
-
-  /* Rimuoviamo il pcb da qualsiasi semaforo */
-  out_blocked(pcb);
-
   SYSCALL(TERMPROCESS, 0, 0, 0);
 }

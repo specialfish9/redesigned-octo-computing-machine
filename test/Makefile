@@ -31,7 +31,7 @@ UDEV = umps3-mkdev
 all: printerTest.umps strConcat.umps \
 	fibEight.umps fibEleven.umps \
 	terminalTest2.umps terminalTest3.umps terminalTest4.umps \
-	terminalTest5.umps  \
+	terminalTest5.umps terminalReader.umps  \
 
 %.o: %.c $(TDEFS)
 	$(CC) $(CFLAGS) -o %.o $<
