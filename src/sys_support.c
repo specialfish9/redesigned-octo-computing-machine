@@ -134,8 +134,11 @@ int write_to_printer(unsigned int virtAddr, int len, unsigned int asid)
   return i;
 }
 
+unsigned int var7; 
 int write_to_terminal(unsigned int virtAddr, int len, unsigned int asid)
 {
+  var7 = virtAddr;
+
   termreg_t *dev_reg;
   unsigned int status;
   size_tt i;
@@ -153,7 +156,7 @@ int write_to_terminal(unsigned int virtAddr, int len, unsigned int asid)
 
   for (i = 0; i < len; i++) {
     /* carico il carattere da trasmettere sul campo data0, data1 non viene usato */
-    cmdval = ((virtAddr + i) << 8) | TRANSMITCHAR;
+    cmdval = (*(char *)(virtAddr + i) << 8) | TRANSMITCHAR;
 
     if (*((char *)(virtAddr + i)) == '\0') {
       break;
@@ -164,12 +167,10 @@ int write_to_terminal(unsigned int virtAddr, int len, unsigned int asid)
     if ((status & TERMSTATMASK) != OKCHARTRANS) {
       /* Rilascio la mutua esclusione */
       SYSCALL(VERHOGEN, (unsigned int)&dev_sems[TERMOUT_SEMS][asid - 1], 0, 0);
-      LOG("QUAU");
       return -dev_reg->transm_status;
     }
   }
 
-      LOG("YTYYYYY");
   /* Rilascio la mutua esclusione */
   SYSCALL(VERHOGEN, (unsigned int)&dev_sems[TERMOUT_SEMS][asid - 1], 0, 0);
 
