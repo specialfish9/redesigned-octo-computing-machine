@@ -45,8 +45,6 @@ inline void init_dev_sem(void)
 
 inline enum eh_act handle_interrupts(const int line)
 {
-  LOGi("int", line);
-
   switch (line) {
   case IL_IPI: {
     break; /* safely ignore */
@@ -127,11 +125,6 @@ inline enum eh_act handle_interrupts(const int line)
   return CONTINUE;
 }
 
-void f4(){}
-unsigned int var8;
-unsigned int var9;
-unsigned int var10;
-
 inline void generic_interrupt_handler(int line, int *semaphores)
 {
   size_tt bitmap, index;
@@ -142,8 +135,8 @@ inline void generic_interrupt_handler(int line, int *semaphores)
   bitmap = *((size_tt *)CDEV_BITMAP_ADDR(IL_DISK + line));
 
   /* Scorro la bitmap fino a trovare la posizione dell'uno piu' significativo.
-   * Ad ogni iterazione incremento l'indice. In questo trovo il numero del device che ha sollevato
-   * l'interrupt e la corrispondente linea. */
+   * Ad ogni iterazione incremento l'indice. In questo trovo il numero del
+   * device che ha sollevato l'interrupt e la corrispondente linea. */
   index = 0;
   while (bitmap > 1) {
     ++index;

@@ -1,19 +1,15 @@
 #include "sys_support.h"
-#include "asl.h"
-#include "pandos_const.h"
-#include "pcb.h"
-#include "utils.h"
 #include "interrupts.h"
 #include "pager.h"
+#include "pandos_const.h"
+#include "utils.h"
 #include <umps3/umps/arch.h>
-#include <umps3/umps/const.h>
 #include <umps3/umps/cp0.h>
 #include <umps3/umps/libumps.h>
-#include <umps3/umps/types.h>
 
 /* Macro per il log */
-#define LOG(s) log("SS", s)
-#define LOGi(s, i) logi("SS", s, i)
+#define LOG(s) log("sS", s)
+#define LOGi(s, i) logi("sS", s, i)
 
 #define INTMIN -2147483648
 
@@ -46,7 +42,7 @@ static inline unsigned int get_TOD(void);
  * @brief Systemcall TERMINATE (SYS2). Termina il processo chiamante attraverso
  * la NSYS2
  * */
-static inline void terminate(void);
+static inline void terminate();
 
 /**
  * @brief Systemcall WRITE TO PRINTER (SYS3). Scrive sulla stampante
@@ -94,10 +90,10 @@ void terminate(void)
 {
   int pid;
 
-  /* Get the pid using NSYS9 */
+  /* Recupero il pid usando la NSYS9 */
   pid = SYSCALL(GETPROCESSID, 0, 0, 0);
 
-  /* Kill the process using NSYS2 */
+  /* Uccido il processo usando NSYS2 */
   SYSCALL(TERMPROCESS, pid, 0, 0);
 }
 
@@ -120,7 +116,8 @@ int write_to_printer(unsigned int virtAddr, int len, unsigned int asid)
   /* ciclo che scorre tutta la stringa, inserisce su dev_reg.data0 il carattere
    attuale, chiama la syscall e poi riesegue */
   for (i = 0; i < len; i++) {
-    /* carico il carattere da trasmettere sul campo data0, data1 non viene usato */
+    /* carico il carattere da trasmettere sul campo data0, data1 non viene usato
+     */
     dev_reg->data0 = *((char *)(virtAddr + i));
 
     if (*((char *)(virtAddr + i)) == '\0') { // fine stringa
@@ -159,7 +156,8 @@ int write_to_terminal(unsigned int virtAddr, int len, unsigned int asid)
   dev_reg = (termreg_t *)DEV_REG_ADDR(IL_TERMINAL, asid - 1);
 
   for (i = 0; i < len; i++) {
-    /* carico il carattere da trasmettere sul campo data0, data1 non viene usato */
+    /* carico il carattere da trasmettere sul campo data0, data1 non viene usato
+     */
     cmdval = (*(char *)(virtAddr + i) << 8) | TRANSMITCHAR;
 
     if (*((char *)(virtAddr + i)) == '\0') {
@@ -204,7 +202,6 @@ int read_from_terminal(unsigned int virtAddr, unsigned int asid)
     /* maschero il return value per leggere lo status */
     if ((status & TERMSTATMASK) != OKCHARTRANS) {
       /* Rilascio la mutua esclusione */
-      LOG("UScita forzata");
       SYSCALL(VERHOGEN, (unsigned int)&dev_sems[TERMIN_SEMS][asid - 1], 0, 0);
       return -status;
     }
@@ -213,11 +210,8 @@ int read_from_terminal(unsigned int virtAddr, unsigned int asid)
     *((char *)virtAddr++) = status >> 8;
     i++;
 
-    /* TODO Da verificare se vogliamo prendere in input anche \0 oppure solo i
-     * caratteri effettivi (per ora per sicurezza lo faccio) */
   } while (status >> 8 != '\n');
 
-      LOG("UScita ok");
   /* Rilascio la mutua esclusione */
   SYSCALL(VERHOGEN, (unsigned int)&dev_sems[TERMIN_SEMS][asid - 1], 0, 0);
 
@@ -259,8 +253,6 @@ void support_syscall_handler(support_t *act_proc_sup)
   /* uso INTMIN per evitare conflitti con i valori di ritorno che possono
    * essere numeri negativi, 0 e positivi */
   ret = INTMIN;
-
-  LOGi("SYS", number);
 
   switch (number) {
   case GETTOD: {
@@ -306,7 +298,4 @@ void support_syscall_handler(support_t *act_proc_sup)
 
 void support_trap_handler(support_t *act_proc_sup) { safe_kill(); }
 
-inline void safe_kill(void)
-{
-  SYSCALL(TERMPROCESS, 0, 0, 0);
-}
+inline void safe_kill(void) { SYSCALL(TERMPROCESS, 0, 0, 0); }

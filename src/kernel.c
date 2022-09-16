@@ -11,9 +11,9 @@
 #include "asl.h"
 #include "init_proc.h"
 #include "interrupts.h"
+#include "pager.h"
 #include "pandos_const.h"
 #include "pandos_types.h"
-#include "pager.h"
 #include "pcb.h"
 #include "scheduler.h"
 #include "syscalls.h"
@@ -111,12 +111,7 @@ void exception_handler(void)
 
   if (act_proc != NULL) {
     memcpy(&act_proc->p_s, saved_state, sizeof(state_t));
-  } else {
-    // TODO
   }
-
-  if (cause != 8 && cause != 0)
-    LOGi("ex", cause);
 
   if (cause == EXC_INT) {
     /* Interrupts */
@@ -135,6 +130,7 @@ void exception_handler(void)
   } else if (cause == EXC_ADEL || cause == EXC_ADES || cause == EXC_IBE ||
              cause == EXC_DBE || cause == EXC_BP || cause == EXC_RI ||
              cause == EXC_CPU || cause == EXC_OV) {
+    LOGi("ex", cause);
     reenqueue = passup_or_die(GENERALEXCEPT);
   } else if (cause == EXC_SYS) {
     if (act_proc == NULL) {
@@ -185,11 +181,8 @@ void uTLB_RefillHandler(void)
   /* Trova l'entry corretta nella page table del processo */
   exc_state = (state_t *)BIOSDATAPAGE;
   missing_page = ENTRYHI_GET_VPN(exc_state->entry_hi);
-  
-  pg_n = missing_page == STK_PG? USERPGTBLSIZE - 1 :  missing_page;
 
-  LOGi("TLBREFILL-np", pg_n);
-  LOGi("By ",ENTRYHI_GET_ASID(exc_state->entry_hi));
+  pg_n = missing_page == STK_PG ? USERPGTBLSIZE - 1 : missing_page;
 
   missing_entry = act_proc->p_supportStruct->sup_privatePgTbl[pg_n];
 

@@ -60,7 +60,11 @@ int swp_pl_sem;
  * */
 int dev_sems[DEVINTNUM + 1][DEVPERINT];
 
-/** TODO docs */
+/**
+ * @brief Libera un frame salvandone il contenuto nel dispositivo flash
+ * @param frame puntatore al frame da liberare
+ * @param asid l'asid del processo proprietario del frame
+ * */
 static inline void free_frame(swppl_entry_t *frame, const int asid);
 
 /**
@@ -77,11 +81,25 @@ static inline int chose_frame(void);
  * */
 static inline void toggle_int(int on);
 
-/*TODO doc*/
-static inline unsigned int read_from_flash(const int asid, const unsigned int pg_no, const unsigned int dest);
+/**
+ * @brief Funzione per leggere da un dispositivo flash
+ * @param asid L'asid del processo
+ * @param pg_no Il numero della pagina da leggere
+ * @param dest L'indirizzo su cui salvare i byte letti
+ * @return Lo status della operazione
+ * */
+static inline unsigned int read_from_flash(const int asid,
+                                           const unsigned int pg_no,
+                                           const unsigned int dest);
 
-/*TODO doc*/
-static inline unsigned int write_to_flash(const int asid, const unsigned int data);
+/**
+ * @brief Funzione per scrivere su un dispositivo flash
+ * @param asid L'asid del processo
+ * @param data I dati da scrivere nel dispositivo
+ * @return Lo status dell'operazione
+ * */
+static inline unsigned int write_to_flash(const int asid,
+                                          const unsigned int data);
 
 /**
  * @brief Aggiorna il TLB con le entryHI e entryLO passate. Esegue prima una
@@ -108,15 +126,10 @@ inline void init_supp_structures(void)
       dev_sems[i][j] = 1;
 }
 
-void f2(){}
-void f3(){}
-unsigned int var3;
-unsigned int var4;
-unsigned int var5;
-
 inline void tlb_exc_handler(void)
 {
-  support_t *const act_proc_sup = (support_t *const)SYSCALL(GETSUPPORTPTR, 0, 0, 0);
+  support_t *const act_proc_sup =
+      (support_t *const)SYSCALL(GETSUPPORTPTR, 0, 0, 0);
 
   if (act_proc_sup == NULL) {
     LOG("Error on getsupport");
@@ -130,7 +143,7 @@ inline void tlb_exc_handler(void)
     LOG("EXECMOD");
     safe_kill();
     return;
-  } 
+  }
 
   /* P sul semaforo della swap pool */
   SYSCALL(PASSEREN, (unsigned int)&swp_pl_sem, 0, 0);
@@ -138,29 +151,26 @@ inline void tlb_exc_handler(void)
   size_tt mpg_no;
 
   /* Controllo se la pagina mancante è quella della stack */
-  if ((mpg_no = ENTRYHI_GET_VPN(act_proc_sup->sup_exceptState[PGFAULTEXCEPT].entry_hi)) == STK_PG) {
-    mpg_no = USERPGTBLSIZE - 1; 
+  if ((mpg_no = ENTRYHI_GET_VPN(
+           act_proc_sup->sup_exceptState[PGFAULTEXCEPT].entry_hi)) == STK_PG) {
+    mpg_no = USERPGTBLSIZE - 1;
   }
-
-  LOGi("Process", act_proc_sup->sup_asid);
-  LOGi("is missing pgno", mpg_no);
 
   const unsigned int chosen_frame = chose_frame();
   swppl_entry_t *const ch_frame_entry = &swppl_tbl[chosen_frame];
 
-  LOGi("Chosen frame", chosen_frame);
-
   /* Guardo se il frame selezionato e' occupato */
   if (ch_frame_entry->asid != -1) {
-    LOG("occupato");
     free_frame(ch_frame_entry, act_proc_sup->sup_asid);
   }
 
   /* Calcolo l'indirizzo di destinazione della swap pool */
-  const unsigned int sp_addr = (unsigned int)SWAP_POOL_BEGIN + (chosen_frame * PAGESIZE);
+  const unsigned int sp_addr =
+      (unsigned int)SWAP_POOL_BEGIN + (chosen_frame * PAGESIZE);
 
   /* Leggo dal flash device */
-  const unsigned int dev_stat = read_from_flash(act_proc_sup->sup_asid, mpg_no, sp_addr);
+  const unsigned int dev_stat =
+      read_from_flash(act_proc_sup->sup_asid, mpg_no, sp_addr);
 
   /* Controllo che la lettura sia andata a buon fine */
   if (dev_stat != READY) {
@@ -173,11 +183,14 @@ inline void tlb_exc_handler(void)
 
   /* Aggiorno la swap pool table con le informaioni nuove */
   swppl_tbl[chosen_frame].asid = act_proc_sup->sup_asid;
-  swppl_tbl[chosen_frame].vpn = KUSEG + (mpg_no << VPNSHIFT) ; // TODO capire se mettere 0x80.... come è adesso o solo 1,2,3 ecc...
-  swppl_tbl[chosen_frame].pg_tbl_entry = &act_proc_sup->sup_privatePgTbl[mpg_no];
+  swppl_tbl[chosen_frame].vpn = KUSEG + (mpg_no << VPNSHIFT);
+  swppl_tbl[chosen_frame].pg_tbl_entry =
+      &act_proc_sup->sup_privatePgTbl[mpg_no];
 
-  /* Aggiorno la page table del processo segnando la pagina valida e mettendo il nuovo pfn */
-  act_proc_sup->sup_privatePgTbl[mpg_no].pte_entryLO = sp_addr | ENTRYLO_VALID | ENTRYLO_DIRTY;
+  /* Aggiorno la page table del processo segnando la pagina valida e mettendo il
+   * nuovo pfn */
+  act_proc_sup->sup_privatePgTbl[mpg_no].pte_entryLO =
+      sp_addr | ENTRYLO_VALID | ENTRYLO_DIRTY;
 
   /* Aggiorno il TLB */
   update_tlb(act_proc_sup->sup_privatePgTbl[mpg_no].pte_entryHI,
@@ -194,7 +207,7 @@ inline void tlb_exc_handler(void)
 
 int update_tlb(unsigned int entryHi, unsigned int entryLo)
 {
-  #define P_BIT 0x40000000
+#define P_BIT 0x40000000
   unsigned int index;
 
   setENTRYHI(entryHi);
@@ -208,7 +221,6 @@ int update_tlb(unsigned int entryHi, unsigned int entryLo)
 
   setENTRYLO(entryLo);
   TLBWI();
-  LOG("TLB updated");
   return 1;
 }
 
@@ -216,11 +228,11 @@ int chose_frame(void)
 {
   static size_tt frame_top = 0;
   size_tt i;
-  
-  /* Partendo dall'ultimo frame scelto scorriamo la tabella della swap pool 
-     * in modo circolare finchè non ne troviamo uno libero.*/
+
+  /* Partendo dall'ultimo frame scelto scorriamo la tabella della swap pool
+   * in modo circolare finchè non ne troviamo uno libero.*/
   for (i = 0; i < SWAP_POOL_SIZE; i++) {
-    if (swppl_tbl[(frame_top + i ) % SWAP_POOL_SIZE].asid == -1) {
+    if (swppl_tbl[(frame_top + i) % SWAP_POOL_SIZE].asid == -1) {
       return frame_top = (frame_top + i) % SWAP_POOL_SIZE;
     }
   }
@@ -251,13 +263,17 @@ void free_frame(swppl_entry_t *frame, const int asid)
   toggle_int(TRUE);
 
   /* Scrivo nel dispostivio flash i dati presenti al pfn */
-  dev_stat = write_to_flash(asid, ENTRYLO_GET_PFN(proc_pgtbl_entry->pte_entryLO));
+  dev_stat =
+      write_to_flash(asid, ENTRYLO_GET_PFN(proc_pgtbl_entry->pte_entryLO));
 
   /* Controllo che la DO IO sia andata a buon fine */
   if (dev_stat != READY) {
     LOGi("error writing frame to dev", dev_stat);
     return;
   }
+
+  /* Marco il frame come libero */
+  frame->asid = -1;
 }
 
 void toggle_int(int on)
@@ -269,31 +285,32 @@ void toggle_int(int on)
   }
 }
 
-unsigned int read_from_flash(const int asid, const unsigned int pg_no, const unsigned int dest) 
+unsigned int read_from_flash(const int asid, const unsigned int pg_no,
+                             const unsigned int dest)
 {
-    dtpreg_t *dev_reg;
-    unsigned int cmdval;
-    unsigned int dev_stat;
+  dtpreg_t *dev_reg;
+  unsigned int cmdval;
+  unsigned int dev_stat;
 
-    /* Guadagno l'accesso al device in mutua esclusione */
-    SYSCALL(PASSEREN, (unsigned int)&dev_sems[FLASH_SEMS][asid - 1], 0, 0);
+  /* Guadagno l'accesso al device in mutua esclusione */
+  SYSCALL(PASSEREN, (unsigned int)&dev_sems[FLASH_SEMS][asid - 1], 0, 0);
 
-    /* Prendo il device register del dispositivo flash associato all'asid */
-    dev_reg = (dtpreg_t *)DEV_REG_ADDR(FLASHINT, asid - 1);
+  /* Prendo il device register del dispositivo flash associato all'asid */
+  dev_reg = (dtpreg_t *)DEV_REG_ADDR(FLASHINT, asid - 1);
 
-    /* Scrivi il contenuto di data0 nella destinazione scelta */
-    dev_reg->data0 = dest;
+  /* Scrivi il contenuto di data0 nella destinazione scelta */
+  dev_reg->data0 = dest;
 
-    /* Imposto il command */
-    cmdval = (pg_no << 8) | FLASHREAD;
+  /* Imposto il command */
+  cmdval = (pg_no << 8) | FLASHREAD;
 
-    /* Uso la NSYS5 per dire al controller del device di leggere */
-    dev_stat = SYSCALL(DOIO, (unsigned int)&dev_reg->command, cmdval, 0);
+  /* Uso la NSYS5 per dire al controller del device di leggere */
+  dev_stat = SYSCALL(DOIO, (unsigned int)&dev_reg->command, cmdval, 0);
 
-    /* Rilascio la mutua esclusione */
-    SYSCALL(VERHOGEN, (unsigned int)&dev_sems[FLASH_SEMS][asid - 1], 0, 0);
+  /* Rilascio la mutua esclusione */
+  SYSCALL(VERHOGEN, (unsigned int)&dev_sems[FLASH_SEMS][asid - 1], 0, 0);
 
-    return dev_stat;
+  return dev_stat;
 }
 
 unsigned int write_to_flash(const int asid, const unsigned int data)

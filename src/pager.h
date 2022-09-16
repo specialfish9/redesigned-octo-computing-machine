@@ -7,9 +7,10 @@
 
 #include <umps3/umps/const.h>
 
-/*TODO doc*/
+/**
+ * @const VPN della pagina contenente lo stack
+ * */
 #define STK_PG 0x3FFFF
-#define STK_PG_ADDR 0xBFFFF
 
 /**
  * @brief Indicatore dei semafori per i flash device nella matrice dei semafori

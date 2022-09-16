@@ -138,6 +138,7 @@ inline void kill_proc(pcb_t *p)
   }
   if (p->p_semAdd != NULL) {
     --sb_procs;
+    PANIC();
     if (out_blocked(p) == NULL) {
       LOGi("Could not remove process from semaphore ", p->p_pid);
       PANIC();

@@ -84,8 +84,6 @@ inline enum eh_act handle_syscall(void)
   arg2 = act_proc->p_s.reg_a2;
   arg3 = act_proc->p_s.reg_a3;
 
-  LOGi("nsys", number);
-
   if (!is_alive(act_proc)) {
     LOG("Syscall called by a zombie");
     PANIC();
@@ -268,8 +266,6 @@ inline int passup_or_die(size_tt kind)
     LOG("Dying");
     return NOTHING;
   }
-
-  LOGi("Passing up", kind);
 
   /* Pass up */
   memcpy(act_proc->p_supportStruct->sup_exceptState + kind,

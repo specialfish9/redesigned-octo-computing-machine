@@ -5,12 +5,12 @@
  *
  */
 #include "init_proc.h"
+#include "pager.h"
 #include "pandos_const.h"
 #include "pandos_types.h"
 #include "sys_support.h"
 #include "syscalls.h"
 #include "utils.h"
-#include "pager.h"
 #include <umps3/umps/cp0.h>
 #include <umps3/umps/libumps.h>
 
@@ -44,7 +44,7 @@ inline void instantiator_proc(void)
   init_supp_structures();
   init_sem = 0;
 
-  for (i = 6; i <= UPROCMAX; i++) {
+  for (i = 1; i <= UPROCMAX; i++) {
     logi(LOG, "creating uproc", i);
 
     /* Create state_t and support_t structures for test processes */
@@ -55,7 +55,8 @@ inline void instantiator_proc(void)
     tp_states[i - 1].reg_sp = USERSTACKTOP;
 
     /* Timer enabled, interrupts enabled and usermode */
-    tp_states[i - 1].status = STATUS_TE | STATUS_IEc | STATUS_KUp | STATUS_IM_MASK;
+    tp_states[i - 1].status =
+        STATUS_TE | STATUS_IEc | STATUS_KUp | STATUS_IM_MASK;
 
     tp_states[i - 1].entry_hi = i << ENTRYHI_ASID_BIT;
 
@@ -63,20 +64,23 @@ inline void instantiator_proc(void)
     tp_supps[i - 1].sup_asid = i;
     init_page_table(tp_supps[i - 1].sup_privatePgTbl, i);
 
-    tp_supps[i-1].sup_exceptContext[0].pc = (memaddr)tlb_exc_handler;
-    tp_supps[i-1].sup_exceptContext[1].pc = (memaddr)support_exec_handler;
+    tp_supps[i - 1].sup_exceptContext[0].pc = (memaddr)tlb_exc_handler;
+    tp_supps[i - 1].sup_exceptContext[1].pc = (memaddr)support_exec_handler;
 
     /* Timer enabled, interupts on and kernel mode */
-    tp_supps[i-1].sup_exceptContext[0].status = (STATUS_TE | STATUS_IM_MASK | STATUS_KUp | STATUS_IEc) ^ STATUS_KUp;
-    tp_supps[i-1].sup_exceptContext[1].status = (STATUS_TE | STATUS_IM_MASK | STATUS_KUp | STATUS_IEc) ^ STATUS_KUp;
+    tp_supps[i - 1].sup_exceptContext[0].status =
+        (STATUS_TE | STATUS_IM_MASK | STATUS_KUp | STATUS_IEc) ^ STATUS_KUp;
+    tp_supps[i - 1].sup_exceptContext[1].status =
+        (STATUS_TE | STATUS_IM_MASK | STATUS_KUp | STATUS_IEc) ^ STATUS_KUp;
 
     /* Set stack ptr to the end of the stack minus 1 */
-    tp_supps[i-1].sup_exceptContext[0].stackPtr = (memaddr) &tp_supps[i].sup_stackTLB[500 - 1];
-    tp_supps[i-1].sup_exceptContext[1].stackPtr = (memaddr) &tp_supps[i].sup_stackGen[500 - 1];
+    tp_supps[i - 1].sup_exceptContext[0].stackPtr =
+        (memaddr)&tp_supps[i].sup_stackTLB[500 - 1];
+    tp_supps[i - 1].sup_exceptContext[1].stackPtr =
+        (memaddr)&tp_supps[i].sup_stackGen[500 - 1];
 
     SYSCALL(CREATEPROCESS, (unsigned int)&tp_states[i - 1], PROCESS_PRIO_LOW,
             (unsigned int)&tp_supps[i - 1]);
-    logi(LOG, "created uproc ", i);
   }
 
   SYSCALL(PASSEREN, (unsigned int)&init_sem, 0, 0);
@@ -85,7 +89,7 @@ inline void instantiator_proc(void)
 inline void init_page_table(pteEntry_t *tbl, const int asid)
 {
   size_tt i = 0;
-  
+
   /* Just in case */
   if (tbl == NULL || asid <= 0 || asid > UPROCMAX) {
     log(LOG, "Invalid page table ref or asid");
@@ -93,9 +97,9 @@ inline void init_page_table(pteEntry_t *tbl, const int asid)
   }
 
   for (i = 0; i < USERPGTBLSIZE - 1; i++) {
-      /* Impostiamo il virtual page number e l'asid */
-      tbl[i].pte_entryHI = KUSEG + (i << VPNSHIFT) + (asid << ASIDSHIFT);
-      tbl[i].pte_entryLO = ENTRYLO_DIRTY;
+    /* Impostiamo il virtual page number e l'asid */
+    tbl[i].pte_entryHI = KUSEG + (i << VPNSHIFT) + (asid << ASIDSHIFT);
+    tbl[i].pte_entryLO = ENTRYLO_DIRTY;
   }
 
   /* Se è l'ultima entry (quella associata alla pagina contenente la stack

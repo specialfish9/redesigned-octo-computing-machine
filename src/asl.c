@@ -80,6 +80,7 @@ pcb_t *remove_blocked(int *semAdd)
     list_del(&(s->s_link));
     list_add(&(s->s_link), semd_free_h);
   }
+
   return pcb;
 }
 
