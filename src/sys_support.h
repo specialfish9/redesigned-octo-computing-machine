@@ -1,3 +1,11 @@
+/**
+ * @file sys_support.h
+ * @brief Gestore delle syscall del livello supporto.
+ *
+ * Espone la funzione necessaria per gestire le system call e alcune altre
+ * funzioni. 
+ *
+ */
 #ifndef SYSSUPPORT_H
 #define SYSSUPPORT_H
 

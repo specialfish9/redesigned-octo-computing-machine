@@ -1,3 +1,13 @@
+/**
+ *
+ * @file sys_support.c
+ * @brief Implementazione delle funzioni neccessarie per gestire le systemcall
+ * del livello supporto.
+ *
+ * Oltre alle funzioni esposte dal header @ref sys_support.h, contiene
+ * l'implementazione di ciascuna syscall con codice da 1 a 5.
+ *
+ */
 #include "sys_support.h"
 #include "interrupts.h"
 #include "pager.h"
