@@ -2,55 +2,66 @@
  * @file pager.h
  * @brief Modulo contenente le funzioni per la gestione della memoria virtuale
  * */
-#ifndef PAGER
-#define PAGER
+#ifndef PAGER_H
+#define PAGER_H
 
 #include <umps3/umps/const.h>
+#include "pandos_types.h"
 
 /**
- * @const VPN della pagina contenente lo stack
+ * @brief VPN della pagina contenente lo stack
  * */
 #define STK_PG 0x3FFFF
 
 /**
- * @brief Indicatore dei semafori per i flash device nella matrice dei semafori
- * dei device
+ * @brief Dimensione della Swap Pool
  * */
-#define FLASH_SEMS IL_FLASH - IL_DISK
+#define SP_SIZE (2 * UPROCMAX)
 
 /**
- * @brief Indicatore dei semafori per il printer device nella matrice dei
- * semafori dei device
+ * @struct sp_entry_t
+ * @brief Rappresenta una entry della swap table.
+ * @var asid Indica l'ASID del processo propretario della pagina salvata
+ * nella entry
+ * @var vpn Indica il numero della pagina salvata nella entry
+ * @ pg_tbl_entry Puntatore alla entry dentro la tabella delle pagine privata
+ * del processo
  * */
-#define PRINTER_SEMS (IL_PRINTER - IL_DISK - 1)
+typedef struct {
+  int asid;
+  int vpn;
+  pteEntry_t *pg_tbl_entry;
+} sp_entry_t;
 
 /**
- * @brief Indicatore dei semafori per il terminale nella matrice dei semafori
- * dei device
+ * @var Semaforo mutex per la swap pool
  * */
-#define TERMIN_SEMS (IL_TERMINAL - IL_DISK - 1)
-#define TERMOUT_SEMS (IL_TERMINAL - IL_DISK)
+extern int sp_sem;
 
 /**
- * @var Semaforo mutex per la Swap Pool
+ * @var Array con le entry della swap pool
  * */
-extern int swp_pl_sem;
+extern sp_entry_t sp_tbl[SP_SIZE];
 
 /**
- * @var Semafori per l'accesso in mutua esclusione ai device. Usati dal livello
- * supporto. Vengono inizializzati con @ref init_supp_structures.
+ * @var Variabile per tenere conto dei processi che occupano la swap pool e sono
+ * vivi. In particolare essendo una variabile di tipo char e' composta da 8 bit.
+ * Se il bit i-esimo e' a 1 significa che la swap pool contiene frame del processo
+ * con asid i + 1 e che questo processo e' vivo. Se il bit i-esimo e' 0 allora
+ * il processo e' morto e/o la swap pool non contiene frame di sua proprieta'.
  * */
-extern int dev_sems[DEVINTNUM + 1][DEVPERINT];
-
-/**
- * @brief Inizializza tutte le strutture dati necessarie per la gestione
- * della memoria virtuale.
- * */
-extern void init_supp_structures(void);
+extern char sp_asids;
 
 /**
  * @brief Gestore delle eccezioni del TLB. The pager
  * */
 extern void tlb_exc_handler(void);
+
+/**
+ * @brief Utilizza sp_asids per marcare i frame del processo specificato come 
+ * utilizzabili
+ * @param asid L'asid del processo coinvolto
+ * */
+extern void clean_frames(const unsigned int asid);
 
 #endif

@@ -10,12 +10,11 @@
 #define SYSSUPPORT_H
 
 #include "pandos_types.h"
-
 /**
- * @brief Handler generale per il livello supporto. Gestisce la divisione tra
- * syscall e trap
- */
-extern void support_exec_handler(void);
+ * @brief Gestore delle systemcall a livello supporto
+ * @param act_proc_sup struttura di supporto del processo attivo
+ * */
+extern void support_syscall_handler(support_t *act_proc_sup);
 
 /**
  * @brief Termina il processo dopo aver rilasciato un eventuale semaforo su

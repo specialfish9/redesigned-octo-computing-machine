@@ -37,7 +37,6 @@ static semd_t *get_semd(int *s_key)
 int insert_blocked(int *semAdd, pcb_t *p)
 {
   struct semd_t *s = get_semd(semAdd);
-
   if (s == NULL) { /*se il semaforo non è presente tra i SEMD*/
     if (list_empty(semd_free_h)) {
       /*termino restituendo TRUE se non è possibile allocare un nuovo semaforo

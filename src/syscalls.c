@@ -33,7 +33,15 @@ extern pcb_t *act_proc;
  * */
 extern size_tt sb_procs;
 
-/**
+/*
+ * @brief Systemcall TERMPROC (NSYS2)
+ * @param pid Il pid del processo da terminare
+ * @return L'azione che l'excepton handler deve fare una volta gestita la
+ * syscall.
+ * */
+static enum eh_act term_process(int pid);
+
+/*
  * @brief Systemcall DOIO (NSYS5)
  * @param cmdaddr Indirizzo del comando
  * @param cmdval Valore del comando
@@ -99,18 +107,7 @@ inline enum eh_act handle_syscall(void)
     return create_process((state_t *)arg1, (int)arg2, (support_t *)arg3);
   }
   case TERMPROCESS: {
-    pcb_t *res;
-    int pid;
-
-    pid = (int)arg1;
-    if (!pid) {
-      res = act_proc;
-    } else {
-      res = search_by_pid(pid);
-    }
-
-    kill_parent_and_progeny(res);
-    return is_alive(act_proc) ? RENQUEUE : NOTHING;
+    return term_process((int) arg1);
   }
   case PASSEREN: {
     int *sem_addr;
@@ -119,7 +116,7 @@ inline enum eh_act handle_syscall(void)
 
     if (*sem_addr != 0 && *sem_addr != 1) {
       /* problema */
-      LOG("Sem value out of range");
+      LOG("Sem value out of range on P");
       PANIC();
     }
 
@@ -137,7 +134,8 @@ inline enum eh_act handle_syscall(void)
 
     if (*sem_addr != 0 && *sem_addr != 1) {
       /* problema */
-      LOG("Sem value out of range");
+      LOG("Sem value out of range on V");
+      LOGi("value:", *sem_addr);
       PANIC();
     }
 
@@ -181,6 +179,20 @@ inline enum eh_act create_process(state_t *statep, int prio,
   act_proc->p_s.reg_v0 = new_proc->p_pid;
 
   return CONTINUE;
+}
+
+inline enum eh_act term_process(int pid)
+{
+    pcb_t *res;
+
+    if (!pid) {
+      res = act_proc;
+    } else {
+      res = search_by_pid(pid);
+    }
+    
+    kill_parent_and_progeny(res);
+    return is_alive(act_proc) ? RENQUEUE : NOTHING;
 }
 
 inline int passeren(int *semaddr)

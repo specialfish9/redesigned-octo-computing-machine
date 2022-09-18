@@ -5,7 +5,7 @@
  *
  */
 #include "init_proc.h"
-#include "pager.h"
+#include "support.h"
 #include "pandos_const.h"
 #include "pandos_types.h"
 #include "sys_support.h"
@@ -27,22 +27,14 @@ extern void tlb_exc_handler(void);
  * */
 extern void support_exec_handler(void);
 
-/**
- * @brief Inizializza una tabella delle pagine privata
- * @param tbl la tabella da inizializzare
- * @param asid l'ASID del processo proprietario della tabella
- * */
-static void init_page_table(pteEntry_t *tbl, const int asid);
 
 inline void instantiator_proc(void)
 {
   state_t tp_states[UPROCMAX];
   static support_t tp_supps[UPROCMAX];
   size_tt i;
-  int init_sem;
 
   init_supp_structures();
-  init_sem = 0;
 
   for (i = 1; i <= UPROCMAX; i++) {
     logi(LOG, "creating uproc", i);
@@ -83,27 +75,10 @@ inline void instantiator_proc(void)
             (unsigned int)&tp_supps[i - 1]);
   }
 
-  SYSCALL(PASSEREN, (unsigned int)&init_sem, 0, 0);
-}
-
-inline void init_page_table(pteEntry_t *tbl, const int asid)
-{
-  size_tt i = 0;
-
-  /* Just in case */
-  if (tbl == NULL || asid <= 0 || asid > UPROCMAX) {
-    log(LOG, "Invalid page table ref or asid");
-    PANIC();
+  for (i = 1; i <= UPROCMAX; i++) {
+    p_on_master_sem(); 
   }
 
-  for (i = 0; i < USERPGTBLSIZE - 1; i++) {
-    /* Impostiamo il virtual page number e l'asid */
-    tbl[i].pte_entryHI = KUSEG + (i << VPNSHIFT) + (asid << ASIDSHIFT);
-    tbl[i].pte_entryLO = ENTRYLO_DIRTY;
-  }
-
-  /* Se è l'ultima entry (quella associata alla pagina contenente la stack
-   * del uproc) settiamo l'indirizzo 0xBFFFF, ovvero il bottom della stack */
-  tbl[i].pte_entryHI = KUSEG + GETPAGENO + (asid << ASIDSHIFT);
-  tbl[i].pte_entryLO = ENTRYLO_DIRTY;
+  SYSCALL(TERMPROCESS, 0, 0, 0);
 }
+

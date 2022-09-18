@@ -144,9 +144,11 @@ void exception_handler(void)
     if (KUp == 0 && ((int)act_proc->p_s.reg_a0) < 0) {
       reenqueue = handle_syscall();
 
+      if (act_proc != NULL) {
       /* Incrementiamo il PC */
       act_proc->p_s.pc_epc = act_proc->p_s.reg_t9 =
           act_proc->p_s.pc_epc + WORD_SIZE;
+      }
     } else {
       act_proc->p_s.cause =
           (act_proc->p_s.cause & CLEAREXECCODE) | (PRIVINSTR << CAUSESHIFT);

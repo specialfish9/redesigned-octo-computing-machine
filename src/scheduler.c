@@ -99,6 +99,7 @@ inline void scheduler_next(void)
     PANIC();
   } else {
     /* Non dovremmo mai finire qua */
+    LOG("SCHEDULER PANIC");
     PANIC();
   }
 }
@@ -129,16 +130,17 @@ inline pcb_t *mk_proc(state_t *statep, int prio, support_t *supportp)
 inline void kill_proc(pcb_t *p)
 {
   if (p == NULL) {
+    LOG("Attempt to kill a NULL proc");
     PANIC();
   }
 
   --procs_count;
   if (p->p_parent != NULL && out_child(p) != p) {
+    LOG("HOPE");
     PANIC();
   }
   if (p->p_semAdd != NULL) {
     --sb_procs;
-    PANIC();
     if (out_blocked(p) == NULL) {
       LOGi("Could not remove process from semaphore ", p->p_pid);
       PANIC();

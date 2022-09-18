@@ -8,6 +8,7 @@
 #include "pandos_const.h"
 #include "pandos_types.h"
 #include "scheduler.h"
+#include "support.h"
 #include "sys_support.h"
 #include "syscalls.h"
 #include "umps3/umps/cp0.h"
@@ -16,62 +17,69 @@
 #include <umps3/umps/libumps.h>
 
 /**
- * @brief Dimensione della Swap Pool
- * */
-#define SWAP_POOL_SIZE (2 * UPROCMAX)
-
-/**
  * @brief Indirizzo di inizio della Swap Pool
  * */
-#define SWAP_POOL_BEGIN 0x20020000
+#define SP_BEGIN 0x20020000
 
 /* Macro per il log */
 #define LOG(s) log("VM", s)
 #define LOGi(s, i) logi("VM", s, i)
 
 /**
- * @struct swppl_entry_t
- * @brief Rappresenta una entry della swap table.
- * @var asid Indica l'ASID del processo propretario della pagina salvata
- * nella entry
- * @var vpn Indica il numero della pagina salvata nella entry
- * @ pg_tbl_entry Puntatore alla entry dentro la tabella delle pagine privata
- * del processo
- * */
-typedef struct {
-  int asid;
-  int vpn;
-  pteEntry_t *pg_tbl_entry;
-} swppl_entry_t;
-
-/**
  * @var Array con le entry della swap pool
  * */
-static swppl_entry_t swppl_tbl[SWAP_POOL_SIZE];
+sp_entry_t sp_tbl[SP_SIZE];
 
 /**
  * @var Semaforo mutex per la swap pool
  * */
-int swp_pl_sem;
+int sp_sem;
 
 /**
- * @var Semafori per l'accesso in mutua esclusione ai device. Usati dal livello
- * supporto. Vengono inizializzati con @ref init_supp_structure.
+ * @var Variabile per tenere conto dei processi i cui frame che occupano la swap
+ * pool sono utilizzabili. In particolare essendo una variabile di tipo char e' 
+ * composta da 8 bit. Se il bit i-esimo e' a 1 significa che la swap pool contiene
+ * frame del processo con asid i + 1 e che questo processo e' vivo. Se il bit
+ * i-esimo e' 0 allora il processo e' morto e/o la swap pool non contiene frame
+ * di sua proprieta'.
  * */
-int dev_sems[DEVINTNUM + 1][DEVPERINT];
+char sp_asids;
+
+/**
+ * @brief Riempie un frame della swap pool
+ * @param sup Struttura di supporto del processo proprietario del frame da riempire
+ * @param frame Numero del frame da riempire
+ * @param pg_no Numero della pagina da scrivere sul frame
+ * */
+static inline void fill_frame(support_t *const sup, const size_tt frame, const size_tt pg_no);
 
 /**
  * @brief Libera un frame salvandone il contenuto nel dispositivo flash
  * @param frame puntatore al frame da liberare
  * @param asid l'asid del processo proprietario del frame
  * */
-static inline void free_frame(swppl_entry_t *frame, const int asid);
+static inline void free_frame(sp_entry_t *frame, const int asid);
+
+/**
+ * @brief Utilizza sp_asids per marcare i frame del processo specificato come 
+ * utilizzabili
+ * @param asid L'asid del processo coinvolto
+ * */
+void clean_frames(const unsigned int asid);
 
 /**
  * @brief Implementa l'algoritmo di rimpiazzamento per i frame nella swap pool
  * @return Il numero del frame da rimpiazzare
  * */
-static inline int chose_frame(void);
+static inline int choose_frame(void);
+
+/**
+ * @brief Utility per modificare il valore della variabile @ref sp_asids
+ * @param on Booleano. Se 1 il bit del processo verra' acceso. Se e' 0 verra'
+ * spento.
+ * @param asid L'asid del processo coinvolto.
+ * */
+static inline void set_sp_asids(const int on, const unsigned int asid);
 
 /**
  * @brief Utility per abilitare/disabilitare gli interrupt. Usata per poter
@@ -88,7 +96,7 @@ static inline void toggle_int(int on);
  * @param dest L'indirizzo su cui salvare i byte letti
  * @return Lo status della operazione
  * */
-static inline unsigned int read_from_flash(const int asid,
+static inline unsigned int read_from_flash(const unsigned int asid,
                                            const unsigned int pg_no,
                                            const unsigned int dest);
 
@@ -98,7 +106,8 @@ static inline unsigned int read_from_flash(const int asid,
  * @param data I dati da scrivere nel dispositivo
  * @return Lo status dell'operazione
  * */
-static inline unsigned int write_to_flash(const int asid,
+static inline unsigned int write_to_flash(const unsigned int asid,
+                                          const unsigned int blk_no, 
                                           const unsigned int data);
 
 /**
@@ -109,35 +118,25 @@ static inline unsigned int write_to_flash(const int asid,
  * */
 static inline int update_tlb(unsigned int entryHi, unsigned int entryLo);
 
-inline void init_supp_structures(void)
-{
-  size_tt i, j;
-
-  /* Inizializza il semaforo di mutua esclusione della swap pool a 1 */
-  swp_pl_sem = 1;
-
-  /* Imposta tutti i frame della swap pool come 'liberi' */
-  for (i = 0; i < SWAP_POOL_SIZE; i++)
-    swppl_tbl[i].asid = -1;
-
-  /* Inizializza tutti i semafori dei device a 1 */
-  for (i = 0; i < DEVINTNUM + 1; i++)
-    for (j = 0; j < DEVPERINT; j++)
-      dev_sems[i][j] = 1;
-}
 
 inline void tlb_exc_handler(void)
 {
-  support_t *const act_proc_sup =
-      (support_t *const)SYSCALL(GETSUPPORTPTR, 0, 0, 0);
+  unsigned int cause;
+  unsigned int sp_addr;
+  unsigned int dev_stat;
+  unsigned int chosen_frame;
+  size_tt mpg_no;
+  support_t *act_proc_sup;
+  sp_entry_t *ch_frame_entry;
+
+  act_proc_sup = (support_t *)SYSCALL(GETSUPPORTPTR, 0, 0, 0);
 
   if (act_proc_sup == NULL) {
     LOG("Error on getsupport");
     return;
   }
 
-  const unsigned int cause =
-      CAUSE_GET_EXCCODE(act_proc_sup->sup_exceptState[PGFAULTEXCEPT].cause);
+  cause = CAUSE_GET_EXCCODE(act_proc_sup->sup_exceptState[PGFAULTEXCEPT].cause);
 
   if (cause == EXC_MOD) {
     LOG("EXECMOD");
@@ -146,31 +145,25 @@ inline void tlb_exc_handler(void)
   }
 
   /* P sul semaforo della swap pool */
-  SYSCALL(PASSEREN, (unsigned int)&swp_pl_sem, 0, 0);
-
-  size_tt mpg_no;
+  SYSCALL(PASSEREN, (unsigned int)&sp_sem, 0, 0);
 
   /* Controllo se la pagina mancante è quella della stack */
-  if ((mpg_no = ENTRYHI_GET_VPN(
-           act_proc_sup->sup_exceptState[PGFAULTEXCEPT].entry_hi)) == STK_PG) {
-    mpg_no = USERPGTBLSIZE - 1;
-  }
+  mpg_no = ENTRYHI_GET_VPN(act_proc_sup->sup_exceptState[PGFAULTEXCEPT].entry_hi);
+  mpg_no = mpg_no == STK_PG? USERPGTBLSIZE - 1 : mpg_no;
 
-  const unsigned int chosen_frame = chose_frame();
-  swppl_entry_t *const ch_frame_entry = &swppl_tbl[chosen_frame];
+  chosen_frame = choose_frame();
+  ch_frame_entry = &sp_tbl[chosen_frame];
 
-  /* Guardo se il frame selezionato e' occupato */
-  if (ch_frame_entry->asid != -1) {
+  /* Guardo se il frame selezionato e' utilizzabile */
+  if (ch_frame_entry->asid != -1 && (sp_asids & (1 << (ch_frame_entry->asid - 1)))) {
     free_frame(ch_frame_entry, act_proc_sup->sup_asid);
   }
 
   /* Calcolo l'indirizzo di destinazione della swap pool */
-  const unsigned int sp_addr =
-      (unsigned int)SWAP_POOL_BEGIN + (chosen_frame * PAGESIZE);
+  sp_addr = (unsigned int)SP_BEGIN + (chosen_frame * PAGESIZE);
 
   /* Leggo dal flash device */
-  const unsigned int dev_stat =
-      read_from_flash(act_proc_sup->sup_asid, mpg_no, sp_addr);
+  dev_stat = read_from_flash(act_proc_sup->sup_asid, mpg_no, sp_addr);
 
   /* Controllo che la lettura sia andata a buon fine */
   if (dev_stat != READY) {
@@ -182,10 +175,7 @@ inline void tlb_exc_handler(void)
   toggle_int(FALSE);
 
   /* Aggiorno la swap pool table con le informaioni nuove */
-  swppl_tbl[chosen_frame].asid = act_proc_sup->sup_asid;
-  swppl_tbl[chosen_frame].vpn = KUSEG + (mpg_no << VPNSHIFT);
-  swppl_tbl[chosen_frame].pg_tbl_entry =
-      &act_proc_sup->sup_privatePgTbl[mpg_no];
+  fill_frame(act_proc_sup, chosen_frame, mpg_no);
 
   /* Aggiorno la page table del processo segnando la pagina valida e mettendo il
    * nuovo pfn */
@@ -200,7 +190,7 @@ inline void tlb_exc_handler(void)
   toggle_int(TRUE);
 
   /* V nel semaforo della swap table per rilasciare la mutua esclusione */
-  SYSCALL(VERHOGEN, (unsigned int)&swp_pl_sem, 0, 0);
+  SYSCALL(VERHOGEN, (unsigned int)&sp_sem, 0, 0);
 
   LDST(&act_proc_sup->sup_exceptState[0]);
 }
@@ -224,27 +214,42 @@ int update_tlb(unsigned int entryHi, unsigned int entryLo)
   return 1;
 }
 
-int chose_frame(void)
+int choose_frame(void)
 {
   static size_tt frame_top = 0;
   size_tt i;
 
   /* Partendo dall'ultimo frame scelto scorriamo la tabella della swap pool
    * in modo circolare finchè non ne troviamo uno libero.*/
-  for (i = 0; i < SWAP_POOL_SIZE; i++) {
-    if (swppl_tbl[(frame_top + i) % SWAP_POOL_SIZE].asid == -1) {
-      return frame_top = (frame_top + i) % SWAP_POOL_SIZE;
+  for (i = 0; i < SP_SIZE; i++) {
+    if (sp_tbl[(frame_top + i) % SP_SIZE].asid == -1) {
+      return frame_top = (frame_top + i) % SP_SIZE;
     }
   }
 
   /* Se sono tutti occupati ritorniamo il frame successivo all'ultimo scelto */
-  return frame_top = (frame_top + 1) % SWAP_POOL_SIZE;
+  return frame_top = (frame_top + 1) % SP_SIZE;
 }
 
-void free_frame(swppl_entry_t *frame, const int asid)
+void fill_frame(support_t *const sup, const size_tt frame, const size_tt pg_no)
+{
+  if (frame < 0 || frame >= SP_SIZE) {
+    LOGi("Invalid frame number", frame);
+    PANIC();
+  }
+
+  sp_tbl[frame].asid = sup->sup_asid;
+  sp_tbl[frame].vpn = KUSEG + (pg_no << VPNSHIFT);
+  sp_tbl[frame].pg_tbl_entry = &sup->sup_privatePgTbl[pg_no];
+
+  set_sp_asids(TRUE, sup->sup_asid);
+}
+
+void free_frame(sp_entry_t *frame, const int asid)
 {
   pteEntry_t *proc_pgtbl_entry;
   unsigned int dev_stat;
+  unsigned int vpn;
 
   /* Recupero la tabella delle pagine del processo */
   proc_pgtbl_entry = frame->pg_tbl_entry;
@@ -261,10 +266,14 @@ void free_frame(swppl_entry_t *frame, const int asid)
 
   /* Riabilito gli interrupt */
   toggle_int(TRUE);
+  
+  /* Recupero il numero della pagina da scrivere */
+  vpn = ENTRYHI_GET_VPN(proc_pgtbl_entry->pte_entryHI);
+  vpn = vpn == STK_PG? USERPGTBLSIZE - 1 : vpn;
 
   /* Scrivo nel dispostivio flash i dati presenti al pfn */
   dev_stat =
-      write_to_flash(asid, ENTRYLO_GET_PFN(proc_pgtbl_entry->pte_entryLO));
+      write_to_flash(asid, vpn, ENTRYLO_GET_PFN(proc_pgtbl_entry->pte_entryLO));
 
   /* Controllo che la DO IO sia andata a buon fine */
   if (dev_stat != READY) {
@@ -276,6 +285,24 @@ void free_frame(swppl_entry_t *frame, const int asid)
   frame->asid = -1;
 }
 
+void clean_frames(const unsigned int asid)
+{
+  set_sp_asids(FALSE, asid);
+}
+
+void set_sp_asids(const int on, const unsigned int asid)
+{
+  if (asid > 8 || asid <= 0) {
+    LOGi("Invalid asid on sp_asids:", asid);
+    PANIC();
+  }
+
+  if (on)
+    sp_asids |= (1 << (asid - 1));
+  else 
+    sp_asids ^= (1 << (asid - 1));
+}
+
 void toggle_int(int on)
 {
   if (on) {
@@ -285,7 +312,7 @@ void toggle_int(int on)
   }
 }
 
-unsigned int read_from_flash(const int asid, const unsigned int pg_no,
+unsigned int read_from_flash(const unsigned int asid, const unsigned int pg_no,
                              const unsigned int dest)
 {
   dtpreg_t *dev_reg;
@@ -293,7 +320,7 @@ unsigned int read_from_flash(const int asid, const unsigned int pg_no,
   unsigned int dev_stat;
 
   /* Guadagno l'accesso al device in mutua esclusione */
-  SYSCALL(PASSEREN, (unsigned int)&dev_sems[FLASH_SEMS][asid - 1], 0, 0);
+  p_on_dev(FLASH_SEMS, asid - 1);
 
   /* Prendo il device register del dispositivo flash associato all'asid */
   dev_reg = (dtpreg_t *)DEV_REG_ADDR(FLASHINT, asid - 1);
@@ -308,18 +335,19 @@ unsigned int read_from_flash(const int asid, const unsigned int pg_no,
   dev_stat = SYSCALL(DOIO, (unsigned int)&dev_reg->command, cmdval, 0);
 
   /* Rilascio la mutua esclusione */
-  SYSCALL(VERHOGEN, (unsigned int)&dev_sems[FLASH_SEMS][asid - 1], 0, 0);
+  v_on_dev(FLASH_SEMS, asid - 1);
 
   return dev_stat;
 }
 
-unsigned int write_to_flash(const int asid, const unsigned int data)
+unsigned int write_to_flash(const unsigned int asid, const unsigned int blk_no, const unsigned int data)
 {
   unsigned int dev_stat;
+  unsigned int cmdval;
   dtpreg_t *dev_reg;
 
   /* Guadagno l'accesso al device in mutua esclusione */
-  SYSCALL(PASSEREN, (unsigned int)&dev_sems[FLASH_SEMS][asid - 1], 0, 0);
+  p_on_dev(FLASH_SEMS, asid - 1);
 
   /* Prendo i registri del device */
   dev_reg = (dtpreg_t *)DEV_REG_ADDR(FLASHINT, asid - 1);
@@ -327,11 +355,14 @@ unsigned int write_to_flash(const int asid, const unsigned int data)
   /* Metto in data0 ciò che voglio scrivere */
   dev_reg->data0 = data;
 
+  /* Imposto il command */
+  cmdval = (blk_no << 8) | FLASHWRITE;
+
   /* Scrivo su command il comando per scrivere (lol)*/
-  dev_stat = SYSCALL(DOIO, (unsigned int)&dev_reg->command, FLASHWRITE, 0);
+  dev_stat = SYSCALL(DOIO, (unsigned int)&dev_reg->command, cmdval, 0);
 
   /* Rilascio la mutua esclusione */
-  SYSCALL(VERHOGEN, (unsigned int)&dev_sems[FLASH_SEMS][asid - 1], 0, 0);
+  v_on_dev(FLASH_SEMS, asid - 1);
 
   return dev_stat;
 }

@@ -59,7 +59,8 @@ documentazione generata del codice.
      * __syscalls:__ chiamate di sistema.
      * __interrupts:__ interrupts associati ai dispositivi connessi e al clock di sistema.
 * FASE 3
-     * __sys_support:__ handler di livello supporto per syscall e trap.
+     * __support:__ handler per le eccezioni e funzioni di utility per il livello supporto.
+     * __sys_support:__ systemcall di livello supporto.
      * __pager:__ gestore della memoria virtuale a livello supporto.
      * __init_proc:__ inizializzatore processi utente di test di fase 3.
 * ALTRO
@@ -105,29 +106,28 @@ l'exception handler deve svolgere una volta gestito l'interrupt. Per la gestione
 delle linee associate ai vari device è presente la funzione 
 ```generic_interrupt_handler```.
 
-### Syscalls positive e gestore trap
-Questo modulo racchiude un gestore generico (```support_exec_handler```, 
+### Support e Syscall Positive
+Il modulo ```support``` racchiude un gestore generico (```support_exec_handler```), 
 richiamato dal livello sottostante tramite Pass Up or Die) con lo scopo
 di scindere le syscall del livello supporto dalle trap. 
-A seguito della divisione, sono presenti altri due handler: 
+A seguito della divisione, sono invocati altri due handler: 
 ```support_syscall_handler``` e ```support_trap_handler```.
-Il primo gestore ha lo scopo di determinare quale chiamata si sia verificata, 
-eseguire le azioni corrispondenti
-e, se l'esecuzione ha successo, inserire il valore di ritorno nel registro v0.
+Il primo gestore è implementato nel modulo sys_support ed ha lo scopo di 
+determinare quale syscall è stata invocata, eseguire le azioni corrispondenti
+e, se l'esecuzione ha successo, inserire il valore di ritorno in ```reg_v0```.
 Alcuni dei servizi forniti sono la scrittura su stampante (SYS3) e la 
 lettura/scrittura su terminale (SYS4 e SYS5).
-Il gestore delle trap verifica se il processo corrente mantiene una mutua 
-esclusione su un semaforo del livello supporto, la rilsacia e lo termina
-tramite la SYS2 (```terminate```).
+Il gestore delle trap invece termina il processo corrente tramite la SYS2 
+(```terminate```), avendo cura di segnalarlo al pager.
 
 ### TLB e memoria virtuale
 Le eccezioni del TLB sono gestiti da due handler: ```uTLB_refill_handler``` 
 per le ecceioni di tipo _TBL refill_, e ```tlb_exec_handler``` per tutte le 
 altre. Il primo si trova nel modulo ```kernel``` e si occupa semplicemente
-di andare a mettere nel TLB la pagina richiesta, andando a recuperarla dalla
+di andare ad inserire nel TLB la pagina richiesta, andando a recuperarla dalla
 tabella delle pagine privata del processo. Il secondo invece si trova nel 
 modulo ```pager``` ed è il cuore della gestione della memoria virtuale.
-Si occupa di andare a caricare la pagina richiesta all'interno della swap pool,
+Si occupa di andare a caricare la pagina richiesta all'interno della ```swap pool```,
 interagendo con essa e con i dispositivi flash che fungono da backing store
 per i processi utente di test di fase 3. Gestisce anche, tramite un apposito 
 algoritmo di rimpiazzamento, l'eventualità in cui la swap pool sia occupata
@@ -179,7 +179,36 @@ ritorna il frame succesivo all'ultimo rimpiazzato. Anche se di complessità magg
 sistema. Infatti limita di parecchio i casi in cui si va a rimpiazzare un frame 
 occupato, limitando drasticamente le operazioni di IO.
 
+### Ottimizzazioni sulla Swap Pool
+Per evitare inutili scritture su device flash è stata introdotta la variabile 
+```sp_asids``` all'interno del modulo ```pager```. Ogni volta che viene inserito
+un frame di un processo con asid ```i``` all'interno della swap pool, il bit alla
+posizione ```i-1```-esima viene acceso, mentre viene spento quando il processo
+termina. In questo modo, quando l'algoritmo di rimpiazzamento sceglie il frame 
+da andare a riempire, oltre a controllare se questo è occupato oppure no, è possibile
+sapere anche se il processo proprietario è ancora in vita. Se non lo dovesse essere
+significa che è possibile andare a sovrascrivere il frame senza dover salvarne il 
+contenuto. Oltre a far risparmiare tempo, questo previene anche la scrittura su 
+device non validi in quanto appartenuti a processi non più in esecuzione.
+
 ### Accesso ai device in mutua esclusione 
 Anche se non strettamente necessario per far funzionare gli 8 processi di test di
 fase 3, è stato ritenuto opportuno mediare gli accessi a ciascun device mediante
-semafori, per garantirne la mutua esclusione.
+semafori, per garantirne la mutua esclusione. In particolare nel modulo ```support```
+è presente una matrice ```dev_sems``` grande ```Numero tipi device + 1 x Numero device```.
+Il tipo aggiuntivo è per gestire in modo separato l'input e l'output dei terminali.
+
+## Problemi
+
+### Master semaphore
+Come suggerito dal manuale è stato implementato il meccanismo del ```master semaphore```.
+Purtroppo il gruppo non è riuscito in tempo a renderlo pienamente funzionante. In particolare
+dopo aver creato gli 8 processi utente, il processo di test esegue correttamente una ```P``` 
+sul master semaphore. Alla terminazione del primo uproc questo esegue una ```V``` e _sveglia_
+il padre che viene correttamente inserito nelle code dello scheduler. Quando questo gli cede 
+il controllo, il processo test solleva un kernel panic senza riuscire a fare la seconda ```P```.
+Il motivo di ciò è oscuro al gruppo. I sospetti cadono sul meccanismo con cui ```passeren``` e 
+```verhogen``` gesticono la sospensione e la ripresa dei processi, anche se sembrano funzionare
+correttamente nel resto del progetto. Purtroppo il gruppo non è stato in grado di indagare più
+a fondo per mancanza di tempo. Per far terminare gli 8 processi la riga in cui viene eseguita la
+```V``` sul master semaphore è stata commentata.

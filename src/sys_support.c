@@ -13,6 +13,7 @@
 #include "pager.h"
 #include "pandos_const.h"
 #include "utils.h"
+#include "support.h"
 #include <umps3/umps/arch.h>
 #include <umps3/umps/cp0.h>
 #include <umps3/umps/libumps.h>
@@ -24,24 +25,6 @@
 #define INTMIN -2147483648
 
 /**
- * @var Semafori per l'accesso in mutua esclusione ai device. Usati dal livello
- * supporto. Vengono inizializzati con @ref init_supp_structure.
- * */
-extern int dev_sems[DEVINTNUM + 1][DEVPERINT];
-
-/**
- * @brief Gestore delle systemcall a livello supporto
- * @param act_proc_sup struttura di supporto del processo attivo
- * */
-static inline void support_syscall_handler(support_t *act_proc_sup);
-
-/**
- * @brief Gestore per le trap a livello supporto
- * @param act_proc_sup struttura di supporto del processo attivo
- * */
-static inline void support_trap_handler(support_t *act_proc_sup);
-
-/**
  * @brief Systemcall GET TOD (SYS1). Restituisce il valore di microsecondi
  * dall'avvio del sistema
  * @return valore in microsecondi dall'avvio del sistema
@@ -51,8 +34,9 @@ static inline unsigned int get_TOD(void);
 /**
  * @brief Systemcall TERMINATE (SYS2). Termina il processo chiamante attraverso
  * la NSYS2
+ * @param asid Asid del processo da terminare
  * */
-static inline void terminate();
+static inline void terminate(const unsigned int asid);
 
 /**
  * @brief Systemcall WRITE TO PRINTER (SYS3). Scrive sulla stampante
@@ -96,15 +80,16 @@ unsigned int get_TOD(void)
   return ret;
 }
 
-void terminate(void)
+void terminate(const unsigned int asid)
 {
-  int pid;
+  /*  Informo il pager che puo' considerare i frame del processo come liberi */
+  clean_frames(asid);
 
-  /* Recupero il pid usando la NSYS9 */
-  pid = SYSCALL(GETPROCESSID, 0, 0, 0);
+  /* V sul master semaphore */
+  /* v_on_master_sem(); */
 
   /* Uccido il processo usando NSYS2 */
-  SYSCALL(TERMPROCESS, pid, 0, 0);
+  SYSCALL(TERMPROCESS, 0, 0, 0);
 }
 
 int write_to_printer(unsigned int virtAddr, int len, unsigned int asid)
@@ -118,7 +103,7 @@ int write_to_printer(unsigned int virtAddr, int len, unsigned int asid)
   }
 
   /* Richiedo la mutua esclusione */
-  SYSCALL(PASSEREN, (unsigned int)&dev_sems[PRINTER_SEMS][asid - 1], 0, 0);
+  p_on_dev(PRINTER_SEMS, asid - 1);
 
   /* asid è l'id del processo, associazione 1:1 tra processi e devices */
   dev_reg = (dtpreg_t *)DEV_REG_ADDR(IL_PRINTER, asid - 1);
@@ -138,13 +123,14 @@ int write_to_printer(unsigned int virtAddr, int len, unsigned int asid)
 
     if (status != READY) {
       /* Rilascio la mutua esclusione */
-      SYSCALL(VERHOGEN, (unsigned int)&dev_sems[PRINTER_SEMS][asid - 1], 0, 0);
+      v_on_dev(PRINTER_SEMS, asid - 1);
+
       return -dev_reg->status;
     }
   }
 
   /* Rilascio la mutua esclusione */
-  SYSCALL(VERHOGEN, (unsigned int)&dev_sems[PRINTER_SEMS][asid - 1], 0, 0);
+  v_on_dev(PRINTER_SEMS, asid - 1);
   return i;
 }
 
@@ -160,14 +146,12 @@ int write_to_terminal(unsigned int virtAddr, int len, unsigned int asid)
   }
 
   /* Richiedo la mutua esclusione */
-  SYSCALL(PASSEREN, (unsigned int)&dev_sems[TERMOUT_SEMS][asid - 1], 0, 0);
+  p_on_dev(TERMOUT_SEMS, asid - 1);
 
-  /* asid è l'id del processo, associazione 1:1 tra processi e devices */
   dev_reg = (termreg_t *)DEV_REG_ADDR(IL_TERMINAL, asid - 1);
 
   for (i = 0; i < len; i++) {
-    /* carico il carattere da trasmettere sul campo data0, data1 non viene usato
-     */
+    /* carico il carattere da trasmettere sul campo data0, data1 non viene usato */
     cmdval = (*(char *)(virtAddr + i) << 8) | TRANSMITCHAR;
 
     if (*((char *)(virtAddr + i)) == '\0') {
@@ -178,13 +162,13 @@ int write_to_terminal(unsigned int virtAddr, int len, unsigned int asid)
 
     if ((status & TERMSTATMASK) != OKCHARTRANS) {
       /* Rilascio la mutua esclusione */
-      SYSCALL(VERHOGEN, (unsigned int)&dev_sems[TERMOUT_SEMS][asid - 1], 0, 0);
+      v_on_dev(TERMOUT_SEMS, asid - 1);
       return -dev_reg->transm_status;
     }
   }
 
   /* Rilascio la mutua esclusione */
-  SYSCALL(VERHOGEN, (unsigned int)&dev_sems[TERMOUT_SEMS][asid - 1], 0, 0);
+  v_on_dev(TERMOUT_SEMS, asid - 1);
 
   return i;
 }
@@ -199,7 +183,7 @@ int read_from_terminal(unsigned int virtAddr, unsigned int asid)
     safe_kill();
 
   /* Richiedo la mutua esclusione */
-  SYSCALL(PASSEREN, (unsigned int)&dev_sems[TERMIN_SEMS][asid - 1], 0, 0);
+  p_on_dev(TERMIN_SEMS, asid - 1);
 
   dev_reg = (termreg_t *)DEV_REG_ADDR(IL_TERMINAL, asid - 1);
 
@@ -212,7 +196,7 @@ int read_from_terminal(unsigned int virtAddr, unsigned int asid)
     /* maschero il return value per leggere lo status */
     if ((status & TERMSTATMASK) != OKCHARTRANS) {
       /* Rilascio la mutua esclusione */
-      SYSCALL(VERHOGEN, (unsigned int)&dev_sems[TERMIN_SEMS][asid - 1], 0, 0);
+      v_on_dev(TERMIN_SEMS, asid - 1);
       return -status;
     }
 
@@ -223,35 +207,12 @@ int read_from_terminal(unsigned int virtAddr, unsigned int asid)
   } while (status >> 8 != '\n');
 
   /* Rilascio la mutua esclusione */
-  SYSCALL(VERHOGEN, (unsigned int)&dev_sems[TERMIN_SEMS][asid - 1], 0, 0);
+  v_on_dev(TERMIN_SEMS, asid - 1);
 
   return i;
 }
 
-void support_exec_handler(void)
-{
-  support_t *act_proc_sup;
-  unsigned int cause;
-
-  act_proc_sup = (support_t *)SYSCALL(GETSUPPORTPTR, 0, 0, 0);
-
-  if (act_proc_sup == NULL) {
-    LOG("Error on get support");
-    return;
-  }
-
-  cause = CAUSE_GET_EXCCODE(act_proc_sup->sup_exceptState[GENERALEXCEPT].cause);
-
-  /* Se e' una syscall */
-  if (cause == EXC_SYS) {
-    support_syscall_handler(act_proc_sup);
-  } else {
-    /* Altrimenti la gestiamo come trap */
-    support_trap_handler(act_proc_sup);
-  }
-}
-
-void support_syscall_handler(support_t *act_proc_sup)
+inline void support_syscall_handler(support_t *act_proc_sup)
 {
   unsigned int arg1, arg2;
   int number, ret;
@@ -270,7 +231,7 @@ void support_syscall_handler(support_t *act_proc_sup)
     break;
   }
   case TERMINATE: {
-    terminate();
+    terminate(act_proc_sup->sup_asid);
     break;
   }
   case WRITEPRINTER: {
@@ -305,7 +266,5 @@ void support_syscall_handler(support_t *act_proc_sup)
   /* Lascio il controllo al processo corrente caricando lo stato salvato */
   LDST(&act_proc_sup->sup_exceptState[1]);
 }
-
-void support_trap_handler(support_t *act_proc_sup) { safe_kill(); }
 
 inline void safe_kill(void) { SYSCALL(TERMPROCESS, 0, 0, 0); }
